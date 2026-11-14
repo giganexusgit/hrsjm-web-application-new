@@ -195,11 +195,13 @@ Verified Document Attachments:
 
       if (user?.id) {
         // Authenticated member / user endpoint
+        const formattedSubject = subject.trim().startsWith('[')
+          ? subject.trim()
+          : `[${helpCategories}] ${subject.trim()}`.slice(0, 200);
+
         const res = await supportService.create({
-          category: helpCategories,
-          subject: subject.trim(),
+          subject: formattedSubject,
           description: structuredDescription,
-          priority: 'HIGH',
           source: 'web',
         });
         assignedId = res.id;

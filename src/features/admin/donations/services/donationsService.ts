@@ -8,10 +8,13 @@ import type {
   DateRange,
 } from '../types/donations.types';
 import {
-  INITIAL_DONATIONS as SEED_DONATIONS,
   createDonationReceipt as makeReceipt,
   isWithinDateRange as checkDateRange,
 } from '../data/donationsFixtures';
+import {
+  printOfficialDonationReceipt,
+  downloadOfficialDonationReceiptPdf,
+} from '../utils/donationReceiptGenerator';
 
 const STORAGE_KEY = 'hrsjm_local_donations_v1';
 
@@ -25,8 +28,7 @@ function getStoredDonations(): Donation[] {
   } catch (e) {
     console.warn('Failed to parse cached donations:', e);
   }
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(SEED_DONATIONS));
-  return SEED_DONATIONS;
+  return [];
 }
 
 function saveStoredDonations(donations: Donation[]): void {
@@ -109,7 +111,25 @@ export const donationsService = {
         : null;
 
       if (Array.isArray(items)) {
-        return items;
+        return items.map((p: any) => ({
+          id: p.id,
+          donor_name: p.donor_name || 'Anonymous Donor',
+          donor_mobile: p.donor_mobile || '',
+          donor_email: p.donor_email || null,
+          amount: Number(p.amount) || 0,
+          donation_type: (p.donation_type || (p.source?.toUpperCase() === 'OFFLINE' ? 'OFFLINE' : 'ONE_TIME')) as 'ONE_TIME' | 'RECURRING' | 'OFFLINE',
+          status: (p.status || 'SUCCESS') as DonationStatus,
+          cause: p.cause || 'General Relief Fund',
+          source: p.source || 'Website',
+          is_80g_claimed: Boolean(p.is_80g_claimed ?? p.is_80g_eligible ?? true),
+          pan_number: p.pan_number || undefined,
+          receipt_number: p.receipt_number || (p.id ? `REC-${String(p.id).slice(0, 8).toUpperCase()}` : undefined),
+          remark: p.remark || null,
+          member_code: p.member_code || null,
+          payment_method: p.payment_method || p.source || 'Online Payment',
+          created_at: p.created_at || new Date().toISOString(),
+          updated_at: p.updated_at || p.created_at || new Date().toISOString(),
+        }));
       }
     } catch (e) {
       console.warn('Backend /donations unavailable, using local mock store:', e);
@@ -303,153 +323,10 @@ export const donationsService = {
   },
 
   printDonationReceipt(receipt: DonationReceiptModel): void {
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-      alert('Please allow popups to open the official donation receipt.');
-      return;
-    }
+    printOfficialDonationReceipt(receipt);
+  },
 
-    const fullHtml = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>Donation Receipt - ${receipt.receiptNumber}</title>
-        <meta charset="utf-8" />
-        <style>
-          @page { size: A4 portrait; margin: 15mm; }
-          body { font-family: 'Inter', Arial, sans-serif; color: #011F39; margin: 0; padding: 25px; font-size: 13px; line-height: 1.5; }
-          .receipt-border { border: 3px double #011F39; padding: 25px; border-radius: 8px; position: relative; }
-          .header { text-align: center; border-bottom: 2px solid #011F39; padding-bottom: 15px; margin-bottom: 20px; }
-          .org-title { font-size: 22px; font-weight: 800; color: #011F39; letter-spacing: 0.5px; }
-          .org-subtitle { font-size: 13px; font-weight: 600; color: #011F39; margin-top: 2px; }
-          .org-tagline { font-size: 11px; color: #64748b; font-style: italic; }
-          .org-reg { font-size: 11px; color: #475569; margin-top: 6px; }
-          .receipt-badge { display: inline-block; background: #011F39; color: #FAD465; padding: 6px 20px; font-weight: 800; font-size: 14px; border-radius: 4px; margin: 15px 0; text-transform: uppercase; letter-spacing: 1px; }
-          .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; background: #f8fafc; border: 1px solid #e2e8f0; padding: 12px 16px; border-radius: 6px; margin-bottom: 20px; font-size: 12px; }
-          .meta-item { display: flex; justify-content: space-between; }
-          .meta-label { color: #64748b; font-weight: 600; }
-          .meta-val { font-weight: 700; color: #0f172a; font-family: monospace; }
-          .section-title { font-size: 12px; font-weight: 800; text-transform: uppercase; color: #011F39; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px; margin: 18px 0 10px 0; }
-          .details-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-          .details-table th { background: #f1f5f9; padding: 8px 12px; text-align: left; font-size: 11px; color: #475569; border-bottom: 1px solid #cbd5e1; }
-          .details-table td { padding: 10px 12px; border-bottom: 1px solid #e2e8f0; }
-          .amount-banner { background: #ecfdf5; border: 2px solid #10b981; border-radius: 6px; padding: 15px; margin: 20px 0; display: flex; justify-content: space-between; align-items: center; }
-          .amount-label { font-size: 12px; font-weight: 800; color: #065f46; text-transform: uppercase; }
-          .amount-val { font-size: 24px; font-weight: 800; color: #047857; font-family: monospace; }
-          .tax-exemption-box { background: #fefce8; border: 1px solid #fde047; padding: 12px; border-radius: 6px; font-size: 11px; color: #854d0e; line-height: 1.5; margin-bottom: 25px; }
-          .tax-icon { font-size: 14px; font-weight: bold; margin-right: 4px; }
-          .footer-signatures { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 50px; padding-top: 20px; }
-          .sig-box { text-align: center; border-top: 1px dashed #011F39; padding-top: 8px; font-size: 11px; font-weight: 600; color: #475569; }
-          .watermark { position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%) rotate(-30deg); font-size: 70px; font-weight: 900; color: rgba(1, 31, 57, 0.04); text-transform: uppercase; pointer-events: none; }
-          @media print {
-            body { padding: 0; }
-          }
-        </style>
-      </head>
-      <body>
-        <div class="receipt-border">
-          <div class="watermark">HRSJM OFFICIAL</div>
-          <div class="header">
-            <div class="org-title">HUMAN RIGHTS SANRAKSHAN JAN MANCH</div>
-            <div class="org-subtitle">मानव अधिकार एवं सामाजिक न्याय संरक्षण ट्रस्ट</div>
-            <div class="org-tagline">Registered National Human Rights Non-Governmental Organization</div>
-            <div class="org-reg">National HQ: New Delhi, India • Regd. No: HR/0092/2019 • PAN: AABTH4589K</div>
-            <div class="receipt-badge">Official Donation Receipt</div>
-          </div>
-
-          <div class="meta-grid">
-            <div class="meta-item">
-              <span class="meta-label">Receipt Number:</span>
-              <span class="meta-val">${receipt.receiptNumber}</span>
-            </div>
-            <div class="meta-item">
-              <span class="meta-label">Receipt Date:</span>
-              <span class="meta-val">${new Date(receipt.receiptDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
-            </div>
-            <div class="meta-item">
-              <span class="meta-label">Payment Mode:</span>
-              <span class="meta-val">${receipt.paymentMethod || 'Online Transfer'}</span>
-            </div>
-            <div class="meta-item">
-              <span class="meta-label">Transaction Reference:</span>
-              <span class="meta-val">${receipt.transactionId || 'N/A'}</span>
-            </div>
-          </div>
-
-          <div class="section-title">Donor Information</div>
-          <table class="details-table">
-            <tr>
-              <th style="width: 25%;">Donor Full Name</th>
-              <td style="font-weight: bold; font-size: 14px;">${receipt.donorName}</td>
-            </tr>
-            <tr>
-              <th>Contact Mobile</th>
-              <td>${receipt.donorMobile || 'Not Provided'}</td>
-            </tr>
-            <tr>
-              <th>Email Address</th>
-              <td>${receipt.donorEmail || 'Not Provided'}</td>
-            </tr>
-            ${receipt.memberCode ? `<tr><th>Member Registration ID</th><td style="font-family: monospace; font-weight: bold;">${receipt.memberCode}</td></tr>` : ''}
-          </table>
-
-          <div class="section-title">Contribution Particulars</div>
-          <table class="details-table">
-            <thead>
-              <tr>
-                <th>Purpose / Campaign Cause</th>
-                <th>Source Platform</th>
-                <th style="text-align: right;">Amount (INR)</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>
-                  <strong>${receipt.cause}</strong>
-                  ${receipt.notes ? `<div style="font-size: 11px; color: #64748b; margin-top: 3px;">Note: ${receipt.notes}</div>` : ''}
-                </td>
-                <td>${receipt.source || 'Website'}</td>
-                <td style="text-align: right; font-weight: bold; font-size: 14px;">₹ ${receipt.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-              </tr>
-            </tbody>
-          </table>
-
-          <div class="amount-banner">
-            <div>
-              <div class="amount-label">Net Received Amount</div>
-              <div style="font-size: 11px; color: #065f46; margin-top: 2px;">Transferred to HRSJM Corpus / Relief Fund</div>
-            </div>
-            <div class="amount-val">₹ ${receipt.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
-          </div>
-
-          <div class="tax-exemption-box">
-            <span class="tax-icon">🏛️</span>
-            <strong>Tax Exemption Endorsement (Section 80G):</strong>
-            Donations to Human Rights Sanrakshan Jan Manch are eligible for tax exemption under Section 80G of the Income Tax Act, 1961 vide Unique Registration Number (URN) <strong>AAATH1234KF20214</strong> dated 12/04/2021.
-          </div>
-
-          <div class="footer-signatures">
-            <div class="sig-box">
-              Verified by Finance &amp; Accounts Desk<br>
-              <span style="font-size: 10px; color: #94a3b8;">Human Rights Sanrakshan Jan Manch</span>
-            </div>
-            <div class="sig-box">
-              Authorized Signatory / National Treasurer<br>
-              <span style="font-size: 10px; color: #94a3b8;">Stamp &amp; Seal of Trust</span>
-            </div>
-          </div>
-        </div>
-        <script>
-          window.onload = function() {
-            window.print();
-          };
-        </script>
-      </body>
-      </html>
-    `;
-
-    printWindow.document.open();
-    printWindow.document.write(fullHtml);
-    printWindow.document.close();
+  downloadDonationReceipt(receipt: DonationReceiptModel): void {
+    downloadOfficialDonationReceiptPdf(receipt);
   },
 };

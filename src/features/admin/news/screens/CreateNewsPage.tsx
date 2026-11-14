@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -6,6 +6,7 @@ import {
   Send,
   FileEdit,
   X,
+  Upload,
 } from 'lucide-react';
 import { newsStore } from '../store/newsStore';
 import {
@@ -29,7 +30,7 @@ export const CreateNewsPage: React.FC = () => {
     slug: '',
     summary: '',
     content: '',
-    featuredImageUri: 'https://picsum.photos/seed/hrsjm-news-new/800/450',
+    featuredImageUri: null,
     author: 'HRSJM Team',
     category: 'Legal',
     tags: ['Human Rights', 'Community'],
@@ -43,6 +44,32 @@ export const CreateNewsPage: React.FC = () => {
   const [errors, setErrors] = useState<CreateNewsFieldErrors>({});
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [selectedFileName, setSelectedFileName] = useState<string>('');
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      setErrors((err) => ({ ...err, featuredImageUri: 'Please select a valid image file (PNG, JPG, WEBP).' }));
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setErrors((err) => ({ ...err, featuredImageUri: 'Image size must be 5 MB or less.' }));
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        setForm((prev) => ({ ...prev, featuredImageUri: reader.result as string }));
+        setSelectedFileName(file.name);
+        if (errors.featuredImageUri) {
+          setErrors((err) => ({ ...err, featuredImageUri: undefined }));
+        }
+      }
+    };
+    reader.readAsDataURL(file);
+  };
   const [publishModalOpen, setPublishModalOpen] = useState(false);
 
   // Auto-generate slug from headline if slug hasn't been manually altered
@@ -297,33 +324,35 @@ export const CreateNewsPage: React.FC = () => {
 
           <div style={styles.fieldGroup}>
             <label style={styles.label}>
-              Cover Image URL <span style={styles.requiredStar}>*</span>
+              Cover Image <span style={styles.requiredStar}>*</span>
             </label>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleImageSelect}
+              style={{ display: 'none' }}
+            />
             <div style={styles.imageInputRow}>
-              <input
-                type="text"
-                placeholder="https://example.com/image.jpg"
-                value={form.featuredImageUri || ''}
-                onChange={(e) => {
-                  setForm((prev) => ({ ...prev, featuredImageUri: e.target.value }));
-                  if (errors.featuredImageUri) {
-                    setErrors((err) => ({ ...err, featuredImageUri: undefined }));
-                  }
-                }}
-                style={styles.input}
-              />
               <button
                 type="button"
-                onClick={() =>
-                  setForm((prev) => ({
-                    ...prev,
-                    featuredImageUri: `https://picsum.photos/seed/news-${Date.now()}/800/450`,
-                  }))
-                }
-                style={styles.randomThumbBtn}
+                onClick={() => fileInputRef.current?.click()}
+                style={{
+                  ...styles.randomThumbBtn,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  backgroundColor: '#011F39',
+                  color: '#FFFFFF',
+                  border: '1px solid #011F39',
+                }}
               >
-                Sample Image
+                <Upload size={15} />
+                <span>{form.featuredImageUri ? 'Change Image' : 'Select Image'}</span>
               </button>
+              <span style={{ fontSize: 13, color: '#64748B', alignSelf: 'center' }}>
+                {selectedFileName || (form.featuredImageUri ? 'Image selected' : 'PNG, JPG, or WEBP (max 5 MB)')}
+              </span>
             </div>
 
             {form.featuredImageUri && (
@@ -332,14 +361,14 @@ export const CreateNewsPage: React.FC = () => {
                   src={form.featuredImageUri}
                   alt="Cover preview"
                   style={styles.previewImage}
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src =
-                      'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=800&q=80';
-                  }}
                 />
                 <button
                   type="button"
-                  onClick={() => setForm((prev) => ({ ...prev, featuredImageUri: null }))}
+                  onClick={() => {
+                    setForm((prev) => ({ ...prev, featuredImageUri: null }));
+                    setSelectedFileName('');
+                    if (fileInputRef.current) fileInputRef.current.value = '';
+                  }}
                   style={styles.removeImageBtn}
                   title="Remove image"
                 >

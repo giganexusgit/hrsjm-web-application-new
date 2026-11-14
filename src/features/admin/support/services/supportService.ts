@@ -56,7 +56,9 @@ export const supportService = {
   },
 
   async create(body: CreateTicketBody): Promise<SupportTicket> {
-    return apiClient.post<SupportTicket>(ENDPOINTS.support.create, body);
+    // Strip properties that are not part of the standard CreateTicketDto to prevent forbidden property validation errors
+    const { category, priority, ...cleanBody } = body;
+    return apiClient.post<SupportTicket>(ENDPOINTS.support.create, cleanBody);
   },
 
   async createPublic(body: CreatePublicComplaintBody): Promise<{ ticketNumber: string; id?: string; message?: string }> {

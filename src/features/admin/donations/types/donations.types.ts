@@ -56,6 +56,8 @@ export interface DonationReceiptModel {
   donorName: string;
   donorMobile?: string | null;
   donorEmail?: string | null;
+  donorPan?: string | null;
+  panNumber?: string | null;
   memberCode?: string | null;
   cause: string;
   amount: number;

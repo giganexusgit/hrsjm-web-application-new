@@ -374,7 +374,7 @@ export const reportsService = {
       </head>
       <body>
         <div class="header">
-          <div class="org-title">HUMAN RIGHTS SANRAKSHAN JAN MANCH</div>
+          <div class="org-title">Human Rights &  Social Justice Mission</div>
           <div class="org-sub">Registered National Human Rights NGO • Regd No: HR/0092/2019 • 80G & 12A Certified</div>
           <div class="report-title">${title}</div>
           <div class="report-meta">Generated on ${new Date().toLocaleString('en-IN')} | Strict Audit & General Ledger Copy</div>
@@ -426,8 +426,8 @@ export const reportsService = {
         </thead>
         <tbody>
           ${report.accounts
-            .map(
-              acc => `
+        .map(
+          acc => `
             <tr>
               <td>${acc.account.account_code || '—'}</td>
               <td class="font-bold">${acc.account.account_name}</td>
@@ -436,8 +436,8 @@ export const reportsService = {
               <td class="text-right">${acc.credit_balance > 0 ? formatCurrency(acc.credit_balance) : '—'}</td>
             </tr>
           `
-            )
-            .join('')}
+        )
+        .join('')}
           <tr class="total-row">
             <td colspan="3" class="font-bold">GRAND TOTAL</td>
             <td class="text-right font-bold">${formatCurrency(report.total_debit)}</td>
@@ -446,11 +446,10 @@ export const reportsService = {
         </tbody>
       </table>
       <div style="font-size: 11px; color: ${report.is_balanced ? '#166534' : '#991b1b'}; margin-top: 8px;">
-        ${
-          report.is_balanced
-            ? '✓ Verified: Total Gross Debits exactly equal Total Gross Credits. No ledger discrepancy detected.'
-            : `⚠ Attention: Difference of ${formatCurrency(report.difference)} detected between debits and credits.`
-        }
+        ${report.is_balanced
+        ? '✓ Verified: Total Gross Debits exactly equal Total Gross Credits. No ledger discrepancy detected.'
+        : `⚠ Attention: Difference of ${formatCurrency(report.difference)} detected between debits and credits.`
+      }
       </div>
     `;
     this.printStatement(`Trial Balance Statement (${report.as_of_date})`, html);
@@ -479,16 +478,16 @@ export const reportsService = {
         </thead>
         <tbody>
           ${report.income.items
-            .map(
-              item => `
+        .map(
+          item => `
             <tr>
               <td>${item.account.account_code || '—'}</td>
               <td class="font-bold">${item.account.account_name}</td>
               <td class="text-right">${formatCurrency(item.amount)}</td>
             </tr>
           `
-            )
-            .join('')}
+        )
+        .join('')}
           <tr class="total-row">
             <td colspan="2">TOTAL REVENUE / INCOME (A)</td>
             <td class="text-right font-bold">${formatCurrency(report.total_income)}</td>
@@ -507,16 +506,16 @@ export const reportsService = {
         </thead>
         <tbody>
           ${report.expenses.items
-            .map(
-              item => `
+        .map(
+          item => `
             <tr>
               <td>${item.account.account_code || '—'}</td>
               <td class="font-bold">${item.account.account_name}</td>
               <td class="text-right">${formatCurrency(item.amount)}</td>
             </tr>
           `
-            )
-            .join('')}
+        )
+        .join('')}
           <tr class="total-row">
             <td colspan="2">TOTAL EXPENDITURE (B)</td>
             <td class="text-right font-bold">${formatCurrency(report.total_expenses)}</td>
@@ -560,8 +559,8 @@ export const reportsService = {
             </thead>
             <tbody>
               ${report.assets.items
-                .map(
-                  item => `
+        .map(
+          item => `
                 <tr>
                   <td>
                     <div class="font-bold">${item.account.account_name}</div>
@@ -570,8 +569,8 @@ export const reportsService = {
                   <td class="text-right font-bold">${formatCurrency(item.amount)}</td>
                 </tr>
               `
-                )
-                .join('')}
+        )
+        .join('')}
               <tr class="total-row">
                 <td>TOTAL ASSETS (A)</td>
                 <td class="text-right">${formatCurrency(report.total_assets)}</td>
@@ -592,8 +591,8 @@ export const reportsService = {
             <tbody>
               <tr><td colspan="2" style="background: #f1f5f9; font-weight: 700; font-size: 10px;">A. CURRENT LIABILITIES</td></tr>
               ${report.liabilities.items
-                .map(
-                  item => `
+        .map(
+          item => `
                 <tr>
                   <td>
                     <div>${item.account.account_name}</div>
@@ -602,8 +601,8 @@ export const reportsService = {
                   <td class="text-right">${formatCurrency(item.amount)}</td>
                 </tr>
               `
-                )
-                .join('')}
+        )
+        .join('')}
               <tr style="background: #fafafa; font-weight: 600;">
                 <td>Subtotal Liabilities</td>
                 <td class="text-right">${formatCurrency(report.total_liabilities)}</td>
@@ -611,8 +610,8 @@ export const reportsService = {
 
               <tr><td colspan="2" style="background: #f1f5f9; font-weight: 700; font-size: 10px;">B. CAPITAL & CORPUS FUNDS</td></tr>
               ${report.equity.items
-                .map(
-                  item => `
+        .map(
+          item => `
                 <tr>
                   <td>
                     <div>${item.account.account_name}</div>
@@ -621,8 +620,8 @@ export const reportsService = {
                   <td class="text-right">${formatCurrency(item.amount)}</td>
                 </tr>
               `
-                )
-                .join('')}
+        )
+        .join('')}
               <tr>
                 <td>
                   <div class="font-bold" style="color: #166534;">Current Period Net Surplus</div>

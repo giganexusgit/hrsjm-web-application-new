@@ -123,7 +123,6 @@ export const MEMBER_NAV_GROUPS: MemberNavGroup[] = [
         title: 'Notifications',
         path: '/member/notifications',
         icon: Bell,
-        badge: '7',
         description: 'Alerts, bulletins & system announcements',
       },
       {

@@ -200,7 +200,7 @@ export const MemberIdCardModal: React.FC<MemberIdCardModalProps> = ({
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <HrsjmLogo size="sm" variant="light" showWordmark={false} />
+                    <HrsjmLogo size="sm" variant="light" showWordmark={false} showIcon={true} />
                     <div>
                       <div
                         style={{

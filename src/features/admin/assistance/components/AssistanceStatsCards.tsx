@@ -77,16 +77,10 @@ export const AssistanceStatsCards: React.FC<AssistanceStatsCardsProps> = ({
   ];
 
   return (
-    <div
-      style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))',
-        gap: '14px',
-        marginBottom: '20px',
-      }}
-    >
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5 mb-5">
       {cards.map((card, idx) => {
         const Icon = card.icon;
+        const isLast = idx === cards.length - 1;
         return (
           <div
             key={`${card.title}-${idx}`}
@@ -95,10 +89,11 @@ export const AssistanceStatsCards: React.FC<AssistanceStatsCardsProps> = ({
                 onSelectTab(card.id);
               }
             }}
+            className={isLast ? 'sm:col-span-2 lg:col-span-1' : ''}
             style={{
               backgroundColor: '#FFFFFF',
               borderRadius: '12px',
-              padding: '16px 18px',
+              padding: '14px 16px',
               border: card.isActive
                 ? `2px solid ${card.color}`
                 : '1px solid #E5E7EB',
@@ -118,39 +113,42 @@ export const AssistanceStatsCards: React.FC<AssistanceStatsCardsProps> = ({
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 marginBottom: '10px',
+                gap: '8px',
               }}
             >
               <span
                 style={{
-                  fontSize: '12.5px',
-                  fontWeight: 600,
+                  fontSize: '11.5px',
+                  fontWeight: 700,
                   color: '#4B5563',
                   textTransform: 'uppercase',
                   letterSpacing: '0.04em',
+                  lineHeight: 1.2,
                 }}
               >
                 {card.title}
               </span>
               <div
                 style={{
-                  width: '36px',
-                  height: '36px',
-                  borderRadius: '9px',
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '8px',
                   backgroundColor: card.bgColor,
                   border: `1px solid ${card.borderColor}`,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
+                  flexShrink: 0,
                 }}
               >
-                <Icon size={18} color={card.color} strokeWidth={2.2} />
+                <Icon size={16} color={card.color} strokeWidth={2.2} />
               </div>
             </div>
 
             <div>
               <div
                 style={{
-                  fontSize: card.isCurrency ? '22px' : '26px',
+                  fontSize: card.isCurrency ? '20px' : '24px',
                   fontWeight: 700,
                   color: '#011F39',
                   lineHeight: 1.1,
@@ -163,9 +161,9 @@ export const AssistanceStatsCards: React.FC<AssistanceStatsCardsProps> = ({
               </div>
               <div
                 style={{
-                  fontSize: '11.5px',
+                  fontSize: '11px',
                   color: '#6B7280',
-                  lineHeight: 1.3,
+                  lineHeight: 1.25,
                 }}
               >
                 {card.description}

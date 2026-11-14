@@ -60,14 +60,25 @@ export const membersService = {
   },
 
   /**
-   * Fetches active membership categories from GET /memberships/categories
+   * Fetches active membership categories from GET /membership-categories
    */
   async getCategories(): Promise<MembershipCategoryItem[]> {
     try {
-      const res = await apiClient.get<any>('/memberships/categories');
-      const raw = Array.isArray(res) ? res : res?.items || [];
-      if (Array.isArray(raw) && raw.length > 0) {
-        return raw;
+      const res = await apiClient.get<any>('/membership-categories');
+      const list = Array.isArray(res)
+        ? res
+        : res?.items || res?.data?.items || res?.data || [];
+      if (Array.isArray(list) && list.length > 0) {
+        return list.map((c: any) => ({
+          id: c.id,
+          name: c.name || c.title || 'General Member',
+          code: c.code || '',
+          fee: c.fee !== undefined ? c.fee : 0,
+          description: c.description || '',
+          validity_days: c.validity_days || (c.validity_months ? c.validity_months * 30 : 365),
+          status: c.status || 'ACTIVE',
+          free_renewal_years: c.free_renewal_years,
+        }));
       }
       return STANDARD_MEMBERSHIP_CATEGORIES;
     } catch {

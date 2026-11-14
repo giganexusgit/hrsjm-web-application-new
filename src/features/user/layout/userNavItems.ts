@@ -14,6 +14,7 @@ import {
   User,
   Bell,
   Receipt,
+  Target,
 } from 'lucide-react';
 
 export interface UserNavItem {
@@ -92,6 +93,12 @@ export const USER_NAV_GROUPS: UserNavGroup[] = [
         title: 'File a Complaint',
         path: '/support',
         icon: LifeBuoy,
+      },
+      {
+        id: 'user-causes',
+        title: 'Mission Causes',
+        path: '/causes',
+        icon: Target,
       },
       {
         id: 'user-donations',

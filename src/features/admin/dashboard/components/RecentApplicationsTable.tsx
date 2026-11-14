@@ -1,16 +1,30 @@
 import type React from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useSyncExternalStore } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { FileText, ArrowRight } from 'lucide-react';
-import { DEMO_RECENT_APPLICATIONS } from '../data/dashboardDemoData';
+import { applicationsStore } from '@/features/admin/applications/store/applicationsStore';
 
 export const RecentApplicationsTable: React.FC = () => {
-  const getStatusBadge = (status: 'SUBMITTED' | 'UNDER_REVIEW' | 'APPROVED') => {
-    switch (status) {
-      case 'APPROVED':
+  const navigate = useNavigate();
+  useSyncExternalStore(
+    applicationsStore.subscribe,
+    applicationsStore.getSnapshot
+  );
+  const applications = applicationsStore.getAllApplications().slice(0, 5);
+
+  useEffect(() => {
+    if (applicationsStore.getAllApplications().length === 0) {
+      applicationsStore.fetchApplications().catch(() => {});
+    }
+  }, []);
+
+  const getStatusBadge = (status: string) => {
+    switch (status?.toLowerCase()) {
+      case 'approved':
         return { bg: '#EAF7EE', color: '#16A34A', label: 'Approved' };
-      case 'UNDER_REVIEW':
+      case 'under_review':
         return { bg: '#FFF9E6', color: '#D97706', label: 'Under Review' };
-      case 'SUBMITTED':
+      case 'submitted':
       default:
         return { bg: '#EDF2F7', color: '#174A78', label: 'Submitted' };
     }
@@ -48,40 +62,49 @@ export const RecentApplicationsTable: React.FC = () => {
             </tr>
           </thead>
           <tbody>
-            {DEMO_RECENT_APPLICATIONS.map((app) => {
-              const badge = getStatusBadge(app.status);
-              return (
-                <tr key={app.id} style={styles.tr}>
-                  <td style={styles.td}>
-                    <span style={styles.applicantName}>{app.applicantName}</span>
-                  </td>
-                  <td style={styles.td}>
-                    <span style={styles.codeBadge}>{app.applicationId}</span>
-                  </td>
-                  <td style={styles.td}>{app.type}</td>
-                  <td style={styles.td}>{app.submittedDate}</td>
-                  <td style={styles.td}>
-                    <span
-                      style={{
-                        ...styles.statusPill,
-                        backgroundColor: badge.bg,
-                        color: badge.color,
-                      }}
-                    >
-                      {badge.label}
-                    </span>
-                  </td>
-                  <td style={{ ...styles.td, textAlign: 'right' }}>
-                    <Link
-                      to="/admin/membership-applications"
-                      style={styles.actionBtn}
-                    >
-                      Review
-                    </Link>
-                  </td>
-                </tr>
-              );
-            })}
+            {applications.length === 0 ? (
+              <tr>
+                <td colSpan={6} style={{ ...styles.td, textAlign: 'center', padding: '32px 16px', color: '#64748B' }}>
+                  No applications currently pending.
+                </td>
+              </tr>
+            ) : (
+              applications.map((app) => {
+                const badge = getStatusBadge(app.status);
+                return (
+                  <tr key={app.id} style={styles.tr}>
+                    <td style={styles.td}>
+                      <span style={styles.applicantName}>{app.applicantName}</span>
+                    </td>
+                    <td style={styles.td}>
+                      <span style={styles.codeBadge}>{app.applicationId}</span>
+                    </td>
+                    <td style={styles.td}>{app.membershipType}</td>
+                    <td style={styles.td}>{app.submittedAt}</td>
+                    <td style={styles.td}>
+                      <span
+                        style={{
+                          ...styles.statusBadge,
+                          backgroundColor: badge.bg,
+                          color: badge.color,
+                        }}
+                      >
+                        {badge.label}
+                      </span>
+                    </td>
+                    <td style={{ ...styles.td, textAlign: 'right' }}>
+                      <button
+                        type="button"
+                        onClick={() => navigate(`/admin/membership-applications/${app.id}`)}
+                        style={styles.reviewBtn}
+                      >
+                        Review
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
           </tbody>
         </table>
       </div>
@@ -101,40 +124,41 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: '18px',
-    flexWrap: 'wrap',
+    marginBottom: '16px',
     gap: '12px',
+    flexWrap: 'wrap',
   },
   titleWrap: {
     display: 'flex',
     alignItems: 'center',
-    gap: '10px',
+    gap: '12px',
   },
   iconWrap: {
-    width: '36px',
-    height: '36px',
+    width: '38px',
+    height: '38px',
     borderRadius: '8px',
-    backgroundColor: '#EDF2F7',
+    backgroundColor: 'rgba(6, 41, 77, 0.08)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
   },
   title: {
-    fontSize: '16px',
-    fontWeight: 700,
-    color: '#0B2F52',
     margin: 0,
+    fontSize: '16px',
+    fontWeight: 600,
+    color: '#06294D',
   },
   subtitle: {
+    margin: '2px 0 0',
     fontSize: '12px',
-    color: '#718096',
-    margin: '2px 0 0 0',
+    color: '#64748B',
   },
   viewAllLink: {
     display: 'inline-flex',
     alignItems: 'center',
     gap: '6px',
-    fontSize: '12.5px',
+    fontSize: '13px',
     fontWeight: 600,
     color: '#174A78',
     textDecoration: 'none',
@@ -146,57 +170,55 @@ const styles: Record<string, React.CSSProperties> = {
     width: '100%',
     borderCollapse: 'collapse',
     textAlign: 'left',
-    fontSize: '13px',
   },
   theadRow: {
-    borderBottom: '1.5px solid #E2E8F0',
+    borderBottom: '1px solid #E2E8F0',
   },
   th: {
     padding: '10px 12px',
-    fontSize: '11.5px',
+    fontSize: '11px',
     fontWeight: 700,
-    color: '#718096',
+    color: '#64748B',
     textTransform: 'uppercase',
-    letterSpacing: '0.04em',
+    letterSpacing: '0.5px',
   },
   tr: {
     borderBottom: '1px solid #F1F5F9',
   },
   td: {
     padding: '12px',
-    color: '#34516D',
-    whiteSpace: 'nowrap',
+    fontSize: '13px',
+    color: '#1E293B',
   },
   applicantName: {
     fontWeight: 600,
-    color: '#0B2F52',
+    color: '#06294D',
   },
   codeBadge: {
-    fontFamily: 'monospace',
-    fontSize: '12px',
-    backgroundColor: '#FAF7F0',
-    border: '1px solid #DCE4EC',
-    padding: '2px 6px',
+    padding: '3px 8px',
+    backgroundColor: '#F1F5F9',
     borderRadius: '4px',
-    color: '#06294D',
-    fontWeight: 600,
-  },
-  statusPill: {
-    padding: '3px 9px',
-    borderRadius: '999px',
-    fontSize: '11.5px',
-    fontWeight: 600,
-  },
-  actionBtn: {
-    display: 'inline-block',
-    padding: '4px 12px',
-    backgroundColor: '#06294D',
-    color: '#FAD465',
-    borderRadius: '5px',
     fontSize: '12px',
     fontWeight: 600,
-    textDecoration: 'none',
-    transition: 'background-color 0.15s',
+    color: '#334155',
+    fontFamily: 'monospace',
+  },
+  statusBadge: {
+    display: 'inline-block',
+    padding: '3px 10px',
+    borderRadius: '9999px',
+    fontSize: '11px',
+    fontWeight: 600,
+    textTransform: 'capitalize',
+  },
+  reviewBtn: {
+    padding: '5px 12px',
+    backgroundColor: '#06294D',
+    color: '#FFFFFF',
+    border: 'none',
+    borderRadius: '6px',
+    fontSize: '12px',
+    fontWeight: 600,
+    cursor: 'pointer',
   },
 };
-

@@ -4,8 +4,7 @@ import type {
   EventUiStatus,
   CreateEventFormState,
 } from '../types/events.types';
-import { INITIAL_EVENTS_FIXTURES } from '../data/eventsFixtures';
-import { eventsService } from '../services/eventsService';
+import { eventsService, isAdminCreatedEvent } from '../services/eventsService';
 
 const STORAGE_KEY = 'hrsjm_local_events_v1';
 
@@ -35,18 +34,12 @@ class EventsStore {
   private loadPersisted(): EventListItem[] {
     try {
       if (typeof window !== 'undefined' && window.localStorage) {
-        const raw = window.localStorage.getItem(STORAGE_KEY);
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            return parsed;
-          }
-        }
+        window.localStorage.removeItem(STORAGE_KEY);
       }
     } catch {
-      // Fallback
+      // Ignore storage errors
     }
-    return [...INITIAL_EVENTS_FIXTURES];
+    return [];
   }
 
   private persist(): void {
@@ -114,7 +107,7 @@ class EventsStore {
     try {
       const items = await eventsService.list();
       if (Array.isArray(items)) {
-        this.events = items;
+        this.events = items.filter(isAdminCreatedEvent);
         this.sortInternal();
         this.notify();
       }

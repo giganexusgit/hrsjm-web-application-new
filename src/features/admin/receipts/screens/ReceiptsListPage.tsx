@@ -376,9 +376,9 @@ export const ReceiptsListPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
+    <div className="w-full max-w-7xl mx-auto space-y-6 min-w-0 overflow-x-hidden">
       {/* Top Header Card */}
-      <div className="bg-white rounded-xl border border-[#DCE4EC] px-6 py-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-white rounded-xl border border-[#DCE4EC] px-6 py-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4 w-full min-w-0">
         <div>
           <div className="inline-flex items-center gap-1.5 text-xs font-bold text-[#718096] uppercase tracking-[0.14em] mb-1">
             <Receipt size={14} className="text-[#06294D]" />
@@ -443,7 +443,7 @@ export const ReceiptsListPage: React.FC = () => {
       />
 
       {/* Main Unified Workspace Card */}
-      <div className="bg-white rounded-xl border border-[#DCE4EC] shadow-xs overflow-hidden">
+      <div className="bg-white rounded-xl border border-[#DCE4EC] shadow-xs overflow-hidden w-full min-w-0">
         {/* Primary Stream Tabs */}
         <ReceiptStatusTabs
           activeTab={activeCategory}
@@ -488,16 +488,16 @@ export const ReceiptsListPage: React.FC = () => {
         />
 
         {/* Vouchers Data Table */}
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs border-collapse">
+        <div className="overflow-x-auto w-full">
+          <table className="w-full min-w-[920px] text-left text-xs border-collapse table-fixed">
             <thead>
-              <tr className="bg-[#FAF7F0] border-b border-[#DCE4EC] text-[#06294D] text-[11px] font-bold uppercase tracking-[0.12em]">
-                <th className="py-3.5 px-4 w-[30%]">Voucher No &amp; Stream</th>
-                <th className="py-3.5 px-4 w-[22%]">Received From / Payer</th>
-                <th className="py-3.5 px-4 w-[20%]">Income Account Allocation</th>
-                <th className="py-3.5 px-4 w-[14%]">Payment Method</th>
-                <th className="py-3.5 px-4 w-[10%] text-right">Amount &amp; Status</th>
-                <th className="py-3.5 px-4 w-[4%] text-right">Action</th>
+              <tr className="bg-[#FAF7F0] border-b border-[#DCE4EC] text-[#06294D] text-[11px] font-bold uppercase tracking-[0.06em]">
+                <th className="py-3 px-3.5 w-[25%]">Voucher No &amp; Stream</th>
+                <th className="py-3 px-3.5 w-[21%]">Received From / Payer</th>
+                <th className="py-3 px-3.5 w-[17%]">Income Allocation</th>
+                <th className="py-3 px-3.5 w-[14%]">Payment Method</th>
+                <th className="py-3 px-3.5 w-[14%] text-right">Amount &amp; Status</th>
+                <th className="py-3 px-3.5 w-[9%] text-right whitespace-nowrap">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#EDF2F7]">
@@ -513,7 +513,7 @@ export const ReceiptsListPage: React.FC = () => {
                 <tr>
                   <td colSpan={6} className="text-center py-16 px-4">
                     <div className="flex flex-col items-center gap-2">
-                      <div className="w-12 h-12 rounded-full bg-[#EDF2F7] text-[#06294D] flex items-center justify-center mb-1">
+                      <div className="w-12 h-12 rounded-full bg-[#EDF2F7] text-[#07294E] flex items-center justify-center mb-1">
                         <AlertCircle size={24} />
                       </div>
                       <div className="font-['Playfair_Display',Georgia,serif] text-base font-bold text-[#0B2F52]">
@@ -526,7 +526,7 @@ export const ReceiptsListPage: React.FC = () => {
                         <button
                           type="button"
                           onClick={handleResetFilters}
-                          className="mt-3 px-4 py-2 text-xs font-bold rounded-xl border border-[#DBE5EE] bg-[#EDF2F7] hover:bg-[#DBE5EE] text-[#06294D] transition cursor-pointer"
+                          className="mt-3 px-4 py-2 text-xs font-bold rounded-xl border border-[#DBE5EE] bg-[#EDF2F7] hover:bg-[#DBE5EE] text-[#07294E] transition cursor-pointer"
                         >
                           Clear All Filters
                         </button>

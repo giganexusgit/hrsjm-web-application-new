@@ -13,6 +13,7 @@ import {
 import { ADMIN_NAV_GROUPS } from './adminNavItems';
 import { useProfile } from '@/features/admin/profile/store/profileStore';
 import { useUnreadCount } from '@/features/admin/notifications/store/notificationsStore';
+import { getValidAvatarUrl } from '@/utils/avatar';
 
 interface AdminHeaderProps {
   onToggleMobileSidebar: () => void;
@@ -30,7 +31,14 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
   const { profile } = useProfile();
   const unreadCount = useUnreadCount();
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const [imgError, setImgError] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const validAvatarUrl = getValidAvatarUrl(profile?.avatar);
+
+  useEffect(() => {
+    setImgError(false);
+  }, [profile?.avatar]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -120,10 +128,11 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
             {/* Avatar with Navy & Gold Ring */}
             <div style={styles.avatarRing}>
               <div style={styles.avatarCore}>
-                {profile.avatar ? (
+                {validAvatarUrl && !imgError ? (
                   <img
-                    src={profile.avatar}
-                    alt={profile.fullName}
+                    src={validAvatarUrl}
+                    alt=""
+                    onError={() => setImgError(true)}
                     style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
                   />
                 ) : (

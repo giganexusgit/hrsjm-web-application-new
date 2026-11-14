@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Search,
   X,
@@ -14,6 +15,7 @@ import {
   Calendar,
 } from 'lucide-react';
 import { useCurrentMember } from '../store/memberStore';
+import { useUserAuth } from '../../user/store/userAuthStore';
 import { GlobalPaymentModal } from '../../payments';
 import { assistanceService } from '../../admin/assistance/services/assistanceService';
 
@@ -65,235 +67,39 @@ const CATEGORY_TABS: FilterTabItem[] = [
   { key: 'environment', label: 'Environment', icon: '🌱' },
 ];
 
-// Fallback seed causes matching APK dataset exactly (Active: 8, Funds Raised: ₹48,001, Lives: 10, Donors: 30)
-const SEED_CAUSES: MemberCause[] = [
-  {
-    id: 'cause-cataract-1',
-    title: 'HRSJM Test Seeker (Emergency Medical Relief for cataract surgery at district govt hospital)',
-    category: 'Healthcare',
-    categoryKey: 'healthcare',
-    categoryIcon: '🏥',
-    location: 'Mumbai, Maharashtra',
-    imageUrl: 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?w=600&auto=format&fit=crop&q=80',
-    description: 'Cataract surgery required at district government hospital with immediate prescription.',
-    aboutStory:
-      'HRSJM verified assistance request for Sahil Test Seeker. Immediate ophthalmology consultation and surgical procedure at district civic hospital. Full verified documentation on record with local chapter.',
-    targetAmount: 100000,
-    raisedAmount: 0,
-    status: 'active',
-    beneficiariesCount: 1,
-    targetBeneficiaries: '1 Beneficiary (HRSJM Test Seeker)',
-    donorCount: 0,
-    daysLeft: 20,
-    isVerified: true,
-    createdAt: '2026-09-01T10:00:00Z',
-  },
-  {
-    id: 'cause-edu-2',
-    title: 'Child Slum Primary Education & Notebooks Kit Distribution',
-    category: 'Education',
-    categoryKey: 'education',
-    categoryIcon: '📚',
-    location: 'Palghar, Maharashtra',
-    imageUrl: 'https://images.unsplash.com/photo-1509062522246-3755977927d7?w=600&auto=format&fit=crop&q=80',
-    description: 'Supporting basic primary schooling, notebooks, and nutritious daily meals for children of migrant laborers.',
-    aboutStory:
-      'Providing 150 underprivileged tribal children with full-year school supplies, learning kits, uniforms, and mid-day nutritional health supplements.',
-    targetAmount: 45000,
-    raisedAmount: 18500,
-    status: 'active',
-    beneficiariesCount: 150,
-    targetBeneficiaries: '150 Children (Govt Tribal School)',
-    donorCount: 12,
-    daysLeft: 14,
-    isVerified: true,
-    createdAt: '2026-09-05T10:00:00Z',
-  },
-  {
-    id: 'cause-relief-3',
-    title: 'Emergency Flood Relief & Food Ration Packets Distribution',
-    category: 'Relief',
-    categoryKey: 'relief',
-    categoryIcon: '🍲',
-    location: 'Kolhapur, Maharashtra',
-    imageUrl: 'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=600&auto=format&fit=crop&q=80',
-    description: 'Immediate dry rations, clean drinking water pouches, and tarpaulins for displaced families.',
-    aboutStory:
-      'Heavy river flooding submerged low-lying slums along the river basin. Our mobile relief van distributes dry rations, grain bags, and clean drinking water tanks to 80 affected households.',
-    targetAmount: 35000,
-    raisedAmount: 12500,
-    status: 'active',
-    beneficiariesCount: 80,
-    targetBeneficiaries: '80 Families (Riverbank Slums)',
-    donorCount: 8,
-    daysLeft: 10,
-    isVerified: true,
-    createdAt: '2026-09-10T10:00:00Z',
-  },
-  {
-    id: 'cause-women-4',
-    title: 'Women Self-Employment Sewing Machine & Livelihood Drive',
-    category: 'Women',
-    categoryKey: 'women',
-    categoryIcon: '👩‍🏫',
-    location: 'Thane, Maharashtra',
-    imageUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=600&auto=format&fit=crop&q=80',
-    description: 'Equipping destitute single mothers and widows with industrial sewing machines to start small tailoring businesses.',
-    aboutStory:
-      'Provides commercial sewing machines and fabric materials for 25 women undergoing vocational tailoring training under HRSJM women empowerment wing.',
-    targetAmount: 30000,
-    raisedAmount: 9000,
-    status: 'active',
-    beneficiariesCount: 25,
-    targetBeneficiaries: '25 Women (Single Mothers SHG)',
-    donorCount: 5,
-    daysLeft: 22,
-    isVerified: true,
-    createdAt: '2026-09-12T10:00:00Z',
-  },
-  {
-    id: 'cause-legal-5',
-    title: 'Pro-Bono Free Legal Aid Defense for Underprivileged Citizens',
-    category: 'Legal Aid',
-    categoryKey: 'human_rights',
-    categoryIcon: '⚖️',
-    location: 'Mumbai, Maharashtra',
-    imageUrl: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=600&auto=format&fit=crop&q=80',
-    description: 'Providing senior advocates to defend underprivileged citizens against unlawful detention and custodial abuse.',
-    aboutStory:
-      'Ensuring constitutional representation under Article 39A for marginalized workers unable to afford advocate retainers. Handled directly by Supreme Court & High Court accredited legal cell advocates.',
-    targetAmount: 25000,
-    raisedAmount: 5001,
-    status: 'active',
-    beneficiariesCount: 12,
-    targetBeneficiaries: '12 Undertrial Citizens (Legal Cell)',
-    donorCount: 3,
-    daysLeft: 30,
-    isVerified: true,
-    createdAt: '2026-09-15T10:00:00Z',
-  },
-  {
-    id: 'cause-env-6',
-    title: 'Tribal Community Clean Drinking Water Borewell Project',
-    category: 'Environment',
-    categoryKey: 'environment',
-    categoryIcon: '🌱',
-    location: 'Ratnagiri, Maharashtra',
-    imageUrl: 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=600&auto=format&fit=crop&q=80',
-    description: 'Installing solar-powered deep borewell water filtration system for drought-hit hamlet.',
-    aboutStory:
-      'Village women currently walk 4km daily to fetch brackish well water. This initiative installs an eco-friendly solar pump and water filtration unit benefiting over 300 tribal villagers.',
-    targetAmount: 60000,
-    raisedAmount: 3000,
-    status: 'active',
-    beneficiariesCount: 300,
-    targetBeneficiaries: '300 Villagers (Kokan Region)',
-    donorCount: 2,
-    daysLeft: 25,
-    isVerified: true,
-    createdAt: '2026-09-18T10:00:00Z',
-  },
-  {
-    id: 'cause-health-7',
-    title: 'Free Eye Checkup & Cataract Surgery Camp for Senior Citizens',
-    category: 'Healthcare',
-    categoryKey: 'healthcare',
-    categoryIcon: '🏥',
-    location: 'Solapur, Maharashtra',
-    imageUrl: 'https://images.unsplash.com/photo-1579684385127-1ef15d508118?w=600&auto=format&fit=crop&q=80',
-    description: 'Mobile eye clinic camp providing free lens implants and medicated drops to elderly rural patients.',
-    aboutStory:
-      'Comprehensive 3-day rural camp covering 60 senior citizens with complete pre-op evaluation, IOL cataract surgeries, protective eyewear, and 30-day post-operative medication.',
-    targetAmount: 50000,
-    raisedAmount: 0,
-    status: 'active',
-    beneficiariesCount: 60,
-    targetBeneficiaries: '60 Senior Citizens',
-    donorCount: 0,
-    daysLeft: 18,
-    isVerified: true,
-    createdAt: '2026-09-20T10:00:00Z',
-  },
-  {
-    id: 'cause-relief-8',
-    title: "Midday Nutrition & Milk Supplement Drive for Migrant Workers' Kids",
-    category: 'Relief',
-    categoryKey: 'relief',
-    categoryIcon: '🍲',
-    location: 'Kurla, Mumbai',
-    imageUrl: 'https://images.unsplash.com/photo-1469571486292-0ba58a3f068b?w=600&auto=format&fit=crop&q=80',
-    description: 'Daily fresh milk, fortified biscuits, and fruits distributed at railway construction settlements.',
-    aboutStory:
-      'Targets early childhood malnutrition among toddlers at temporary construction labor colonies along the suburban railway expansion belt.',
-    targetAmount: 20000,
-    raisedAmount: 0,
-    status: 'active',
-    beneficiariesCount: 120,
-    targetBeneficiaries: '120 Children (Labor Camps)',
-    donorCount: 0,
-    daysLeft: 15,
-    isVerified: true,
-    createdAt: '2026-09-22T10:00:00Z',
-  },
-  {
-    id: 'cause-edu-9',
-    title: 'Girl Child Higher Education Scholarship & Laptop Grant',
-    category: 'Education',
-    categoryKey: 'education',
-    categoryIcon: '📚',
-    location: 'Pune, Maharashtra',
-    imageUrl: 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=600&auto=format&fit=crop&q=80',
-    description: 'College tuition support and refurbished laptops for first-generation female engineering students.',
-    aboutStory:
-      'Empowering 10 meritorious girl students from BPL rural families to continue tertiary polytechnic and engineering degree coursework.',
-    targetAmount: 80000,
-    raisedAmount: 0,
-    status: 'active',
-    beneficiariesCount: 10,
-    targetBeneficiaries: '10 Meritorious Students',
-    donorCount: 0,
-    daysLeft: 28,
-    isVerified: true,
-    createdAt: '2026-09-25T10:00:00Z',
-  },
-  {
-    id: 'cause-relief-10',
-    title: 'Rapid Response Disaster Relief & Thermal Blanket Distribution',
-    category: 'Relief',
-    categoryKey: 'relief',
-    categoryIcon: '🍲',
-    location: 'Satara, Maharashtra',
-    imageUrl: 'https://images.unsplash.com/photo-1532629345422-7515f3d16bb7?w=600&auto=format&fit=crop&q=80',
-    description: 'Providing winter blankets, warm clothes, and clean tarpaulins for landslide-affected families.',
-    aboutStory:
-      'Winter temperatures drop below 10°C in the hilly tracts where hillside families were displaced by monsoon landslips. Providing warm thermal blankets and basic shelter repair materials.',
-    targetAmount: 40000,
-    raisedAmount: 0,
-    status: 'active',
-    beneficiariesCount: 200,
-    targetBeneficiaries: '200 Displaced Families',
-    donorCount: 0,
-    daysLeft: 12,
-    isVerified: true,
-    createdAt: '2026-09-28T10:00:00Z',
-  },
-];
-
 export const MemberCausesPage: React.FC = () => {
   const { member, processDonation } = useCurrentMember();
-  const [causes, setCauses] = useState<MemberCause[]>(SEED_CAUSES);
-  const [searchQuery, setSearchQuery] = useState<string>('');
-  const [activeTab, setActiveTab] = useState<CauseCategoryKey>('all');
+  const { user } = useUserAuth();
+  const [searchParams] = useSearchParams();
+
+  const urlCategory = searchParams.get('category') as CauseCategoryKey | null;
+  const urlCause = searchParams.get('cause') || searchParams.get('search') || '';
+
+  const [causes, setCauses] = useState<MemberCause[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [searchQuery, setSearchQuery] = useState<string>(urlCause);
+  const [activeTab, setActiveTab] = useState<CauseCategoryKey>(urlCategory || 'all');
   const [selectedCauseForDonation, setSelectedCauseForDonation] = useState<MemberCause | null>(null);
   const [selectedCauseForDetails, setSelectedCauseForDetails] = useState<MemberCause | null>(null);
 
-  // Fetch approved requests from backend and map them into the APK structure
+  useEffect(() => {
+    const causeParam = searchParams.get('cause') || searchParams.get('search');
+    if (causeParam !== null) {
+      setSearchQuery(causeParam);
+    }
+    const catParam = searchParams.get('category') as CauseCategoryKey | null;
+    if (catParam) {
+      setActiveTab(catParam);
+    }
+  }, [searchParams]);
+
+  // Fetch live approved requests from backend
   useEffect(() => {
     const loadApprovedCauses = async () => {
+      setLoading(true);
       try {
-        const approved = await assistanceService.listApproved();
-        if (approved && approved.length > 0) {
-          const mappedFromBackend: MemberCause[] = approved.map((item: any, idx: number) => {
+        const approved = await assistanceService.listApproved({ limit: 100 });
+        const mappedFromBackend: MemberCause[] = (approved || []).map((item: any, idx: number) => {
             const reasonLower = (item.reason || item.title || '').toLowerCase();
             const descLower = (item.description || item.reason_for_aid || '').toLowerCase();
             const nameLower = (item.full_name || '').toLowerCase();
@@ -363,14 +169,24 @@ export const MemberCausesPage: React.FC = () => {
               defaultImg = 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=600&auto=format&fit=crop&q=80';
             }
 
-            const target = Number(item.requested_amount || item.amount_requested || 100000);
+            const target = Number(item.requested_amount || item.amount_requested || 0);
             const raised = Number(item.raised_amount || item.amount_disbursed || 0);
-            const applicantName = item.full_name || 'HRSJM Test Seeker';
+            const applicantName = item.full_name || 'Verified Seeker';
 
             let causeTitle = item.reason || item.title || 'Assistance & Social Relief Support';
             if (causeTitle.includes(':')) {
               causeTitle = causeTitle.split(':')[1].trim();
             }
+
+            const rawDesc = String(item.description || item.reason_for_aid || '');
+            const locMatch = rawDesc.match(/\[Location:\s*([^\]]+)\]/i);
+            const parsedLocation =
+              locMatch?.[1]?.trim() ||
+              [item.city, item.state].filter(Boolean).join(', ') ||
+              'India';
+            const cleanDescription = rawDesc
+              .replace(/\s*\[(Location|Urgency|Age):[^\]]+\]/gi, '')
+              .trim();
 
             return {
               id: item.id || `live-cause-${idx}`,
@@ -378,11 +194,11 @@ export const MemberCausesPage: React.FC = () => {
               category,
               categoryKey,
               categoryIcon,
-              location: 'Mumbai, Maharashtra',
+              location: parsedLocation,
               imageUrl: defaultImg,
-              description: item.description || item.reason_for_aid || `Assistance request for ${applicantName}.`,
+              description: cleanDescription || `Verified assistance cause for ${applicantName}.`,
               aboutStory:
-                item.description ||
+                cleanDescription ||
                 `HRSJM verified assistance request for ${applicantName}.\n\nPurpose: ${causeTitle}\n\nYour contribution goes directly to support this verified case.`,
               targetAmount: target,
               raisedAmount: raised,
@@ -396,26 +212,19 @@ export const MemberCausesPage: React.FC = () => {
             };
           });
 
-          // Prepend backend causes and retain seed items to ensure full 10-cause APK coverage
-          setCauses(() => {
-            const combined = [...mappedFromBackend];
-            for (const seed of SEED_CAUSES) {
-              if (!combined.some((c) => c.id === seed.id || c.title === seed.title)) {
-                combined.push(seed);
-              }
-            }
-            return combined;
-          });
-        }
+        setCauses(mappedFromBackend);
       } catch (err) {
-        console.warn('[MemberCausesPage] Error fetching live causes, using seed causes:', err);
+        console.warn('[MemberCausesPage] Error fetching live approved causes:', err);
+        setCauses([]);
+      } finally {
+        setLoading(false);
       }
     };
 
     loadApprovedCauses();
   }, []);
 
-  // Compute KPI Stats (Matches APK exactly: Active Causes: 8, Funds Raised: ₹48,001, Lives: 10, Donors: 30)
+  // Compute KPI Stats directly from live causes
   const kpiStats = useMemo(() => {
     const totalCauses = causes.length;
     const activeCauses = causes.filter((c) => c.status === 'active').length;
@@ -432,11 +241,11 @@ export const MemberCausesPage: React.FC = () => {
 
     return {
       totalCauses,
-      activeCauses: activeCauses || 8,
+      activeCauses,
       totalRaised,
-      totalRaisedFormatted: formatRupeeShort(totalRaised || 48001),
-      totalBeneficiaries: totalBeneficiaries > 0 ? totalCauses : 10,
-      totalDonors: totalDonors || 30,
+      totalRaisedFormatted: formatRupeeShort(totalRaised),
+      totalBeneficiaries,
+      totalDonors,
       totalTarget,
     };
   }, [causes]);
@@ -628,7 +437,12 @@ export const MemberCausesPage: React.FC = () => {
       {/* ════════════════════════════════════════════════════════════
           6. CAUSES CARDS LIST / GRID: 1:1 APK CauseCard Parity
       ════════════════════════════════════════════════════════════ */}
-      {filteredCauses.length === 0 ? (
+      {loading ? (
+        <div className="bg-white rounded-2xl border border-[#DCE4EC] p-10 text-center space-y-2 shadow-2xs">
+          <div className="w-8 h-8 border-2 border-[#011F39] border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-xs font-semibold text-slate-500">Loading verified causes...</p>
+        </div>
+      ) : filteredCauses.length === 0 ? (
         <div className="bg-white rounded-2xl border border-[#DCE4EC] p-8 text-center space-y-3 shadow-2xs">
           <div className="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
             <Search size={22} />
@@ -961,10 +775,10 @@ export const MemberCausesPage: React.FC = () => {
             title: selectedCauseForDonation.title,
             subtitle: selectedCauseForDonation.category,
             entityId: selectedCauseForDonation.id,
-            userId: member.id,
-            donorName: member.fullName,
-            donorMobile: member.phone,
-            donorEmail: member.email,
+            userId: user?.id || member?.id,
+            donorName: user?.full_name || member?.fullName || 'HRSJM Contributor',
+            donorMobile: user?.mobile_number || member?.phone || '',
+            donorEmail: user?.email || member?.email || '',
           }}
           onSuccess={(receipt) => {
             const donatedId = selectedCauseForDonation.id;

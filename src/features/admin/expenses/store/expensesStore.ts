@@ -3,7 +3,6 @@ import type {
   ExpenseEntryItem,
   ExpenseStatsSummary,
 } from '../types/expenses.types';
-import { INITIAL_EXPENSE_FIXTURES } from '../data/expensesFixtures';
 import { expensesService } from '../services/expensesService';
 
 const STORAGE_KEY = 'hrsjm_local_expenses_v1';
@@ -26,27 +25,15 @@ class ExpensesStore {
 
   private sortInternal(): void {
     this.vouchers.sort((a, b) => {
-      const timeA = new Date(a.expense_date || a.created_at || 0).getTime() || 0;
-      const timeB = new Date(b.expense_date || b.created_at || 0).getTime() || 0;
-      return timeB - timeA;
+      const timeB = new Date(b.created_at || b.expense_date || 0).getTime() || 0;
+      const timeA = new Date(a.created_at || a.expense_date || 0).getTime() || 0;
+      if (timeB !== timeA) return timeB - timeA;
+      return (b.voucher_number || '').localeCompare(a.voucher_number || '');
     });
   }
 
   private loadPersisted(): ExpenseEntryItem[] {
-    try {
-      if (typeof window !== 'undefined' && window.localStorage) {
-        const raw = window.localStorage.getItem(STORAGE_KEY);
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            return parsed;
-          }
-        }
-      }
-    } catch {
-      // Ignore quota/parse errors
-    }
-    return [...INITIAL_EXPENSE_FIXTURES];
+    return [];
   }
 
   private persist(): void {
@@ -102,30 +89,19 @@ class ExpensesStore {
   public async syncFromBackend(): Promise<void> {
     try {
       const { items } = await expensesService.list({ limit: 100 });
-      if (items && items.length > 0) {
-        const mergedMap = new Map<string, ExpenseEntryItem>();
-        for (const item of items) {
-          mergedMap.set(item.id, item);
-        }
-        for (const local of this.vouchers) {
-          if (!mergedMap.has(local.id)) {
-            mergedMap.set(local.id, local);
-          }
-        }
-        this.vouchers = Array.from(mergedMap.values());
+      if (Array.isArray(items)) {
+        this.vouchers = items;
         this.sortInternal();
         this.notify();
       }
-    } catch {
-      // Fallback already loaded
+    } catch (e) {
+      console.warn('Could not sync expenses from backend:', e);
     }
   }
 
   public async create(payload: CreateExpensePayload): Promise<ExpenseEntryItem> {
     const created = await expensesService.create(payload);
-    this.vouchers = [created, ...this.vouchers];
-    this.sortInternal();
-    this.notify();
+    await this.syncFromBackend();
     return created;
   }
 

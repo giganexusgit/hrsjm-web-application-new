@@ -13,12 +13,6 @@ import {
   X,
   AlertCircle,
   Shield,
-  HeartHandshake,
-  UserCheck,
-  Gift,
-  Scale,
-  FileText,
-  Sparkles,
 } from 'lucide-react';
 import {
   authService,
@@ -28,12 +22,11 @@ import {
 import { authStore } from '../features/auth/store/authStore';
 import { userAuthStore } from '../features/user/store/userAuthStore';
 import { ApiError } from '../services/apiClient';
-import hrsjmLogo from '../assets/hrsjm_logo.png';
 import memberRallyImg from '../assets/images/member-hero-rally.jpg';
 
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
 
   // Role query param (e.g. ?role=member | ?role=seeker | ?role=admin)
   const roleParam = searchParams.get('role')?.toLowerCase() || null;
@@ -204,30 +197,6 @@ export const LoginPage: React.FC = () => {
     }
   };
 
-  /**
-   * One-click demo credentials fill for easy testing
-   */
-  const handleQuickFill = (type: 'member' | 'seeker' | 'admin' | 'user') => {
-    setFormError(null);
-    setFieldErrors({});
-    if (type === 'member') {
-      setIdentifier('member@hrsjm.org');
-      setPassword('MemberPass#1');
-      setSearchParams({ role: 'member' });
-    } else if (type === 'seeker') {
-      setIdentifier('seeker@hrsjm.org');
-      setPassword('SeekerPass#1');
-      setSearchParams({ role: 'seeker' });
-    } else if (type === 'admin') {
-      setIdentifier('admin@hrsjm.org');
-      setPassword('AdminPass#1');
-      setSearchParams({ role: 'admin' });
-    } else {
-      setIdentifier('user@hrsjm.org');
-      setPassword('UserPass#1');
-      setSearchParams({ role: 'general' });
-    }
-  };
 
   return (
     <div className="min-h-screen bg-[#FAF7F0] flex flex-col lg:flex-row text-slate-800 font-sans selection:bg-[#FAD465] selection:text-[#011F39]">
@@ -251,33 +220,21 @@ export const LoginPage: React.FC = () => {
         {/* Top Header / National Seal */}
         <div className="relative z-10 shrink-0 space-y-4">
           <div className="flex items-center justify-between gap-4 flex-wrap">
-            <Link to="/home" className="flex items-center gap-3.5 group cursor-pointer">
-              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white/10 p-1.5 border border-white/20 backdrop-blur-md shadow-lg group-hover:border-[#FAD465]/50 transition-colors shrink-0">
-                <img
-                  src={hrsjmLogo}
-                  alt="HRSJM Official Seal"
-                  className="w-full h-full object-contain drop-shadow-md"
-                />
-              </div>
+            <Link to="/login" className="flex items-center gap-3.5 group cursor-pointer">
               <div>
                 <div className="text-sm sm:text-base font-extrabold tracking-wider text-white font-serif flex items-center gap-2">
                   <span>HRSJM</span>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#FAD465]/20 text-[#FAD465] border border-[#FAD465]/40 uppercase tracking-widest">
-                    National
-                  </span>
+
                 </div>
                 <div className="text-[10px] sm:text-[11px] font-bold text-[#FAD465] tracking-wider uppercase">
                   HUMAN RIGHTS & SOCIAL JUSTICE MISSION
-                </div>
-                <div className="text-[9.5px] text-slate-300 font-medium">
-                  मानव अधिकार • सामाजिक न्याय
                 </div>
               </div>
             </Link>
 
             {/* Back to Public Home Button */}
             <Link
-              to="/home"
+              to="https://hrsjm-ngo-website-8tr9.vercel.app/"
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-slate-200 hover:text-white text-xs font-semibold border border-white/15 transition backdrop-blur-sm"
             >
               <ArrowLeft size={14} />
@@ -296,10 +253,7 @@ export const LoginPage: React.FC = () => {
 
         {/* Center Editorial Headlines & Mission Pillars (Guaranteed vertical flow without overlap) */}
         <div className="relative z-10 py-2 sm:py-4 space-y-5 xl:space-y-6 max-w-xl">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-[#FAD465]/15 text-[#FAD465] border border-[#FAD465]/30">
-            <Sparkles size={13} />
-            <span>Constitutional Human Rights Network</span>
-          </div>
+
 
           <h1 className="text-3xl sm:text-4xl xl:text-5xl font-black font-serif tracking-tight text-white leading-[1.18]">
             Together for a{' '}
@@ -313,89 +267,11 @@ export const LoginPage: React.FC = () => {
             Championing pro-bono legal aid, rapid grievance interventions, and civic protections across India. Dedicated to upholding fundamental constitutional guarantees under the law.
           </p>
 
-          {/* 3 Core Trust Pillars */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
-            <div className="bg-white/10 p-3.5 rounded-2xl border border-white/15 backdrop-blur-sm space-y-1">
-              <div className="w-8 h-8 rounded-xl bg-[#FAD465]/20 text-[#FAD465] flex items-center justify-center mb-2">
-                <Scale size={16} />
-              </div>
-              <div className="text-xs font-bold text-white">Pro-Bono Legal Defense</div>
-              <div className="text-[11px] text-slate-300 leading-snug">
-                Defending underprivileged citizens in district & state courts.
-              </div>
-            </div>
-
-            <div className="bg-white/10 p-3.5 rounded-2xl border border-white/15 backdrop-blur-sm space-y-1">
-              <div className="w-8 h-8 rounded-xl bg-[#FAD465]/20 text-[#FAD465] flex items-center justify-center mb-2">
-                <UserCheck size={16} />
-              </div>
-              <div className="text-xs font-bold text-white">28,000+ Members</div>
-              <div className="text-[11px] text-slate-300 leading-snug">
-                Accredited advocates, delegates, and activists across 28 states.
-              </div>
-            </div>
-
-            <div className="bg-white/10 p-3.5 rounded-2xl border border-white/15 backdrop-blur-sm space-y-1">
-              <div className="w-8 h-8 rounded-xl bg-[#FAD465]/20 text-[#FAD465] flex items-center justify-center mb-2">
-                <FileText size={16} />
-              </div>
-              <div className="text-xs font-bold text-white">Section 80G Tax Exemption</div>
-              <div className="text-[11px] text-slate-300 leading-snug">
-                Statutory deductions with verified Form 10BD acknowledgments.
-              </div>
-            </div>
-          </div>
-
-          {/* Quick Fill Demo Badges */}
-          <div className="pt-2">
-            <div className="text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-              <span>Quick Test Logins:</span>
-              <span className="text-[10px] text-[#FAD465] font-normal">(Click to autofill)</span>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => handleQuickFill('member')}
-                className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-[#FAD465]/20 hover:text-[#FAD465] text-white text-xs font-semibold border border-white/20 transition cursor-pointer flex items-center gap-1.5"
-              >
-                <UserCheck size={12} className="text-[#FAD465]" />
-                <span>Active Member</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleQuickFill('seeker')}
-                className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-[#FAD465]/20 hover:text-[#FAD465] text-white text-xs font-semibold border border-white/20 transition cursor-pointer flex items-center gap-1.5"
-              >
-                <HeartHandshake size={12} className="text-[#FAD465]" />
-                <span>Donation Seeker</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleQuickFill('admin')}
-                className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-[#FAD465]/20 hover:text-[#FAD465] text-white text-xs font-semibold border border-white/20 transition cursor-pointer flex items-center gap-1.5"
-              >
-                <Shield size={12} className="text-[#FAD465]" />
-                <span>Administrator</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleQuickFill('user')}
-                className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-[#FAD465]/20 hover:text-[#FAD465] text-white text-xs font-semibold border border-white/20 transition cursor-pointer flex items-center gap-1.5"
-              >
-                <Gift size={12} className="text-[#FAD465]" />
-                <span>Public Donor</span>
-              </button>
-            </div>
-          </div>
         </div>
 
         {/* Hero Footer */}
         <div className="relative z-10 shrink-0 pt-4 border-t border-white/10 flex items-center justify-between text-[11px] text-slate-300">
           <div>Regd. Societies Registration Act XXI of 1860</div>
-          <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span>Central Directorate Active</span>
-          </div>
         </div>
       </section>
 
@@ -412,7 +288,6 @@ export const LoginPage: React.FC = () => {
                 <Shield size={12} className="text-[#06294D]" />
                 Official Access Portal
               </span>
-              <span className="text-[11px] font-bold text-slate-400">256-Bit SSL</span>
             </div>
 
             <h2 className="text-2xl sm:text-3xl font-black font-serif text-[#0B2F52] tracking-tight pt-1">
@@ -449,10 +324,10 @@ export const LoginPage: React.FC = () => {
 
               <div
                 className={`flex items-center bg-[#FAF7F0] border rounded-xl px-3.5 h-[50px] transition-all shadow-xs ${focusedField === 'identifier'
-                    ? 'border-[#06294D] bg-white ring-2 ring-[#FAD465]/40'
-                    : fieldErrors.identifier
-                      ? 'border-rose-400 bg-rose-50/50'
-                      : 'border-[#DCE4EC] hover:border-slate-300'
+                  ? 'border-[#06294D] bg-white ring-2 ring-[#FAD465]/40'
+                  : fieldErrors.identifier
+                    ? 'border-rose-400 bg-rose-50/50'
+                    : 'border-[#DCE4EC] hover:border-slate-300'
                   }`}
               >
                 <div className="w-5 flex items-center justify-center text-slate-400 mr-2.5">
@@ -490,10 +365,10 @@ export const LoginPage: React.FC = () => {
 
               <div
                 className={`flex items-center bg-[#FAF7F0] border rounded-xl px-3.5 h-[50px] transition-all shadow-xs ${focusedField === 'password'
-                    ? 'border-[#06294D] bg-white ring-2 ring-[#FAD465]/40'
-                    : fieldErrors.password
-                      ? 'border-rose-400 bg-rose-50/50'
-                      : 'border-[#DCE4EC] hover:border-slate-300'
+                  ? 'border-[#06294D] bg-white ring-2 ring-[#FAD465]/40'
+                  : fieldErrors.password
+                    ? 'border-rose-400 bg-rose-50/50'
+                    : 'border-[#DCE4EC] hover:border-slate-300'
                   }`}
               >
                 <div className="w-5 flex items-center justify-center text-slate-400 mr-2.5">

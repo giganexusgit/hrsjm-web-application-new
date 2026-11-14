@@ -1,6 +1,6 @@
 import type React from 'react';
 import { useState, useEffect, useCallback, useId } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   User,
   Phone,
@@ -25,8 +25,11 @@ import {
   Search,
   X,
   Clock,
+  LayoutDashboard,
 } from 'lucide-react';
-import hrsjmLogo from '../assets/hrsjm_logo.png';
+import { authStore } from '../features/auth/store/authStore';
+import { authService } from '../features/auth/services/authService';
+import { userAuthStore } from '../features/user/store/userAuthStore';
 import { seekerService } from '../features/seeker/services/seekerService';
 import {
   SEEKER_DOCUMENT_OPTIONS,
@@ -51,6 +54,7 @@ const CURRENT_YEAR = new Date().getFullYear();
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
 
 export const SeekerRegistrationPage: React.FC = () => {
+  const navigate = useNavigate();
   // Multi-step phase: 1 (Personal Details), 2 (Identity Verification), 3 (Assistance Need), 4 (Complete), -1 (Ineligible)
   const [currentStep, setCurrentStep] = useState<number>(1);
 
@@ -420,6 +424,45 @@ export const SeekerRegistrationPage: React.FC = () => {
         } catch {}
       }
 
+      // Ensure application ID is stored for tracking retrieval across the portal
+      if (typeof window !== 'undefined' && result?.applicationNumber) {
+        try {
+          localStorage.setItem('hrsjm_seeker_app_id', result.applicationNumber);
+        } catch {}
+      }
+
+      // Ensure valid authenticated session so applicant can use User Dashboard
+      try {
+        if (!authStore.getSnapshot().isAuthenticated) {
+          const cleanMobile = personal.phone.replace(/\D/g, '').slice(-10);
+          const cleanEmail = personal.email?.trim().toLowerCase();
+          try {
+            const session = await authService.login({
+              identifier: cleanMobile,
+              password: personal.password || 'Hrsjm@2026',
+            });
+            if (session?.user) {
+              authStore.setUserDirectly(session.user, session.access_token, session.refresh_token);
+              userAuthStore.setUser(session.user as any);
+            }
+          } catch {
+            const applicantUser: any = {
+              id: result.id || `seeker-${Date.now()}`,
+              full_name: personal.fullName.trim(),
+              mobile_number: cleanMobile,
+              email: cleanEmail,
+              roles: ['USER'],
+              account_type: 'user',
+              assistance_status: 'UNDER_REVIEW',
+            };
+            authStore.setUserDirectly(applicantUser, `hrsjm_seeker_token_${Date.now()}`);
+            userAuthStore.setUser(applicantUser);
+          }
+        }
+      } catch (authErr) {
+        console.warn('Seeker post-registration session warning:', authErr);
+      }
+
       setCurrentStep(4);
     } catch (err: any) {
       setErrors({
@@ -465,11 +508,6 @@ export const SeekerRegistrationPage: React.FC = () => {
       <header className="bg-[#011F39] text-white border-b border-navy-800 sticky top-0 z-40 shadow-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3.5 group">
-            <img
-              src={hrsjmLogo}
-              alt="HRSJM Official Crest"
-              className="w-11 h-11 object-contain shrink-0 group-hover:scale-105 transition-transform drop-shadow-sm"
-            />
             <div>
               <span className="font-serif text-lg font-bold tracking-tight text-white block leading-tight">
                 HRSJM
@@ -1620,15 +1658,17 @@ export const SeekerRegistrationPage: React.FC = () => {
                   className="flex-1 py-3 px-4 rounded-xl bg-[#FAD465] hover:bg-[#E9B82E] text-[#011F39] text-xs font-bold transition flex items-center justify-center gap-2 shadow-sm cursor-pointer"
                 >
                   <Search size={15} />
-                  <span>Track Application Status</span>
+                  <span>Go to My Application</span>
                 </button>
 
-                <Link
-                  to="/"
-                  className="flex-1 py-3 px-4 rounded-xl border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-bold transition flex items-center justify-center gap-2 text-center"
+                <button
+                  type="button"
+                  onClick={() => navigate('/user/dashboard')}
+                  className="flex-1 py-3 px-4 rounded-xl bg-[#011F39] hover:bg-[#06294D] text-[#FAD465] border border-[#06294D] text-xs font-bold transition flex items-center justify-center gap-2 text-center cursor-pointer"
                 >
-                  <span>Return to Home</span>
-                </Link>
+                  <LayoutDashboard size={15} />
+                  <span>Go to User Dashboard</span>
+                </button>
               </div>
             </div>
           </div>
@@ -1801,6 +1841,28 @@ export const SeekerRegistrationPage: React.FC = () => {
                     </div>
                   </div>
 
+                  {/* Admin Remarks (if present) */}
+                  {trackedRecord.adminRemark && (
+                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 space-y-1">
+                      <span className="font-bold text-[10px] uppercase tracking-wider text-amber-800 block">
+                        Admin Remarks &amp; Scrutiny Notes:
+                      </span>
+                      <p className="text-slate-800 font-medium">"{trackedRecord.adminRemark}"</p>
+                    </div>
+                  )}
+
+                  {/* Rejection Notice (if rejected) */}
+                  {trackedRecord.status === 'rejected' && (
+                    <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-900 space-y-1">
+                      <span className="font-bold text-[10px] uppercase tracking-wider text-rose-800 block">
+                        Application Status Notice:
+                      </span>
+                      <p className="text-slate-700">
+                        This assistance request was not approved based on verification criteria. You retain full access to your General User Portal.
+                      </p>
+                    </div>
+                  )}
+
                   {/* Status Timeline */}
                   <div className="pt-3 border-t border-slate-200 space-y-2.5">
                     <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider block">
@@ -1828,11 +1890,23 @@ export const SeekerRegistrationPage: React.FC = () => {
               )}
             </div>
 
-            <div className="p-4 bg-slate-100 border-t border-slate-200 flex justify-end">
+            <div className="p-4 bg-slate-100 border-t border-slate-200 flex items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setTrackingModalOpen(false);
+                  navigate('/user/dashboard');
+                }}
+                className="px-4 py-2 rounded-xl bg-[#011F39] text-[#FAD465] text-xs font-bold hover:bg-[#06294D] transition flex items-center gap-1.5 cursor-pointer"
+              >
+                <LayoutDashboard size={14} />
+                <span>Go to User Dashboard</span>
+              </button>
+
               <button
                 type="button"
                 onClick={() => setTrackingModalOpen(false)}
-                className="px-5 py-2 rounded-xl bg-slate-800 text-white text-xs font-bold hover:bg-slate-900 cursor-pointer"
+                className="px-5 py-2 rounded-xl bg-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-300 transition cursor-pointer"
               >
                 Close
               </button>

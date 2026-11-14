@@ -31,10 +31,10 @@ const DEFAULT_PERSONAL: PersonalInfoForm = {
 
 const DEFAULT_ADDRESS: AddressInfoForm = {
   addressLine: '',
-  state: 'Delhi',
-  district: 'North West Delhi',
+  state: '',
+  district: '',
   pinCode: '',
-  proposedChapter: 'National Capital Chapter, New Delhi',
+  proposedChapter: '',
   emergencyContactName: '',
   emergencyContactPhone: '',
 };
@@ -49,68 +49,6 @@ const DEFAULT_DOCUMENTS: DocumentsInfoForm = {
   agreedToCharter: false,
 };
 
-// Seed submitted application for immediate demonstration & testing in /membership/status
-const INITIAL_SUBMITTED_APPS: SubmittedApplicationRecord[] = [
-  {
-    applicationId: 'HRSJM-APP-2026-9214',
-    postName: 'District Active Member',
-    categoryFee: 800,
-    validity: '1 Year',
-    fullName: 'Adv. Rajeshwar Sharma',
-    phone: '+91 98765 43210',
-    email: 'rajeshwar.sharma@example.org',
-    submittedAt: '2026-10-15T11:30:00.000Z',
-    status: 'APPROVED',
-    currentStage: 4,
-    reviewerRemarks: 'All KYC documentation verified. Inducted into National Capital Chapter.',
-    assignedChapter: 'National Capital Chapter, New Delhi',
-    documents: {
-      photo: { name: 'passport_photo.jpg', status: 'VERIFIED' },
-      idProof: { name: 'aadhaar_card_masked.pdf', type: 'Aadhaar', status: 'VERIFIED' },
-      signature: { name: 'signature_specimen.png', status: 'VERIFIED' },
-    },
-    generatedMemberId: 'HRSJM-MEM-2026-0842',
-  },
-  {
-    applicationId: 'HRSJM-APP-2026-4819',
-    postName: 'State Unit Post',
-    categoryFee: 2300,
-    validity: '2 Years',
-    fullName: 'Sunita Mehra',
-    phone: '+91 98111 22334',
-    email: 'sunita.mehra@example.com',
-    submittedAt: '2026-11-02T14:20:00.000Z',
-    status: 'UNDER_REVIEW',
-    currentStage: 2,
-    reviewerRemarks: 'Application received. Document verification in progress by State Directorate.',
-    assignedChapter: 'Haryana State Chapter, Gurugram',
-    documents: {
-      photo: { name: 'sunita_photo.jpg', status: 'VERIFIED' },
-      idProof: { name: 'voter_id_front.jpg', type: 'Voter ID', status: 'PENDING' },
-      signature: { name: 'sign.png', status: 'VERIFIED' },
-    },
-  },
-  {
-    applicationId: 'HRSJM-APP-2026-1105',
-    postName: 'District Unit Post',
-    categoryFee: 1300,
-    validity: '1 Year',
-    fullName: 'Mohd. Imran Khan',
-    phone: '+91 99887 76655',
-    email: 'imran.khan@example.org',
-    submittedAt: '2026-11-03T09:15:00.000Z',
-    status: 'REUPLOAD_REQUIRED',
-    currentStage: 2,
-    reviewerRemarks: 'Aadhaar copy is blurry and address is not clearly legible. Please re-upload a clear scanned copy.',
-    assignedChapter: 'Uttar Pradesh Chapter, Lucknow',
-    documents: {
-      photo: { name: 'imran_photo.jpg', status: 'VERIFIED' },
-      idProof: { name: 'aadhaar_scan.pdf', type: 'Aadhaar', status: 'REJECTED' },
-      signature: { name: 'imran_sign.jpg', status: 'VERIFIED' },
-    },
-  },
-];
-
 class MembershipApplyStore {
   private currentStep = 1;
   private formData: MembershipApplicationFormData;
@@ -124,7 +62,7 @@ class MembershipApplyStore {
   constructor() {
     this.formData = this.loadDraft();
     this.submittedApps = this.loadSubmittedApps();
-    this.activeTrackRecord = this.submittedApps[1] || this.submittedApps[0] || null;
+    this.activeTrackRecord = this.submittedApps[0] || null;
   }
 
   private loadDraft(): MembershipApplicationFormData {
@@ -170,7 +108,7 @@ class MembershipApplyStore {
     } catch {
       // Ignore
     }
-    return [...INITIAL_SUBMITTED_APPS];
+    return [];
   }
 
   private persistSubmittedApps(): void {

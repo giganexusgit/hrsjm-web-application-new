@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { useUserAuth } from '../store/userAuthStore';
 import { authService } from '@/features/auth/services/authService';
+import { CalendarDatePicker } from '../../../components/common/CalendarDatePicker';
 
 const DEFAULT_AVATAR =
   'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&auto=format&fit=crop&q=80';
@@ -529,14 +530,12 @@ export const UserProfilePage: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Date of Birth
-                  </label>
-                  <input
-                    type="date"
+                  <CalendarDatePicker
+                    label="Date of Birth"
+                    minAge={18}
                     value={editDob}
-                    onChange={(e) => setEditDob(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm font-semibold focus:outline-hidden focus:ring-2 focus:ring-[#06294D]"
+                    onChange={(selectedVal) => setEditDob(selectedVal)}
+                    placeholder="dd-mm-yyyy"
                   />
                 </div>
               </div>

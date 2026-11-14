@@ -11,7 +11,7 @@ const PROFILE_STORAGE_KEY = 'hrsjm_admin_profile_data_v1';
 export class ProfileService {
   private static instance: ProfileService;
 
-  private constructor() {}
+  private constructor() { }
 
   public static getInstance(): ProfileService {
     if (!ProfileService.instance) {
@@ -352,23 +352,22 @@ export class ProfileService {
                 Print Official Badge
               </button>
             </div>
-            <div class="print-title">Human Rights Sanrakshan Jan Manch (HRSJM)</div>
+            <div class="print-title">Human Rights &  Social Justice Mission (HRSJM)</div>
             <div class="print-desc">Official Identity Credential Document · Registered Central Trust (Regd: HR/0092/2019)</div>
 
             <div class="cards-wrapper">
               <!-- FRONT CARD -->
               <div class="card">
                 <div class="card-header">
-                  <div class="org-name">HUMAN RIGHTS SANRAKSHAN JAN MANCH</div>
+                  <div class="org-name">Human Rights &  Social Justice Mission</div>
                   <div class="hindi-sub">मानव अधिकार एवं सामाजिक न्याय</div>
                 </div>
                 <div class="card-body">
                   <div class="avatar-frame">
-                    ${
-                      profile.avatar
-                        ? `<img src="${profile.avatar}" alt="${profile.fullName}" />`
-                        : `<div class="avatar-initials">${(profile.fullName || 'AD').slice(0, 2).toUpperCase()}</div>`
-                    }
+                    ${profile.avatar
+        ? `<img src="${profile.avatar}" alt="${profile.fullName}" />`
+        : `<div class="avatar-initials">${(profile.fullName || 'AD').slice(0, 2).toUpperCase()}</div>`
+      }
                   </div>
                   <div class="member-name">${profile.fullName}</div>
                   <div class="member-role">${profile.role}</div>
@@ -408,7 +407,7 @@ export class ProfileService {
                 <div>
                   <div class="back-heading">Instructions & Conditions</div>
                   <ul class="back-terms">
-                    <li>This card is the property of Human Rights Sanrakshan Jan Manch (HRSJM).</li>
+                    <li>This card is the property of Human Rights &  Social Justice Mission (HRSJM).</li>
                     <li>The cardholder is an authorized administrative officer empowered to represent the trust.</li>
                     <li>If found, please return to: HRSJM Central Secretariat, Lodhi Road, New Delhi - 110003.</li>
                     <li>Helpline: +91 11 2345 6789 / info@hrsjm.org</li>

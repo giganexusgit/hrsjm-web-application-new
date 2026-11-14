@@ -1,5 +1,6 @@
 import { apiClient } from '../../../services/apiClient';
 import { ENDPOINTS } from '../../../api/endpoints';
+import { downloadOfficialDonationReceiptPdf } from '../../admin/donations/utils/donationReceiptGenerator';
 import type {
   CashfreeOrderSession,
   CashfreeVerifyResponse,
@@ -351,97 +352,21 @@ export const cashfreeService = {
    * 5. Download Official 80G Donation Receipt PDF
    */
   downloadDonationReceiptPdf(receipt: PaymentReceiptDetails): void {
-    const html = `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8"/>
-  <title>Receipt ${receipt.receiptNumber} — HRSJM</title>
-  <style>
-    body { font-family: 'Inter', Arial, sans-serif; margin: 0; padding: 30px; color: #06294D; background: #FFF; }
-    .receipt-box { max-width: 680px; margin: 0 auto; border: 2px solid #06294D; border-radius: 12px; padding: 24px; }
-    .header { text-align: center; border-bottom: 2px solid #FAD465; padding-bottom: 14px; margin-bottom: 16px; }
-    .title { font-family: 'Playfair Display', Georgia, serif; font-size: 20px; font-weight: 800; color: #06294D; margin: 0; }
-    .sub { font-size: 11px; color: #718096; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.08em; }
-    .badge { display: inline-block; background: #FAF7F0; border: 1px solid #FAD465; color: #C9971A; padding: 4px 12px; border-radius: 999px; font-size: 10px; font-weight: 700; margin-top: 8px; }
-    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 16px 0; font-size: 12px; }
-    .cell { background: #FAF7F0; padding: 10px 14px; border-radius: 8px; border: 1px solid #DCE4EC; }
-    .cell-label { font-size: 10px; text-transform: uppercase; color: #718096; font-weight: 700; }
-    .cell-val { font-size: 13px; font-weight: 700; color: #0B2F52; margin-top: 2px; }
-    .amount-box { background: #06294D; color: #FFFFFF; padding: 16px; border-radius: 8px; text-align: center; margin: 16px 0; }
-    .amount-val { font-size: 26px; font-weight: 800; color: #FAD465; }
-    .footer { text-align: center; font-size: 10.5px; color: #718096; margin-top: 20px; border-top: 1px solid #DCE4EC; padding-top: 12px; }
-  </style>
-</head>
-<body>
-  <div class="receipt-box">
-    <div class="header">
-      <h1 class="title">HUMAN RIGHTS & SOCIAL JUSTICE MISSION</h1>
-      <div class="sub">National Secretariat • New Delhi • Registered Under Society Act XXI 1860</div>
-      <div class="badge">SECTION 80G TAX-EXEMPT STATUTORY RECEIPT</div>
-    </div>
-
-    <div class="amount-box">
-      <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:#DBE5EE;">Contribution Amount Received</div>
-      <div class="amount-val">₹${receipt.amount.toLocaleString('en-IN')}</div>
-      <div style="font-size:11px;color:#FAD465;margin-top:2px;">(Indian Rupees Fifty Percent Tax Exempted)</div>
-    </div>
-
-    <div class="grid">
-      <div class="cell">
-        <div class="cell-label">Official Receipt Number</div>
-        <div class="cell-val">${receipt.receiptNumber}</div>
-      </div>
-      <div class="cell">
-        <div class="cell-label">Cashfree Order ID</div>
-        <div class="cell-val" style="font-family:monospace;font-size:11.5px;">${receipt.orderId}</div>
-      </div>
-      <div class="cell">
-        <div class="cell-label">Donor Name</div>
-        <div class="cell-val">${receipt.donorName}</div>
-      </div>
-      <div class="cell">
-        <div class="cell-label">Donor PAN (For 80G)</div>
-        <div class="cell-val">${receipt.panNumber || 'NOT DISCLOSED'}</div>
-      </div>
-      <div class="cell">
-        <div class="cell-label">Mission Cause</div>
-        <div class="cell-val">${receipt.purposeTitle}</div>
-      </div>
-      <div class="cell">
-        <div class="cell-label">Transaction Reference</div>
-        <div class="cell-val" style="font-family:monospace;font-size:11.5px;">${receipt.transactionId}</div>
-      </div>
-      <div class="cell">
-        <div class="cell-label">Date & Time</div>
-        <div class="cell-val">${new Date(receipt.paidAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
-      </div>
-      <div class="cell">
-        <div class="cell-label">Payment Gateway</div>
-        <div class="cell-val">Cashfree PG (Verified)</div>
-      </div>
-    </div>
-
-    <div class="footer">
-      <div>This is an authorized, computer-generated receipt valid under Section 80G of the Income Tax Act, 1961.</div>
-      <div style="margin-top:4px;">Unique Verification Code: ${receipt.transactionId} • Issued by Central Finance Cell, HRSJM</div>
-    </div>
-  </div>
-</body>
-</html>`;
-
-    const blob = new Blob([html], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    const win = window.open(url, '_blank');
-    if (win) {
-      win.focus();
-      setTimeout(() => {
-        try {
-          win.print();
-        } catch {
-          // ignore
-        }
-      }, 500);
-    }
+    downloadOfficialDonationReceiptPdf({
+      id: receipt.orderId || receipt.receiptNumber,
+      receiptNumber: receipt.receiptNumber,
+      receiptDate: receipt.paidAt || new Date().toISOString(),
+      donorName: receipt.donorName,
+      donorMobile: receipt.donorMobile,
+      donorEmail: receipt.donorEmail,
+      donorPan: receipt.panNumber,
+      cause: receipt.purposeTitle || 'General Humanitarian Relief',
+      amount: receipt.amount,
+      paymentMethod: receipt.paymentMethod || 'Cashfree Payment Gateway (Online)',
+      transactionId: receipt.transactionId,
+      status: receipt.status || 'PAID',
+      source: 'Website Official Portal',
+    });
   },
 
   /**

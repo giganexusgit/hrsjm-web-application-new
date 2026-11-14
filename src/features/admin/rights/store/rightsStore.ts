@@ -4,7 +4,6 @@ import type {
   RightsStatsSummary,
   RightsStatus,
 } from '../types/rights.types';
-import { INITIAL_RIGHTS_FIXTURES } from '../data/rightsFixtures';
 import { rightsService } from '../services/rightsService';
 
 const STORAGE_KEY = 'hrsjm_local_rights_v1';
@@ -25,20 +24,7 @@ class RightsStore {
   }
 
   private loadPersisted(): RightsArticle[] {
-    try {
-      if (typeof window !== 'undefined' && window.localStorage) {
-        const raw = window.localStorage.getItem(STORAGE_KEY);
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            return parsed;
-          }
-        }
-      }
-    } catch {
-      // Ignore parse/quota errors
-    }
-    return [...INITIAL_RIGHTS_FIXTURES];
+    return [];
   }
 
   private persist(): void {
@@ -95,21 +81,10 @@ class RightsStore {
   public async syncFromBackend(): Promise<void> {
     try {
       const { items } = await rightsService.list();
-      if (items && items.length > 0) {
-        const mergedMap = new Map<string, RightsArticle>();
-        for (const item of items) {
-          mergedMap.set(item.id, item);
-        }
-        for (const local of this.articles) {
-          if (!mergedMap.has(local.id)) {
-            mergedMap.set(local.id, local);
-          }
-        }
-        this.articles = Array.from(mergedMap.values());
-        this.notify();
-      }
+      this.articles = items || [];
+      this.notify();
     } catch {
-      // Fallback already loaded
+      // Keep state
     }
   }
 

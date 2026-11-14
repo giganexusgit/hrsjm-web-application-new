@@ -5,7 +5,14 @@ import {
   Clock,
   ArrowRight,
   Paperclip,
+  Globe,
+  Smartphone,
+  Laptop,
+  AlertTriangle,
+  Mail,
+  Phone,
   Calendar,
+  Archive,
 } from 'lucide-react';
 import type { SupportTicket, TicketStatus } from '../types/support.types';
 import {
@@ -25,6 +32,20 @@ interface SupportTicketRowProps {
   onUpdateStatus: (ticket: SupportTicket, targetStatus: TicketStatus) => void;
 }
 
+const STATUS_LEFT_BORDER: Record<TicketStatus, string> = {
+  SUBMITTED: '#D97706',
+  UNDER_REVIEW: '#0284C7',
+  RESOLVED: '#16A34A',
+  CLOSED: '#94A3B8',
+};
+
+const STATUS_DOT_COLOR: Record<TicketStatus, string> = {
+  SUBMITTED: '#D97706',
+  UNDER_REVIEW: '#0284C7',
+  RESOLVED: '#16A34A',
+  CLOSED: '#64748B',
+};
+
 export const SupportTicketRow: React.FC<SupportTicketRowProps> = ({
   ticket,
   messageCount,
@@ -39,7 +60,7 @@ export const SupportTicketRow: React.FC<SupportTicketRowProps> = ({
   const priorityMeta = PRIORITIES.find((p) => p.id === ticket.priority) || PRIORITIES[0];
 
   const complainantName = ticket.user?.full_name || 'Citizen Complainant';
-  const complainantEmail = ticket.user?.email || '—';
+  const complainantEmail = ticket.user?.email || '';
   const complainantPhone = ticket.user?.mobile_number || '';
 
   const cleanSubject = ticket.subject.replace(/\[.*?\]\s*/g, '');
@@ -51,131 +72,138 @@ export const SupportTicketRow: React.FC<SupportTicketRowProps> = ({
     year: 'numeric',
   });
 
-  // Status indicator dot color
-  const statusDotColor =
-    ticket.status === 'RESOLVED'
-      ? 'bg-emerald-500'
-      : ticket.status === 'UNDER_REVIEW'
-      ? 'bg-sky-500'
-      : ticket.status === 'SUBMITTED'
-      ? 'bg-amber-500'
-      : 'bg-slate-400';
+  const getSourceIcon = () => {
+    if (sourceKey === 'website') return <Globe size={12} />;
+    if (sourceKey === 'app') return <Smartphone size={12} />;
+    return <Laptop size={12} />;
+  };
+
+  const leftBorderColor = STATUS_LEFT_BORDER[ticket.status] || '#94A3B8';
+  const dotColor = STATUS_DOT_COLOR[ticket.status] || '#64748B';
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200/90 hover:border-slate-300 p-4 sm:p-5 mb-3.5 shadow-xs hover:shadow-md transition-all duration-200">
+    <div
+      style={{
+        ...styles.card,
+        borderLeft: `4px solid ${leftBorderColor}`,
+      }}
+      className="support-ticket-card"
+    >
       {/* Top Meta Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-2.5 mb-3">
-        {/* Left Badges */}
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Ticket ID */}
-          <span className="font-mono text-xs font-bold text-[#011F39] bg-slate-100 border border-slate-200/80 px-2.5 py-1 rounded-md tracking-wider">
-            {shortId}
-          </span>
+      <div style={styles.topBar}>
+        <div style={styles.idGroup}>
+          <span style={styles.idBadge}>#{shortId}</span>
 
-          {/* Source Channel Badge */}
           <span
-            className="text-[11px] font-semibold px-2.5 py-0.5 rounded-md border"
             style={{
+              ...styles.sourceBadge,
               backgroundColor: sourceMeta.bg,
               color: sourceMeta.text,
               borderColor: sourceMeta.border,
             }}
           >
-            {sourceMeta.label}
+            {getSourceIcon()}
+            <span>{sourceMeta.label}</span>
           </span>
 
-          {/* Category Badge */}
           {ticket.category && (
-            <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-md bg-[#FFF9E6] text-[#B45309] border border-[#FDE68A]">
-              {ticket.category}
-            </span>
+            <span style={styles.categoryBadge}>{ticket.category}</span>
           )}
 
-          {/* Priority Badge */}
           {ticket.priority && ticket.priority !== 'NORMAL' && (
             <span
-              className="text-[11px] font-bold px-2.5 py-0.5 rounded-md border uppercase tracking-wider"
               style={{
+                ...styles.priorityBadge,
                 backgroundColor: priorityMeta.badgeBg,
                 color: priorityMeta.tone,
                 borderColor: priorityMeta.border,
               }}
             >
-              {priorityMeta.label}
+              <AlertTriangle size={11} />
+              <span>{priorityMeta.label}</span>
             </span>
           )}
         </div>
 
-        {/* Right Status & Date */}
-        <div className="flex items-center gap-3">
+        <div style={styles.statusGroup}>
           <span
-            className="inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full border shadow-2xs"
             style={{
+              ...styles.statusBadge,
               backgroundColor: statusMeta.badgeBg,
               color: statusMeta.badgeText,
               borderColor: statusMeta.border,
             }}
           >
-            <span className={`w-2 h-2 rounded-full ${statusDotColor}`} />
+            <span
+              style={{
+                ...styles.statusDot,
+                backgroundColor: dotColor,
+              }}
+            />
             {statusMeta.label}
           </span>
 
-          <span className="inline-flex items-center gap-1 text-xs text-slate-500 font-medium">
-            <Calendar size={13} className="text-slate-400" />
-            {dateFormatted}
+          <span style={styles.dateText}>
+            <Calendar size={12} color="#64748B" />
+            <span>{dateFormatted}</span>
           </span>
         </div>
       </div>
 
       {/* Main Content Body */}
-      <div className="mb-3.5">
-        <div className="flex items-start justify-between gap-3 mb-2">
+      <div style={styles.contentBody}>
+        <div style={styles.subjectRow}>
           <h3
+            style={styles.subjectText}
             onClick={() => onView(ticket)}
-            className="font-serif font-bold text-base sm:text-lg text-[#011F39] hover:text-[#B45309] cursor-pointer transition-colors leading-snug"
+            title="Click to view full ticket details and history"
+            className="support-ticket-title"
           >
             {cleanSubject}
           </h3>
-
           {docCount > 0 && (
-            <span
-              className="inline-flex items-center gap-1 text-xs font-medium text-slate-600 bg-slate-50 border border-slate-200 px-2 py-0.5 rounded-md shrink-0"
-              title={`${docCount} verified attachment(s)`}
-            >
-              <Paperclip size={12} className="text-slate-400" />
-              <span>{docCount}</span>
+            <span style={styles.attachmentPill} title={`${docCount} verified attachment(s)`}>
+              <Paperclip size={12} color="#64748B" />
+              <span>{docCount} {docCount === 1 ? 'doc' : 'docs'}</span>
             </span>
           )}
         </div>
 
-        {/* User Row */}
-        <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-full bg-[#011F39] text-[#FAD465] text-xs font-bold flex items-center justify-center shrink-0">
+        {/* Complainant User Info Bar */}
+        <div style={styles.userRow}>
+          <div style={styles.avatar}>
             {complainantName.charAt(0).toUpperCase()}
           </div>
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs">
-            <span className="font-semibold text-slate-900">{complainantName}</span>
-            <span className="text-slate-400 hidden sm:inline">•</span>
-            <span className="text-slate-500">{complainantEmail}</span>
-            {complainantPhone && (
-              <>
-                <span className="text-slate-400 hidden sm:inline">•</span>
-                <span className="text-slate-500">{complainantPhone}</span>
-              </>
-            )}
+          <div style={styles.userDetails}>
+            <span style={styles.userName}>{complainantName}</span>
+            <div style={styles.contactRow}>
+              {complainantEmail && (
+                <span style={styles.contactItem}>
+                  <Mail size={11} color="#64748B" />
+                  <span>{complainantEmail}</span>
+                </span>
+              )}
+              {complainantPhone && (
+                <span style={styles.contactItem}>
+                  <Phone size={11} color="#64748B" />
+                  <span>{complainantPhone}</span>
+                </span>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
       {/* Action Footer */}
-      <div className="border-t border-slate-100 pt-3 mt-3 flex flex-wrap items-center justify-between gap-3">
-        {/* Quick Lifecycle Transition Actions */}
-        <div className="flex flex-wrap items-center gap-2">
+      <div style={styles.footer}>
+        {/* Quick Transition Buttons */}
+        <div style={styles.quickTransitions}>
           {canTransition(ticket.status, 'UNDER_REVIEW') && (
             <button
               type="button"
               onClick={() => onUpdateStatus(ticket, 'UNDER_REVIEW')}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-sky-50 text-sky-700 hover:bg-sky-100 border border-sky-200 transition-colors cursor-pointer"
+              style={styles.transitionBtnInfo}
+              title="Transition ticket to In Progress state"
             >
               <Clock size={13} />
               <span>Mark In Progress</span>
@@ -186,7 +214,8 @@ export const SupportTicketRow: React.FC<SupportTicketRowProps> = ({
             <button
               type="button"
               onClick={() => onUpdateStatus(ticket, 'RESOLVED')}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 transition-colors cursor-pointer"
+              style={styles.transitionBtnSuccess}
+              title="Mark ticket grievance as Resolved"
             >
               <CheckCircle2 size={13} />
               <span>Mark Resolved</span>
@@ -197,34 +226,37 @@ export const SupportTicketRow: React.FC<SupportTicketRowProps> = ({
             <button
               type="button"
               onClick={() => onUpdateStatus(ticket, 'CLOSED')}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200 transition-colors cursor-pointer"
+              style={styles.transitionBtnNeutral}
+              title="Archive and close ticket"
             >
+              <Archive size={13} />
               <span>Close</span>
             </button>
           )}
         </div>
 
-        {/* Navigation Actions */}
-        <div className="flex items-center gap-2 ml-auto">
+        {/* Navigation Action Buttons */}
+        <div style={styles.navActions}>
           <button
             type="button"
             onClick={() => onOpenChat(ticket)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-white hover:bg-slate-50 text-slate-700 border border-slate-200/90 shadow-2xs transition-colors cursor-pointer"
-            title="Open conversation chat"
+            style={styles.chatBtn}
+            title="Open ticket conversation messages"
+            className="support-chat-btn"
           >
-            <MessageSquare size={14} className="text-slate-500" />
+            <MessageSquare size={14} color="#011F39" />
             <span>Chat</span>
             {messageCount > 0 && (
-              <span className="bg-[#011F39] text-[#FAD465] text-[10px] font-bold rounded-full px-1.5 py-0.2 leading-tight">
-                {messageCount}
-              </span>
+              <span style={styles.chatBadge}>{messageCount}</span>
             )}
           </button>
 
           <button
             type="button"
             onClick={() => onView(ticket)}
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold bg-[#011F39] hover:bg-[#06294D] text-white shadow-2xs transition-colors cursor-pointer"
+            style={styles.viewBtn}
+            title="View complete ticket timeline and details"
+            className="support-view-btn"
           >
             <span>View Ticket</span>
             <ArrowRight size={14} />
@@ -233,4 +265,276 @@ export const SupportTicketRow: React.FC<SupportTicketRowProps> = ({
       </div>
     </div>
   );
+};
+
+const styles: Record<string, React.CSSProperties> = {
+  card: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: '12px',
+    borderTop: '1px solid #E2E8F0',
+    borderRight: '1px solid #E2E8F0',
+    borderBottom: '1px solid #E2E8F0',
+    padding: '16px 20px',
+    marginBottom: '12px',
+    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.03)',
+  },
+  topBar: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: '10px',
+    marginBottom: '10px',
+  },
+  idGroup: {
+    display: 'flex',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: '8px',
+  },
+  idBadge: {
+    fontFamily: '"SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace',
+    fontWeight: 700,
+    fontSize: '12px',
+    color: '#011F39',
+    backgroundColor: '#EDF2F7',
+    border: '1px solid #DCE4EC',
+    padding: '3px 8px',
+    borderRadius: '6px',
+    letterSpacing: '0.03em',
+  },
+  sourceBadge: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '4px',
+    fontSize: '11px',
+    fontWeight: 600,
+    padding: '3px 8px',
+    borderRadius: '6px',
+    border: '1px solid',
+  },
+  categoryBadge: {
+    fontSize: '11px',
+    fontWeight: 600,
+    padding: '3px 8px',
+    borderRadius: '6px',
+    backgroundColor: '#FFF9E6',
+    color: '#B45309',
+    border: '1px solid #FDE68A',
+  },
+  priorityBadge: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '4px',
+    fontSize: '11px',
+    fontWeight: 700,
+    padding: '3px 8px',
+    borderRadius: '6px',
+    border: '1px solid',
+  },
+  statusGroup: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+  },
+  statusBadge: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '5px',
+    fontSize: '11.5px',
+    fontWeight: 700,
+    padding: '3px 10px',
+    borderRadius: '12px',
+    border: '1px solid',
+  },
+  statusDot: {
+    width: '6px',
+    height: '6px',
+    borderRadius: '50%',
+    display: 'inline-block',
+  },
+  dateText: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '4px',
+    fontSize: '12px',
+    color: '#64748B',
+  },
+  contentBody: {
+    marginBottom: '14px',
+  },
+  subjectRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+    marginBottom: '8px',
+  },
+  subjectText: {
+    fontFamily: '"Inter", system-ui, -apple-system, sans-serif',
+    fontSize: '15px',
+    fontWeight: 700,
+    color: '#0B2F52',
+    margin: 0,
+    cursor: 'pointer',
+    flex: 1,
+    lineHeight: 1.35,
+    transition: 'color 0.15s ease',
+  },
+  attachmentPill: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '4px',
+    fontSize: '11px',
+    fontWeight: 600,
+    color: '#64748B',
+    backgroundColor: '#F8FAFC',
+    border: '1px solid #E2E8F0',
+    padding: '2px 8px',
+    borderRadius: '6px',
+    flexShrink: 0,
+  },
+  userRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+  },
+  avatar: {
+    width: '32px',
+    height: '32px',
+    borderRadius: '50%',
+    backgroundColor: '#011F39',
+    color: '#FFFFFF',
+    fontSize: '13px',
+    fontWeight: 700,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+    boxShadow: '0 1px 3px rgba(1, 31, 57, 0.15)',
+  },
+  userDetails: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '2px',
+  },
+  userName: {
+    fontSize: '13px',
+    fontWeight: 600,
+    color: '#0B2F52',
+  },
+  contactRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    flexWrap: 'wrap',
+  },
+  contactItem: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '4px',
+    fontSize: '11.5px',
+    color: '#64748B',
+  },
+  footer: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: '12px',
+    borderTop: '1px solid #F1F5F9',
+    paddingTop: '12px',
+  },
+  quickTransitions: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    flexWrap: 'wrap',
+  },
+  transitionBtnInfo: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '5px',
+    padding: '6px 12px',
+    borderRadius: '8px',
+    border: '1px solid #BAE6FD',
+    backgroundColor: '#EFF6FF',
+    color: '#0284C7',
+    fontSize: '12px',
+    fontWeight: 600,
+    cursor: 'pointer',
+    transition: 'all 0.15s ease',
+  },
+  transitionBtnSuccess: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '5px',
+    padding: '6px 12px',
+    borderRadius: '8px',
+    border: '1px solid #BBF7D0',
+    backgroundColor: '#F0FDF4',
+    color: '#15803D',
+    fontSize: '12px',
+    fontWeight: 600,
+    cursor: 'pointer',
+    transition: 'all 0.15s ease',
+  },
+  transitionBtnNeutral: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '5px',
+    padding: '6px 12px',
+    borderRadius: '8px',
+    border: '1px solid #CBD5E1',
+    backgroundColor: '#F1F5F9',
+    color: '#475569',
+    fontSize: '12px',
+    fontWeight: 600,
+    cursor: 'pointer',
+    transition: 'all 0.15s ease',
+  },
+  navActions: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    marginLeft: 'auto',
+  },
+  chatBtn: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '6px',
+    padding: '7px 14px',
+    borderRadius: '8px',
+    border: '1px solid #DCE4EC',
+    backgroundColor: '#FFFFFF',
+    color: '#011F39',
+    fontSize: '12.5px',
+    fontWeight: 600,
+    cursor: 'pointer',
+    transition: 'all 0.15s ease',
+    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.03)',
+  },
+  chatBadge: {
+    fontSize: '10px',
+    fontWeight: 700,
+    backgroundColor: '#011F39',
+    color: '#FFFFFF',
+    borderRadius: '10px',
+    padding: '1px 6px',
+  },
+  viewBtn: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '6px',
+    padding: '7px 16px',
+    borderRadius: '8px',
+    border: 'none',
+    backgroundColor: '#011F39',
+    color: '#FFFFFF',
+    fontSize: '12.5px',
+    fontWeight: 600,
+    cursor: 'pointer',
+    transition: 'all 0.15s ease',
+    boxShadow: '0 1px 3px rgba(1, 31, 57, 0.2)',
+  },
 };

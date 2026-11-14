@@ -1,51 +1,96 @@
 import type React from 'react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
   Building2,
   Calendar,
-  CreditCard,
   User,
   Info,
   CheckCircle,
+  AlertCircle,
 } from 'lucide-react';
+import { apiClient } from '@/api';
 import { expensesStore } from '../store/expensesStore';
-import {
-  OFFICIAL_EXPENSE_TYPES,
-  ASSET_PAYMENT_ACCOUNTS,
-} from '../data/expensesFixtures';
+import { OFFICIAL_EXPENSE_TYPES } from '../data/expensesFixtures';
 import {
   PAYMENT_METHOD_LABELS,
-  VOUCHER_PAYMENT_METHODS,
   type PaymentMethod,
 } from '../types/expenses.types';
 
-const getInitialDate = () => '2026-09-28';
+const ALLOWED_PAYMENT_METHODS: PaymentMethod[] = ['CASH', 'UPI', 'BANK_TRANSFER'];
+
+const getInitialDate = () => new Date().toISOString().slice(0, 10);
 
 export const CreateExpensePage: React.FC = () => {
   const navigate = useNavigate();
 
   const [expenseDate, setExpenseDate] = useState(getInitialDate);
-  const [expenseAccountId, setExpenseAccountId] = useState('5002');
-  const [paidFromAccountId, setPaidFromAccountId] = useState('acc-bank-01');
+  const [expenseAccounts, setExpenseAccounts] = useState<
+    Array<{ id: string; code: string; name: string; description: string }>
+  >([]);
+  const defaultType = OFFICIAL_EXPENSE_TYPES.find((t) => t.code === '5002') || OFFICIAL_EXPENSE_TYPES[0];
+  const [selectedAccountId, setSelectedAccountId] = useState<string>(
+    defaultType.id || 'b8cbe676-5f17-4d9a-9499-92937a84d7a1'
+  );
   const [amount, setAmount] = useState('');
   const [paidTo, setPaidTo] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('BANK_TRANSFER');
-  const [referenceNumber, setReferenceNumber] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('CASH');
   const [description, setDescription] = useState('');
-  const [attachmentUrl, setAttachmentUrl] = useState('');
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
 
-  const selectedCategory = OFFICIAL_EXPENSE_TYPES.find((t) => t.code === expenseAccountId);
+  // Load real accounts from database on mount to get their database UUIDs
+  useEffect(() => {
+    let active = true;
+    async function loadRealAccounts() {
+      try {
+        const res = await apiClient.get<any>('/accounts?account_type=EXPENSE');
+        const items = Array.isArray(res) ? res : res?.items || res?.data?.items || res?.data || [];
+        if (active && Array.isArray(items) && items.length > 0) {
+          const mapped = items.map((a: any) => ({
+            id: a.id,
+            code: a.account_code || '',
+            name: a.account_name,
+            description: a.description || '',
+          }));
+          setExpenseAccounts(mapped);
+          const defaultAcc = mapped.find((a: any) => a.code === '5002') || mapped[0];
+          if (defaultAcc) {
+            setSelectedAccountId(defaultAcc.id);
+          }
+          return;
+        }
+      } catch (err) {
+        console.warn('Could not fetch accounts from backend API, using fallback fixtures:', err);
+      }
+      if (active) {
+        setExpenseAccounts(
+          OFFICIAL_EXPENSE_TYPES.map((t) => ({
+            id: t.id || t.code,
+            code: t.code,
+            name: t.name,
+            description: t.description,
+          }))
+        );
+      }
+    }
+    loadRealAccounts();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const selectedCategory =
+    expenseAccounts.find((t) => t.id === selectedAccountId || t.code === selectedAccountId) ||
+    OFFICIAL_EXPENSE_TYPES.find((t) => t.code === '5002');
 
   const validate = (): boolean => {
     const errs: Record<string, string> = {};
     if (!expenseDate) errs.expenseDate = 'Expense date is required';
-    if (!expenseAccountId) errs.expenseAccountId = 'Expense account category is required';
+    if (!selectedAccountId) errs.expenseAccountId = 'Expense account category is required';
     if (!paidTo.trim()) errs.paidTo = 'Payee / recipient name is required';
     if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) {
       errs.amount = 'Valid positive amount in INR is required';
@@ -59,19 +104,59 @@ export const CreateExpensePage: React.FC = () => {
   const handleCreateSubmit = async () => {
     if (!validate()) return;
     setIsSubmitting(true);
+    setErrors({});
     try {
+      // Ensure we have a valid database UUID for the expense account
+      let finalAccountId = selectedAccountId;
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+      if (!uuidRegex.test(finalAccountId)) {
+        const matched = expenseAccounts.find(
+          (a) => a.code === finalAccountId || a.id === finalAccountId
+        );
+        if (matched && uuidRegex.test(matched.id)) {
+          finalAccountId = matched.id;
+        } else {
+          try {
+            const res = await apiClient.get<any>('/accounts?account_type=EXPENSE');
+            const items = Array.isArray(res) ? res : res?.items || res?.data || [];
+            const apiMatched = items.find(
+              (a: any) => a.account_code === finalAccountId || a.account_code === '5002'
+            );
+            if (apiMatched && uuidRegex.test(apiMatched.id)) {
+              finalAccountId = apiMatched.id;
+            }
+          } catch (e) {
+            console.warn('Account UUID resolution error:', e);
+          }
+        }
+      }
+
+      // Add Web App source tag to reference and description
+      const webAppRef = `WEB-APP-${Date.now().toString(36).toUpperCase()}`;
+      const baseDesc = description.trim() || `Disbursement for ${selectedCategory?.name || 'operations'}`;
+      const finalDescription = baseDesc.includes('[Source: Web App]')
+        ? baseDesc
+        : `${baseDesc} [Source: Web App]`;
+
       const created = await expensesStore.create({
         expense_date: new Date(expenseDate).toISOString(),
         paid_to: paidTo.trim(),
-        expense_account_id: expenseAccountId,
-        paid_from_account_id: paidFromAccountId,
+        expense_account_id: finalAccountId,
         amount: Number(amount),
         payment_method: paymentMethod,
-        reference_number: referenceNumber.trim() || undefined,
-        description: description.trim() || undefined,
-        attachment_url: attachmentUrl.trim() || undefined,
+        reference_number: webAppRef,
+        description: finalDescription,
       });
+
+      // Synchronize expenses store from backend database
+      await expensesStore.syncFromBackend();
+
       navigate(`/admin/expenses/${created.id}`);
+    } catch (err: any) {
+      console.error('Error creating expense voucher:', err);
+      const msg = err?.response?.data?.message || err?.message || 'Failed to save expense voucher to database';
+      setErrors({ submit: msg });
     } finally {
       setIsSubmitting(false);
       setConfirmOpen(false);
@@ -117,6 +202,24 @@ export const CreateExpensePage: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {errors.submit && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          padding: '12px 16px',
+          backgroundColor: '#FEF2F2',
+          border: '1px solid #F87171',
+          borderRadius: '8px',
+          color: '#991B1B',
+          fontSize: '13px',
+          marginBottom: '20px',
+        }}>
+          <AlertCircle size={18} color="#DC2626" />
+          <span><strong>Failed to save voucher:</strong> {errors.submit}</span>
+        </div>
+      )}
 
       <div style={styles.formGrid}>
         {/* Main Column */}
@@ -202,14 +305,14 @@ export const CreateExpensePage: React.FC = () => {
 
           {/* Section 2: Payment Details */}
           <div style={styles.card}>
-            <h2 style={styles.cardTitle}>Payment Method & Reference</h2>
+            <h2 style={styles.cardTitle}>Payment Method</h2>
 
             <div style={styles.fieldGroup}>
               <label style={styles.label}>
                 Payment Method <span style={styles.required}>*</span>
               </label>
               <div style={styles.methodButtonsGrid}>
-                {VOUCHER_PAYMENT_METHODS.map((m) => {
+                {ALLOWED_PAYMENT_METHODS.map((m) => {
                   const active = paymentMethod === m;
                   return (
                     <button
@@ -228,51 +331,6 @@ export const CreateExpensePage: React.FC = () => {
                   );
                 })}
               </div>
-            </div>
-
-            <div style={styles.row}>
-              {/* Paid From Account */}
-              <div style={styles.fieldGroup}>
-                <label style={styles.label}>
-                  <CreditCard size={13} color="#64748B" />
-                  <span>Paid From (Disbursing Source)</span>
-                </label>
-                <select
-                  value={paidFromAccountId}
-                  onChange={(e) => setPaidFromAccountId(e.target.value)}
-                  style={styles.select}
-                >
-                  {ASSET_PAYMENT_ACCOUNTS.map((acc) => (
-                    <option key={acc.id} value={acc.id}>
-                      {acc.account_name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Reference Number */}
-              <div style={styles.fieldGroup}>
-                <label style={styles.label}>Reference / Cheque / Bill #</label>
-                <input
-                  type="text"
-                  value={referenceNumber}
-                  onChange={(e) => setReferenceNumber(e.target.value)}
-                  placeholder="e.g. NEFT-9284102 or CHQ-409182"
-                  style={styles.input}
-                />
-              </div>
-            </div>
-
-            {/* Attachment URL */}
-            <div style={styles.fieldGroup}>
-              <label style={styles.label}>Supporting Receipt / Bill URL (Optional)</label>
-              <input
-                type="text"
-                value={attachmentUrl}
-                onChange={(e) => setAttachmentUrl(e.target.value)}
-                placeholder="https://..."
-                style={styles.input}
-              />
             </div>
           </div>
         </div>
@@ -293,12 +351,12 @@ export const CreateExpensePage: React.FC = () => {
                 Expense Account (Head) <span style={styles.required}>*</span>
               </label>
               <select
-                value={expenseAccountId}
-                onChange={(e) => setExpenseAccountId(e.target.value)}
+                value={selectedAccountId}
+                onChange={(e) => setSelectedAccountId(e.target.value)}
                 style={styles.select}
               >
-                {OFFICIAL_EXPENSE_TYPES.map((t) => (
-                  <option key={t.code} value={t.code}>
+                {(expenseAccounts.length > 0 ? expenseAccounts : OFFICIAL_EXPENSE_TYPES).map((t) => (
+                  <option key={t.id || t.code} value={t.id || t.code}>
                     {t.code} — {t.name}
                   </option>
                 ))}

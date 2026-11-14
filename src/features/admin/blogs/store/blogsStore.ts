@@ -8,7 +8,6 @@ import type {
   BlogStatus,
   CreateBlogFormState,
 } from '../types/blog.types';
-import { INITIAL_BLOGS_FIXTURES } from '../data/blogsFixtures';
 import { blogsService } from '../services/blogsService';
 
 const STORAGE_KEY = 'hrsjm_local_blogs_v1';
@@ -37,20 +36,7 @@ class BlogsStore {
   }
 
   private loadPersisted(): BlogListItem[] {
-    try {
-      if (typeof window !== 'undefined' && window.localStorage) {
-        const raw = window.localStorage.getItem(STORAGE_KEY);
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            return parsed;
-          }
-        }
-      }
-    } catch {
-      // Fallback
-    }
-    return [...INITIAL_BLOGS_FIXTURES];
+    return [];
   }
 
   private persist(): void {
@@ -118,11 +104,9 @@ class BlogsStore {
   public async fetchBlogs(): Promise<void> {
     try {
       const { blogs } = await blogsService.list();
-      if (blogs && blogs.length > 0) {
-        this.blogs = blogs;
-        this.sortInternal();
-        this.notify();
-      }
+      this.blogs = blogs || [];
+      this.sortInternal();
+      this.notify();
     } catch {
       // Keep local state on network error
     }

@@ -15,7 +15,7 @@ import type {
   MemberSortOption,
   MembershipCategoryItem,
 } from '../types/members.types';
-import { membersStore } from '../store/membersStore';
+import { membersStore, isExpiringSoon } from '../store/membersStore';
 import { STANDARD_MEMBERSHIP_CATEGORIES } from '../data/membersFixtures';
 import { membersService } from '../services/membersService';
 import { MembersStatsCards } from '../components/MembersStatsCards';
@@ -93,10 +93,14 @@ export const MembersListPage: React.FC = () => {
     let pending = 0;
 
     for (const m of members) {
-      if (m.status === 'ACTIVE') active++;
-      else if (m.status === 'EXPIRING_SOON') expiringSoon++;
-      else if (m.status === 'INACTIVE') inactive++;
-      else if (m.status === 'PENDING') pending++;
+      if (m.status === 'ACTIVE' || m.status === 'EXPIRING_SOON') {
+        active++;
+        if (isExpiringSoon(m.validTill)) expiringSoon++;
+      } else if (m.status === 'INACTIVE') {
+        inactive++;
+      } else if (m.status === 'PENDING') {
+        pending++;
+      }
     }
 
     return {
@@ -113,8 +117,16 @@ export const MembersListPage: React.FC = () => {
     let result = [...members];
 
     // Status Tab filter
-    if (selectedTab !== 'ALL') {
-      result = result.filter((m) => m.status === selectedTab);
+    if (selectedTab === 'ACTIVE') {
+      result = result.filter((m) => m.status === 'ACTIVE' || m.status === 'EXPIRING_SOON');
+    } else if (selectedTab === 'EXPIRING_SOON') {
+      result = result.filter(
+        (m) => (m.status === 'ACTIVE' || m.status === 'EXPIRING_SOON') && isExpiringSoon(m.validTill)
+      );
+    } else if (selectedTab === 'INACTIVE') {
+      result = result.filter((m) => m.status === 'INACTIVE');
+    } else if (selectedTab === 'PENDING') {
+      result = result.filter((m) => m.status === 'PENDING');
     }
 
     // Category filter
@@ -239,7 +251,7 @@ export const MembersListPage: React.FC = () => {
   };
 
   return (
-    <div style={{ maxWidth: '1440px', margin: '0 auto' }}>
+    <div style={{ width: '100%', maxWidth: '1440px', minWidth: 0, margin: '0 auto' }}>
       {/* Page Header */}
       <div
         style={{
@@ -365,6 +377,9 @@ export const MembersListPage: React.FC = () => {
       {/* Main Content Card Container */}
       <div
         style={{
+          width: '100%',
+          minWidth: 0,
+          boxSizing: 'border-box',
           backgroundColor: '#FFFFFF',
           borderRadius: '14px',
           border: '1px solid #E5E7EB',
@@ -403,10 +418,18 @@ export const MembersListPage: React.FC = () => {
         />
 
         {/* Data Table */}
-        <div style={{ overflowX: 'auto', margin: '0 -20px' }}>
+        <div
+          style={{
+            width: 'calc(100% + 40px)',
+            margin: '0 -20px',
+            overflowX: 'auto',
+            WebkitOverflowScrolling: 'touch',
+          }}
+        >
           <table
             style={{
               width: '100%',
+              minWidth: '960px',
               borderCollapse: 'collapse',
               textAlign: 'left',
               fontSize: '13.5px',
@@ -424,7 +447,7 @@ export const MembersListPage: React.FC = () => {
                 <th style={thStyle}>Contact</th>
                 <th style={thStyle}>Category / Post</th>
                 <th style={thStyle}>Validity & Dates</th>
-                <th style={thStyle}>Welcome Kit</th>
+                <th style={thStyle}>Days Left</th>
                 <th style={thStyle}>Status</th>
                 <th style={{ ...thStyle, textAlign: 'right' }}>Actions</th>
               </tr>
@@ -622,4 +645,5 @@ const thStyle: React.CSSProperties = {
   color: '#4B5563',
   textTransform: 'uppercase',
   letterSpacing: '0.04em',
+  whiteSpace: 'nowrap',
 };

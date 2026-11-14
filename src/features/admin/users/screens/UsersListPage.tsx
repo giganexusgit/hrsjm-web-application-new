@@ -129,7 +129,7 @@ export const UsersListPage: React.FC = () => {
   };
 
   return (
-    <div style={{ maxWidth: '1440px', margin: '0 auto' }}>
+    <div style={{ width: '100%', maxWidth: '1440px', margin: '0 auto', minWidth: 0, boxSizing: 'border-box' }}>
       {/* Page Header */}
       <div
         style={{
@@ -139,6 +139,8 @@ export const UsersListPage: React.FC = () => {
           justifyContent: 'space-between',
           gap: '16px',
           marginBottom: '24px',
+          width: '100%',
+          minWidth: 0,
         }}
       >
         <div>
@@ -229,6 +231,9 @@ export const UsersListPage: React.FC = () => {
           padding: '20px 24px 16px',
           boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
           marginBottom: '20px',
+          width: '100%',
+          minWidth: 0,
+          boxSizing: 'border-box',
         }}
       >
         {/* Role Tabs */}
@@ -262,6 +267,9 @@ export const UsersListPage: React.FC = () => {
           boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
           overflow: 'hidden',
           marginBottom: '24px',
+          width: '100%',
+          minWidth: 0,
+          boxSizing: 'border-box',
         }}
       >
         {paginatedUsers.length === 0 ? (
@@ -324,10 +332,11 @@ export const UsersListPage: React.FC = () => {
           </div>
         ) : (
           <>
-            <div style={{ overflowX: 'auto' }}>
+            <div style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
               <table
                 style={{
                   width: '100%',
+                  minWidth: '880px',
                   borderCollapse: 'collapse',
                   textAlign: 'left',
                 }}
@@ -347,6 +356,7 @@ export const UsersListPage: React.FC = () => {
                         color: '#06294D',
                         textTransform: 'uppercase',
                         letterSpacing: '0.06em',
+                        whiteSpace: 'nowrap',
                       }}
                     >
                       User & Contact
@@ -359,6 +369,7 @@ export const UsersListPage: React.FC = () => {
                         color: '#06294D',
                         textTransform: 'uppercase',
                         letterSpacing: '0.06em',
+                        whiteSpace: 'nowrap',
                       }}
                     >
                       Membership / ID
@@ -371,6 +382,7 @@ export const UsersListPage: React.FC = () => {
                         color: '#06294D',
                         textTransform: 'uppercase',
                         letterSpacing: '0.06em',
+                        whiteSpace: 'nowrap',
                       }}
                     >
                       Role
@@ -383,6 +395,7 @@ export const UsersListPage: React.FC = () => {
                         color: '#06294D',
                         textTransform: 'uppercase',
                         letterSpacing: '0.06em',
+                        whiteSpace: 'nowrap',
                       }}
                     >
                       Status
@@ -395,6 +408,7 @@ export const UsersListPage: React.FC = () => {
                         color: '#06294D',
                         textTransform: 'uppercase',
                         letterSpacing: '0.06em',
+                        whiteSpace: 'nowrap',
                       }}
                     >
                       Joined Date
@@ -408,6 +422,7 @@ export const UsersListPage: React.FC = () => {
                         textTransform: 'uppercase',
                         letterSpacing: '0.06em',
                         textAlign: 'right',
+                        whiteSpace: 'nowrap',
                       }}
                     >
                       Actions

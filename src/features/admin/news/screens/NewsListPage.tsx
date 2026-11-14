@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useSyncExternalStore } from 'react';
+import React, { useEffect, useState, useMemo, useSyncExternalStore } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Inbox, RefreshCw } from 'lucide-react';
 import { newsStore } from '../store/newsStore';
@@ -25,6 +25,10 @@ export const NewsListPage: React.FC = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [page, setPage] = useState(1);
   const pageSize = 6;
+
+  useEffect(() => {
+    newsStore.fetchNews().catch(() => {});
+  }, []);
 
   // Filter tabs with live counts
   const tabs = useMemo<NewsFilterTab[]>(

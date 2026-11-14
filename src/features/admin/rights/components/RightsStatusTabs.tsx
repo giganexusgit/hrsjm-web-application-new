@@ -13,7 +13,7 @@ export const RightsStatusTabs: React.FC<RightsStatusTabsProps> = ({
   onSelectTab,
 }) => {
   return (
-    <div className="flex items-center gap-2 overflow-x-auto pb-1 mb-5 scrollbar-none">
+    <div className="flex flex-wrap items-center gap-2 w-full min-w-0 pb-1 mb-5">
       {tabs.map((tab) => {
         const isActive = activeStatus === tab.key;
         return (

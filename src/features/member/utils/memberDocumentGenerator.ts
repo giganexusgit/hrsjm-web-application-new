@@ -661,3 +661,96 @@ export const generate80GReceiptPdf = (member: MemberProfile, entry: MemberPassbo
 
   return doc;
 };
+
+/**
+ * Generates and downloads official Membership Guidelines PDF
+ */
+export const downloadMemberGuidelinesPdf = (member: MemberProfile): void => {
+  const doc = new jsPDF({
+    orientation: 'portrait',
+    unit: 'mm',
+    format: 'a4',
+  });
+
+  const W = 210;
+  const H = 297;
+
+  // Header background
+  doc.setFillColor(1, 31, 57);
+  doc.rect(0, 0, W, 40, 'F');
+
+  // Title
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(16);
+  doc.setTextColor(255, 255, 255);
+  doc.text('HUMAN RIGHTS & SOCIAL JUSTICE MISSION', W / 2, 18, { align: 'center' });
+
+  doc.setFontSize(10);
+  doc.setTextColor(250, 212, 101);
+  doc.text('OFFICIAL MEMBERSHIP GUIDELINES, ETHICAL CODE & PROTOCOLS', W / 2, 28, { align: 'center' });
+
+  // Member Reference Box
+  doc.setFillColor(250, 247, 240);
+  doc.roundedRect(14, 48, W - 28, 22, 3, 3, 'F');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10);
+  doc.setTextColor(1, 31, 57);
+  doc.text(`Issued To: ${member.fullName}`, 20, 58);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(100, 116, 139);
+  doc.text(`Member ID: ${member.membershipNumber || 'HRSJM-47611'}  |  Category: ${member.categoryTitle || 'User Member'}  |  Valid Till: ${member.validUpto || '10 Nov 2027'}`, 20, 65);
+
+  // Content Paragraphs
+  let y = 82;
+  const sections = [
+    {
+      title: '1. Constitutional Purpose & Mission',
+      body: 'Human Rights and Social Justice Mission (HRSJM) is a national registered constitutional non-governmental body. Every member undertakes to protect fundamental civil liberties, uphold human dignity, advocate gender equality, and assist underprivileged communities.',
+    },
+    {
+      title: '2. Code of Conduct & Public Demeanor',
+      body: 'Members are ambassadors of fundamental constitutional values. Members must act with fairness, non-discrimination, honesty, and civic responsibility at all times. Misuse of the organizational title, logo, or credential for personal gain or illegal activities is strictly prohibited.',
+    },
+    {
+      title: '3. Digital & Physical Credential Verification',
+      body: 'The digital pass and official membership card are issued strictly to the registered holder and are non-transferable. Authenticity can be verified at any time via the official QR verification portal. Any lost credentials must be reported immediately.',
+    },
+    {
+      title: '4. Rights & Benefits of Members',
+      body: 'Active members enjoy priority access to legal literacy camps, educational conclaves, humanitarian drives, and national community forums. Members are entitled to participate in member delegates assemblies as per organizational bylaws.',
+    },
+    {
+      title: '5. Validity, Extension & Renewals',
+      body: 'Membership is valid for the term specified on your certificate and digital card. Timely renewal ensures continuous access to services, credentials validity, and participation in state and national chapter initiatives.',
+    },
+  ];
+
+  sections.forEach((sec) => {
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(1, 31, 57);
+    doc.text(sec.title, 14, y);
+    y += 6;
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9.5);
+    doc.setTextColor(51, 65, 85);
+    const splitBody = doc.splitTextToSize(sec.body, W - 28);
+    doc.text(splitBody, 14, y);
+    y += splitBody.length * 5 + 6;
+  });
+
+  // Footer
+  doc.setDrawColor(226, 232, 240);
+  doc.setLineWidth(0.5);
+  doc.line(14, H - 24, W - 14, H - 24);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+  doc.setTextColor(148, 163, 184);
+  doc.text('Human Rights & Social Justice Mission • National Headquarters, New Delhi • Official Secretariat Document', W / 2, H - 16, { align: 'center' });
+  doc.text('Verification & Information Portal: https://hrsjm.org/membership', W / 2, H - 11, { align: 'center' });
+
+  doc.save(`HRSJM_Guidelines_${(member.fullName || 'Member').replace(/\s+/g, '_')}.pdf`);
+};

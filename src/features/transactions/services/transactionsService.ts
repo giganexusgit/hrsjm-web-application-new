@@ -6,160 +6,6 @@ import type {
   UserTransactionsResponse,
 } from '../types/transactions.types';
 
-const MOCK_FALLBACK_TRANSACTIONS: UserTransactionItem[] = [
-  {
-    id: 'txn-101',
-    transaction_id: 'TXN-2026-MEM-0091',
-    payment_reference: 'PAY_RZP_MEM99281',
-    gateway_order_id: 'order_Nxk921Lz821',
-    gateway_payment_id: 'pay_Nxk921Lz821_01',
-    category: 'Membership',
-    category_code: 'MEMBERSHIP',
-    title: 'Annual Regular Membership Subscription',
-    purpose: 'HRSJM Membership Enrolment & Annual Statutory Affiliation Fee (FY 2026-27)',
-    amount: 2500,
-    direction: 'OUTGOING',
-    status: 'Success',
-    status_code: 'SUCCESS',
-    payment_method: 'UPI / Razorpay',
-    created_at: '2026-01-01T10:30:00.000Z',
-    payment_date: '2026-01-01T10:30:00.000Z',
-    receipt_id: 'rec-001',
-    receipt_number: 'REC-2026-0881',
-    receipt_available: true,
-    related_info: {
-      membership_id: 'HRSJM-2026-0042',
-      campaign_name: 'Annual Membership Enrolment',
-      receipt_id: 'rec-001',
-      receipt_number: 'REC-2026-0881',
-      receipt_date: '2026-01-01T10:30:00.000Z',
-      receipt_status: 'ISSUED',
-      tax_exemption_eligible: false,
-      notes: 'Official membership kit and physical smart ID card dispatched via Speed Post.',
-    },
-  },
-  {
-    id: 'txn-102',
-    transaction_id: 'TXN-2026-DON-1104',
-    payment_reference: 'PAY_RZP_DON44019',
-    gateway_order_id: 'order_Kmp817721AA',
-    gateway_payment_id: 'pay_Kmp817721AA_02',
-    category: 'Donation',
-    category_code: 'DONATION',
-    title: 'Emergency Flood Relief & Rehabilitation',
-    purpose: 'Direct humanitarian food kits, emergency medicine and tent relief for affected families',
-    amount: 5000,
-    direction: 'OUTGOING',
-    status: 'Success',
-    status_code: 'SUCCESS',
-    payment_method: 'Net Banking (HDFC Bank)',
-    created_at: '2026-01-15T14:45:00.000Z',
-    payment_date: '2026-01-15T14:45:00.000Z',
-    receipt_id: 'rec-002',
-    receipt_number: 'REC-2026-0922',
-    receipt_available: true,
-    related_info: {
-      campaign_name: 'Emergency Flood Relief Fund 2026',
-      receipt_id: 'rec-002',
-      receipt_number: 'REC-2026-0922',
-      receipt_date: '2026-01-15T14:45:00.000Z',
-      receipt_status: 'ISSUED',
-      tax_exemption_eligible: true,
-      notes: 'Eligible for 50% deduction under Section 80G of Income Tax Act 1961.',
-    },
-  },
-  {
-    id: 'txn-103',
-    transaction_id: 'TXN-2026-EVT-0432',
-    payment_reference: 'PAY_RZP_EVT98127',
-    gateway_order_id: 'order_Plm229199BB',
-    gateway_payment_id: 'pay_Plm229199BB_03',
-    category: 'Events',
-    category_code: 'EVENTS',
-    title: 'National Human Rights Convention 2026',
-    purpose: 'Delegate registration pass, kit, and convention lunch coupon (Vigyan Bhawan, New Delhi)',
-    amount: 1200,
-    direction: 'OUTGOING',
-    status: 'Success',
-    status_code: 'SUCCESS',
-    payment_method: 'Credit Card (Visa)',
-    created_at: '2026-02-02T11:15:00.000Z',
-    payment_date: '2026-02-02T11:15:00.000Z',
-    receipt_id: 'rec-003',
-    receipt_number: 'REC-2026-0941',
-    receipt_available: true,
-    related_info: {
-      event_name: 'National Human Rights Convention 2026',
-      receipt_id: 'rec-003',
-      receipt_number: 'REC-2026-0941',
-      receipt_date: '2026-02-02T11:15:00.000Z',
-      receipt_status: 'ISSUED',
-      tax_exemption_eligible: false,
-      notes: 'Delegate Entry Badge QR issued in mobile app.',
-    },
-  },
-  {
-    id: 'txn-104',
-    transaction_id: 'TXN-2026-DON-1288',
-    payment_reference: 'PAY_RZP_DON99412',
-    gateway_order_id: 'order_Zyt981223CC',
-    gateway_payment_id: 'pay_Zyt981223CC_04',
-    category: 'Donation',
-    category_code: 'DONATION',
-    title: 'Legal Aid & Prisoner Welfare Corpus',
-    purpose: 'Pro-bono defense advocates for undertrials and underprivileged individuals in Delhi courts',
-    amount: 2100,
-    direction: 'OUTGOING',
-    status: 'Success',
-    status_code: 'SUCCESS',
-    payment_method: 'UPI / Google Pay',
-    created_at: '2026-02-20T16:20:00.000Z',
-    payment_date: '2026-02-20T16:20:00.000Z',
-    receipt_id: 'rec-004',
-    receipt_number: 'REC-2026-0994',
-    receipt_available: true,
-    related_info: {
-      campaign_name: 'Legal Aid Cell Defense Fund',
-      receipt_id: 'rec-004',
-      receipt_number: 'REC-2026-0994',
-      receipt_date: '2026-02-20T16:20:00.000Z',
-      receipt_status: 'ISSUED',
-      tax_exemption_eligible: true,
-      notes: 'Donation exempt under Section 80G (Unique Regn No. CIT(E)/DELHI/80G/2021-22/A/10492).',
-    },
-  },
-  {
-    id: 'txn-105',
-    transaction_id: 'TXN-2026-EVT-0551',
-    payment_reference: 'PAY_RZP_EVT11094',
-    gateway_order_id: 'order_Qwe881920DD',
-    gateway_payment_id: null,
-    category: 'Events',
-    category_code: 'EVENTS',
-    title: 'District Human Rights Vigilance Workshop',
-    purpose: 'Hands-on workshop on human rights protection and RTI filing at Rohini District Centre',
-    amount: 500,
-    direction: 'OUTGOING',
-    status: 'Pending',
-    status_code: 'PENDING',
-    payment_method: 'UPI (Awaiting Gateway Settlement)',
-    created_at: '2026-03-01T09:00:00.000Z',
-    payment_date: '2026-03-01T09:00:00.000Z',
-    receipt_id: null,
-    receipt_number: null,
-    receipt_available: false,
-    related_info: {
-      event_name: 'District Vigilance Workshop 2026',
-      receipt_id: null,
-      receipt_number: null,
-      receipt_date: null,
-      receipt_status: 'PENDING',
-      tax_exemption_eligible: false,
-      notes: 'Payment confirmation pending bank clearance.',
-    },
-  },
-];
-
 export const transactionsService = {
   /**
    * Fetches unified transaction ledger and totals for current user.
@@ -179,7 +25,7 @@ export const transactionsService = {
       });
 
       const payload = res?.data || res;
-      if (Array.isArray(payload?.items) && payload.items.length > 0) {
+      if (Array.isArray(payload?.items)) {
         const calculatedTax80G = payload.items
           .filter((i: any) => (i.status === 'Success' || i.status_code === 'SUCCESS') && (i.category_code === 'DONATION' || i.related_info?.tax_exemption_eligible))
           .reduce((acc: number, i: any) => acc + (Number(i.amount) || 0), 0);
@@ -204,63 +50,25 @@ export const transactionsService = {
         };
       }
     } catch {
-      // Fallback to offline fixtures
+      // Return empty live state if API fails
     }
-
-    // Apply client filters to offline fixtures
-    let items = [...MOCK_FALLBACK_TRANSACTIONS];
-
-    if (params?.category && params.category !== 'ALL') {
-      const cat = params.category.toUpperCase();
-      items = items.filter(
-        (i) => i.category_code === cat || i.category.toUpperCase() === cat
-      );
-    }
-
-    if (params?.status && params.status !== 'ALL') {
-      const st = params.status.toUpperCase();
-      items = items.filter(
-        (i) => i.status_code === st || i.status.toUpperCase() === st
-      );
-    }
-
-    if (params?.search && params.search.trim()) {
-      const q = params.search.trim().toLowerCase();
-      items = items.filter(
-        (i) =>
-          i.transaction_id.toLowerCase().includes(q) ||
-          i.title.toLowerCase().includes(q) ||
-          i.purpose.toLowerCase().includes(q) ||
-          (i.receipt_number && i.receipt_number.toLowerCase().includes(q)) ||
-          String(i.amount).includes(q)
-      );
-    }
-
-    const totalPaid = items.reduce((acc, i) => acc + i.amount, 0);
-    const successful = items.filter((i) => i.status === 'Success').length;
-    const pending = items.filter((i) => i.status === 'Pending').length;
-    const failed = items.filter((i) => i.status === 'Failed').length;
-    const refunded = items.filter((i) => i.status === 'Refunded').length;
-    const tax80G = items
-      .filter((i) => i.status === 'Success' && i.related_info.tax_exemption_eligible)
-      .reduce((acc, i) => acc + i.amount, 0);
 
     return {
       summary: {
-        total_amount_paid: totalPaid,
-        total_transactions: items.length,
-        successful_count: successful,
-        pending_count: pending,
-        failed_count: failed,
-        refunded_count: refunded,
-        tax_exemption_total: tax80G,
+        total_amount_paid: 0,
+        total_transactions: 0,
+        successful_count: 0,
+        pending_count: 0,
+        failed_count: 0,
+        refunded_count: 0,
+        tax_exemption_total: 0,
       },
-      items,
+      items: [],
       meta: {
-        page: 1,
-        limit: 50,
-        total: items.length,
-        totalPages: 1,
+        page: params?.page || 1,
+        limit: params?.limit || 50,
+        total: 0,
+        totalPages: 0,
       },
     };
   },
@@ -274,13 +82,10 @@ export const transactionsService = {
       const payload = res?.data || res;
       if (payload && payload.id) return payload;
     } catch {
-      // Check mock fixtures
+      // Return null if not found
     }
 
-    const found = MOCK_FALLBACK_TRANSACTIONS.find(
-      (t) => t.id === id || t.transaction_id === id || t.payment_reference === id
-    );
-    return found || null;
+    return null;
   },
 
   /**
@@ -313,7 +118,7 @@ export const transactionsService = {
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(16);
     doc.setTextColor(6, 41, 77);
-    doc.text('HUMAN RIGHTS SANRAKSHAN JAN MANCH', W / 2, 26, { align: 'center' });
+    doc.text('Human Rights &  Social Justice Mission', W / 2, 26, { align: 'center' });
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8.5);
@@ -514,7 +319,7 @@ export const transactionsService = {
     doc.setFontSize(7.5);
     doc.setTextColor(100, 116, 139);
     doc.text('Authorized Finance Secretary', W - 30, 258, { align: 'right' });
-    doc.text('National Human Rights Sanrakshan Jan Manch', W - 30, 262, { align: 'right' });
+    doc.text('National Human Rights &  Social Justice Mission', W - 30, 262, { align: 'right' });
 
     // Save PDF
     const filename = `HRSJM_${receiptNo.replace(/\//g, '_')}.pdf`;

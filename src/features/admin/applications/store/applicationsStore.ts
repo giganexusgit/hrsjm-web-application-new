@@ -1,3 +1,4 @@
+import { useSyncExternalStore } from 'react';
 import type {
   MembershipApplicationItem,
   ApplicationStatsData,
@@ -8,6 +9,7 @@ import type {
 import { applicationsService } from '../services/applicationsService';
 
 const STORAGE_KEY = 'hrsjm_local_membership_applications';
+const STORAGE_KEY_VIEWED_APPS = 'hrsjm_admin_viewed_applications_v1';
 
 export function mapBackendToApplicationItem(backend: any): MembershipApplicationItem {
   const appData = backend.application_data || {};
@@ -481,12 +483,70 @@ export function mapAssistanceRequestToApplicationItem(item: any): MembershipAppl
 
 class ApplicationsStore {
   private applications: MembershipApplicationItem[] = [];
+  private viewedApplicationIds: Set<string> = new Set();
   private listeners: Set<() => void> = new Set();
   private version = 0;
 
   constructor() {
     this.applications = this.loadPersisted();
+    this.viewedApplicationIds = this.loadViewedApplications();
     this.sortInternal();
+  }
+
+  private loadViewedApplications(): Set<string> {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const raw = window.localStorage.getItem(STORAGE_KEY_VIEWED_APPS);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) {
+            return new Set(parsed);
+          }
+        }
+        // Baseline: mark existing applications as viewed so no fake badges appear on first load
+        const baseline = new Set(this.applications.map((a) => a.id));
+        window.localStorage.setItem(STORAGE_KEY_VIEWED_APPS, JSON.stringify(Array.from(baseline)));
+        return baseline;
+      }
+    } catch {
+      // ignore
+    }
+    return new Set(this.applications.map((a) => a.id));
+  }
+
+  public getUnviewedCount(): number {
+    let unviewed = 0;
+    for (const app of this.applications) {
+      if ((app.status === 'submitted' || app.status === 'under_review') && !this.viewedApplicationIds.has(app.id)) {
+        unviewed++;
+      }
+    }
+    return unviewed;
+  }
+
+  public markApplicationViewed(id: string): void {
+    if (!id) return;
+    const clean = id.trim();
+    const app = this.getApplicationById(clean);
+    const targetId = app ? app.id : clean;
+    if (!this.viewedApplicationIds.has(targetId)) {
+      this.viewedApplicationIds.add(targetId);
+      this.persistViewed();
+      this.notify();
+    }
+  }
+
+  private persistViewed(): void {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        window.localStorage.setItem(
+          STORAGE_KEY_VIEWED_APPS,
+          JSON.stringify(Array.from(this.viewedApplicationIds))
+        );
+      }
+    } catch {
+      // ignore
+    }
   }
 
   private sortInternal(): void {
@@ -771,4 +831,9 @@ class ApplicationsStore {
 }
 
 export const applicationsStore = new ApplicationsStore();
+
+export function useUnviewedApplicationsCount(): number {
+  useSyncExternalStore(applicationsStore.subscribe, applicationsStore.getSnapshot);
+  return applicationsStore.getUnviewedCount();
+}
 

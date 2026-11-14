@@ -46,8 +46,9 @@ export const AddSeekerModal: React.FC<AddSeekerModalProps> = ({
       setErrorMsg('Full Name is required.');
       return;
     }
-    if (!phone.trim()) {
-      setErrorMsg('Mobile number is required.');
+    const cleanedPhone = phone.replace(/\D/g, '');
+    if (cleanedPhone.length !== 10) {
+      setErrorMsg('Please enter a valid 10-digit mobile number.');
       return;
     }
     if (!requestedAmount || requestedAmount <= 0) {
@@ -289,10 +290,14 @@ export const AddSeekerModal: React.FC<AddSeekerModalProps> = ({
                   <label style={labelStyle}>Mobile Phone *</label>
                   <input
                     type="tel"
+                    inputMode="numeric"
+                    maxLength={10}
+                    minLength={10}
+                    pattern="[0-9]{10}"
                     required
-                    placeholder="+91 98765 43210"
+                    placeholder="e.g. 9876543210"
                     value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
+                    onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
                     style={inputStyle}
                   />
                 </div>

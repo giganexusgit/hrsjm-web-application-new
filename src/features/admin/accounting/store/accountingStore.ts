@@ -31,11 +31,11 @@ class AccountingStore {
   private journals: JournalEntryItem[] = INITIAL_JOURNAL_ENTRIES;
   private transactions: LedgerTransaction[] = INITIAL_LEDGER_TRANSACTIONS;
   private summary: LedgerSummary = {
-    opening_balance: 450000,
-    total_debit: 121500,
-    total_credit: 23200,
-    closing_balance: 548300,
-    net_change: 98300,
+    opening_balance: 0,
+    total_debit: 0,
+    total_credit: 0,
+    closing_balance: 0,
+    net_change: 0,
   };
   private isLoading = false;
   private error: string | null = null;

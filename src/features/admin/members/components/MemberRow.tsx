@@ -1,5 +1,5 @@
 import type React from 'react';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import {
   MoreVertical,
   Eye,
@@ -10,10 +10,13 @@ import {
   ShieldCheck,
   Calendar,
   Clock,
-  Package,
+  Hourglass,
+  AlertCircle,
+  Infinity as InfinityIcon,
 } from 'lucide-react';
 import type { Member } from '../types/members.types';
 import { MemberStatusBadge } from './MemberStatusBadge';
+import { getValidAvatarUrl } from '@/utils/avatar';
 
 interface MemberRowProps {
   member: Member;
@@ -24,27 +27,94 @@ interface MemberRowProps {
   onToggleStatus: (member: Member) => void;
 }
 
-// Validity calculation
-function getValidityDisplay(validTill: string) {
+// Days left calculation
+function getDaysLeftInfo(validTill: string) {
   if (!validTill || validTill.includes('Lifetime')) {
-    return { text: 'Lifetime Validity', daysLeft: null, tone: 'normal' };
+    return {
+      text: 'Lifetime',
+      days: null,
+      tone: 'lifetime' as const,
+      bg: '#F3F4F6',
+      border: '#E5E7EB',
+      color: '#4B5563',
+    };
   }
   try {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const target = new Date(validTill);
+    if (isNaN(target.getTime())) {
+      return {
+        text: '—',
+        days: null,
+        tone: 'unknown' as const,
+        bg: '#F3F4F6',
+        border: '#E5E7EB',
+        color: '#6B7280',
+      };
+    }
     target.setHours(0, 0, 0, 0);
     const diff = target.getTime() - today.getTime();
     const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+
     if (days < 0) {
-      return { text: `Expired ${Math.abs(days)}d ago`, daysLeft: days, tone: 'expired' };
+      const absDays = Math.abs(days);
+      return {
+        text: `Expired (${absDays}d ago)`,
+        days,
+        tone: 'expired' as const,
+        bg: '#FEF2F2',
+        border: '#FECACA',
+        color: '#DC2626',
+      };
+    }
+    if (days === 0) {
+      return {
+        text: 'Expires Today',
+        days: 0,
+        tone: 'warning' as const,
+        bg: '#FEF7E6',
+        border: '#FDE68A',
+        color: '#D97706',
+      };
+    }
+    if (days === 1) {
+      return {
+        text: '1 day left',
+        days: 1,
+        tone: 'warning' as const,
+        bg: '#FEF7E6',
+        border: '#FDE68A',
+        color: '#D97706',
+      };
     }
     if (days <= 30) {
-      return { text: `${days} days left`, daysLeft: days, tone: 'warning' };
+      return {
+        text: `${days} days left`,
+        days,
+        tone: 'warning' as const,
+        bg: '#FEF7E6',
+        border: '#FDE68A',
+        color: '#D97706',
+      };
     }
-    return { text: `${days} days left`, daysLeft: days, tone: 'normal' };
+    return {
+      text: `${days} days left`,
+      days,
+      tone: 'normal' as const,
+      bg: '#E8F8EE',
+      border: '#B7EB8F',
+      color: '#00A859',
+    };
   } catch {
-    return { text: validTill, daysLeft: null, tone: 'normal' };
+    return {
+      text: validTill,
+      days: null,
+      tone: 'unknown' as const,
+      bg: '#F3F4F6',
+      border: '#E5E7EB',
+      color: '#6B7280',
+    };
   }
 }
 
@@ -58,6 +128,13 @@ export const MemberRow: React.FC<MemberRowProps> = ({
 }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const [imgError, setImgError] = useState(false);
+  const photoUrl = member.photo || (member as any).avatarUrl;
+  const validPhotoUrl = useMemo(() => getValidAvatarUrl(photoUrl), [photoUrl]);
+
+  useEffect(() => {
+    setImgError(false);
+  }, [photoUrl]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -82,7 +159,7 @@ export const MemberRow: React.FC<MemberRowProps> = ({
     return (name[0] || 'M').toUpperCase();
   };
 
-  const validityInfo = getValidityDisplay(member.validTill);
+  const daysLeftInfo = getDaysLeftInfo(member.validTill);
 
   const formattedJoinedDate = member.joinedDate
     ? new Date(member.joinedDate).toLocaleDateString('en-GB', {
@@ -118,24 +195,42 @@ export const MemberRow: React.FC<MemberRowProps> = ({
       <td style={{ padding: '14px 16px', verticalAlign: 'middle' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           {/* Avatar or Initials Circle */}
-          <div
-            style={{
-              width: '42px',
-              height: '42px',
-              borderRadius: '50%',
-              backgroundColor: '#011F39',
-              color: '#FAD465',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '15px',
-              fontWeight: 700,
-              flexShrink: 0,
-              border: '2px solid #E5E7EB',
-            }}
-          >
-            {getInitials(member.name)}
-          </div>
+          {validPhotoUrl && !imgError ? (
+            <img
+              src={validPhotoUrl}
+              alt=""
+              onError={() => setImgError(true)}
+              style={{
+                width: '42px',
+                height: '42px',
+                borderRadius: '50%',
+                objectFit: 'cover',
+                flexShrink: 0,
+                border: '2px solid #FAD465',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.06)',
+                backgroundColor: '#F1F5F9',
+              }}
+            />
+          ) : (
+            <div
+              style={{
+                width: '42px',
+                height: '42px',
+                borderRadius: '50%',
+                backgroundColor: '#011F39',
+                color: '#FAD465',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '15px',
+                fontWeight: 700,
+                flexShrink: 0,
+                border: '2px solid #E5E7EB',
+              }}
+            >
+              {getInitials(member.name)}
+            </div>
+          )}
 
           <div>
             <div
@@ -203,68 +298,43 @@ export const MemberRow: React.FC<MemberRowProps> = ({
             alignItems: 'center',
             gap: '5px',
             fontSize: '12px',
-            fontWeight: validityInfo.tone === 'warning' || validityInfo.tone === 'expired' ? 600 : 500,
-            color:
-              validityInfo.tone === 'warning'
-                ? '#D97706'
-                : validityInfo.tone === 'expired'
-                ? '#DC2626'
-                : '#6B7280',
+            color: '#4B5563',
             marginTop: '3px',
           }}
         >
-          <Clock size={13} />
+          <Clock size={13} color="#9CA3AF" />
           <span>Valid till: {formattedValidTill}</span>
-          <span
-            style={{
-              fontSize: '11px',
-              padding: '1px 5px',
-              borderRadius: '4px',
-              backgroundColor:
-                validityInfo.tone === 'warning'
-                  ? '#FEF3C7'
-                  : validityInfo.tone === 'expired'
-                  ? '#FEE2E2'
-                  : '#F3F4F6',
-            }}
-          >
-            {validityInfo.text}
-          </span>
         </div>
       </td>
 
-      {/* Kit Fulfillment Status */}
+      {/* Days Left */}
       <td style={{ padding: '14px 16px', verticalAlign: 'middle' }}>
-        {member.kitFulfillment ? (
-          <span
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '4px',
-              padding: '3px 8px',
-              borderRadius: '6px',
-              fontSize: '11.5px',
-              fontWeight: 500,
-              backgroundColor:
-                member.kitFulfillment.status === 'DELIVERED'
-                  ? '#E8F8EE'
-                  : member.kitFulfillment.status === 'DISPATCHED'
-                  ? '#EFF6FF'
-                  : '#FFFBEB',
-              color:
-                member.kitFulfillment.status === 'DELIVERED'
-                  ? '#00A859'
-                  : member.kitFulfillment.status === 'DISPATCHED'
-                  ? '#2563EB'
-                  : '#B45309',
-            }}
-          >
-            <Package size={12} />
-            <span>Kit: {member.kitFulfillment.status}</span>
-          </span>
-        ) : (
-          <span style={{ fontSize: '12px', color: '#9CA3AF' }}>—</span>
-        )}
+        <span
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '5px',
+            padding: '3px 8px',
+            borderRadius: '6px',
+            fontSize: '12px',
+            fontWeight: 600,
+            backgroundColor: daysLeftInfo.bg,
+            color: daysLeftInfo.color,
+            border: `1px solid ${daysLeftInfo.border}`,
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {daysLeftInfo.tone === 'lifetime' ? (
+            <InfinityIcon size={13} />
+          ) : daysLeftInfo.tone === 'expired' ? (
+            <AlertCircle size={12} />
+          ) : daysLeftInfo.tone === 'warning' ? (
+            <Hourglass size={12} />
+          ) : (
+            <Clock size={12} />
+          )}
+          <span>{daysLeftInfo.text}</span>
+        </span>
       </td>
 
       {/* Status Badge */}

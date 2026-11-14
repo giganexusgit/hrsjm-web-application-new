@@ -120,11 +120,11 @@ export const AllUsersDirectoryPage: React.FC = () => {
   const handleExportCsv = () => {
     const headers = [
       'User ID',
-      'Member ID',
+      'ID',
       'Full Name',
       'Email',
       'Phone',
-      'Classification',
+      'Role',
       'Status',
       'Joined Date',
       'City/Address',
@@ -277,15 +277,15 @@ export const AllUsersDirectoryPage: React.FC = () => {
           </div>
         ) : (
           <>
-            <div style={{ overflowX: 'auto' }}>
+            <div style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
               <table style={styles.table}>
                 <thead>
                   <tr style={styles.tableHeadRow}>
                     <th style={styles.th}>User & Contact</th>
-                    <th style={styles.th}>Classification</th>
+                    <th style={styles.th}>ID</th>
+                    <th style={styles.th}>Role</th>
                     <th style={styles.th}>Status</th>
                     <th style={styles.th}>Joined Date</th>
-                    <th style={styles.th}>Activity</th>
                     <th style={{ ...styles.th, textAlign: 'right' }}>Actions</th>
                   </tr>
                 </thead>
@@ -401,8 +401,11 @@ export const AllUsersDirectoryPage: React.FC = () => {
 
 const styles: Record<string, React.CSSProperties> = {
   container: {
+    width: '100%',
     maxWidth: '1440px',
     margin: '0 auto',
+    minWidth: 0,
+    boxSizing: 'border-box',
   },
   header: {
     display: 'flex',
@@ -500,6 +503,9 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '20px',
     marginBottom: '20px',
     boxShadow: '0 2px 6px rgba(1, 31, 57, 0.04)',
+    width: '100%',
+    minWidth: 0,
+    boxSizing: 'border-box',
   },
   emptyCard: {
     padding: '60px 20px',
@@ -535,9 +541,13 @@ const styles: Record<string, React.CSSProperties> = {
     boxShadow: '0 2px 6px rgba(1, 31, 57, 0.04)',
     overflow: 'hidden',
     marginBottom: '24px',
+    width: '100%',
+    minWidth: 0,
+    boxSizing: 'border-box',
   },
   table: {
     width: '100%',
+    minWidth: '880px',
     borderCollapse: 'collapse',
     textAlign: 'left',
   },
@@ -552,6 +562,7 @@ const styles: Record<string, React.CSSProperties> = {
     color: '#011F39',
     textTransform: 'uppercase',
     letterSpacing: '0.05em',
+    whiteSpace: 'nowrap',
   },
   paginationRow: {
     display: 'flex',

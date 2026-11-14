@@ -5,11 +5,8 @@ import { apiClient } from '@/api/client';
 import {
   FileText,
   Eye,
-  CheckCircle,
-  Clock,
   Download,
   ShieldCheck,
-  CheckCheck,
   FileCheck2,
   Lock,
   RefreshCw,
@@ -33,7 +30,7 @@ export const ApplicationDocumentsTab: React.FC<ApplicationDocumentsTabProps> = (
   const defaultDocs = useMemo<ApplicationDocument[]>(() => [
     {
       id: `doc-${application.id}-idproof`,
-      title: 'Identity Proof (Aadhaar / Voter ID)',
+      title: 'Aadhaar Card (Identity Proof)',
       fileName: `aadhaar_card_${docAppId}.pdf`,
       fileSize: '1.8 MB',
       uploadDate: application.submittedAt || 'Recently',
@@ -202,32 +199,15 @@ export const ApplicationDocumentsTab: React.FC<ApplicationDocumentsTabProps> = (
     fetchLiveDocuments();
   }, [application.id, application.applicationId]);
 
-  const handleToggleVerify = (docId: string) => {
-    setDocList(prev => {
-      const updated = prev.map(d => (d.id === docId ? { ...d, verified: !d.verified } : d));
-      saveDocsToCache(updated);
-      return updated;
-    });
-  };
-
-  const handleVerifyAll = () => {
-    setDocList(prev => {
-      const updated = prev.map(d => ({ ...d, verified: true }));
-      saveDocsToCache(updated);
-      return updated;
-    });
-  };
-
-  const verifiedCount = docList.filter(d => d.verified).length;
-
   return (
     <div
       style={{
         backgroundColor: '#FFFFFF',
         borderRadius: '20px',
         border: '1px solid #E2E8F0',
-        padding: '28px',
+        padding: '24px 28px',
         boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
+        scrollMarginTop: '130px',
       }}
     >
       {/* Header Bar */}
@@ -278,12 +258,12 @@ export const ApplicationDocumentsTab: React.FC<ApplicationDocumentsTabProps> = (
                   fontWeight: 800,
                   padding: '2px 8px',
                   borderRadius: '12px',
-                  backgroundColor: '#ECFDF5',
-                  color: '#047857',
-                  border: '1px solid #A7F3D0',
+                  backgroundColor: '#EFF6FF',
+                  color: '#1D4ED8',
+                  border: '1px solid #BFDBFE',
                 }}
               >
-                {verifiedCount} of {docList.length} Verified
+                {docList.length} Attached {docList.length === 1 ? 'Document' : 'Documents'}
               </span>
               {isLiveServer && (
                 <span
@@ -311,7 +291,7 @@ export const ApplicationDocumentsTab: React.FC<ApplicationDocumentsTabProps> = (
           </div>
         </div>
 
-        {/* Action Buttons: Refresh & Verify All */}
+        {/* Action Buttons: Refresh Sync */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <button
             type="button"
@@ -336,42 +316,25 @@ export const ApplicationDocumentsTab: React.FC<ApplicationDocumentsTabProps> = (
             <RefreshCw size={14} className={isLoading ? 'animate-spin text-blue-600' : ''} />
             <span>{isLoading ? 'Syncing...' : 'Sync Server'}</span>
           </button>
-
-          <button
-            type="button"
-            onClick={handleVerifyAll}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '8px 16px',
-              borderRadius: '10px',
-              backgroundColor: '#06294D',
-              color: '#FAD465',
-              fontSize: '13px',
-              fontWeight: 700,
-              border: 'none',
-              cursor: 'pointer',
-              boxShadow: '0 2px 6px rgba(6, 41, 77, 0.2)',
-            }}
-            className="hover:bg-[#011F39] transition"
-          >
-            <CheckCheck size={16} />
-            <span>Verify All Documents</span>
-          </button>
         </div>
       </div>
 
-      {/* Grid of Documents */}
+      {/* Grid of Documents (Balanced 2-Column Responsive Grid) */}
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(380px, 1fr))',
           gap: '16px',
         }}
       >
         {docList.map((doc, idx) => {
           const isPhoto = doc.fileName?.match(/\.(jpg|jpeg|png)$/i);
+          const rawTitle = doc.title || 'Verification Document';
+          const displayTitle =
+            rawTitle === 'Identity Proof' || rawTitle === 'Identity Proof (Aadhaar / Voter ID)'
+              ? 'Aadhaar Card (Identity Proof)'
+              : rawTitle;
+
           return (
             <div
               key={doc.id || idx}
@@ -389,7 +352,7 @@ export const ApplicationDocumentsTab: React.FC<ApplicationDocumentsTabProps> = (
               className="hover:shadow-md transition"
             >
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0, flex: 1 }}>
                   <div
                     style={{
                       width: '46px',
@@ -408,21 +371,19 @@ export const ApplicationDocumentsTab: React.FC<ApplicationDocumentsTabProps> = (
                     {isPhoto ? <FileCheck2 size={24} /> : <FileText size={24} />}
                   </div>
 
-                  <div style={{ minWidth: 0 }}>
+                  <div style={{ minWidth: 0, flex: 1 }}>
                     <div
                       style={{
                         fontSize: '14px',
                         fontWeight: 800,
                         color: '#06294D',
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
+                        lineHeight: 1.35,
                       }}
-                      title={doc.title}
+                      title={displayTitle}
                     >
-                      {doc.title}
+                      {displayTitle}
                     </div>
-                    <div style={{ fontSize: '12px', color: '#64748B', marginTop: '2px' }}>
+                    <div style={{ fontSize: '12px', color: '#64748B', marginTop: '2px', wordBreak: 'break-word' }}>
                       {doc.fileName} • {doc.fileSize || '1.5 MB'}
                     </div>
                     <div style={{ fontSize: '11px', color: '#94A3B8', marginTop: '2px' }}>
@@ -430,30 +391,6 @@ export const ApplicationDocumentsTab: React.FC<ApplicationDocumentsTabProps> = (
                     </div>
                   </div>
                 </div>
-
-                {/* Status badge */}
-                <button
-                  type="button"
-                  onClick={() => handleToggleVerify(doc.id)}
-                  title="Click to toggle verification status"
-                  style={{
-                    fontSize: '11px',
-                    fontWeight: 800,
-                    padding: '4px 10px',
-                    borderRadius: '20px',
-                    backgroundColor: doc.verified ? '#ECFDF5' : '#FFFBEB',
-                    color: doc.verified ? '#047857' : '#B45309',
-                    border: doc.verified ? '1px solid #A7F3D0' : '1px solid #FDE68A',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    cursor: 'pointer',
-                    flexShrink: 0,
-                  }}
-                >
-                  {doc.verified ? <CheckCircle size={13} /> : <Clock size={13} />}
-                  <span>{doc.verified ? 'Verified' : 'Pending'}</span>
-                </button>
               </div>
 
               {/* Action Buttons */}

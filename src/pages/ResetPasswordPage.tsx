@@ -17,7 +17,6 @@ import {
 } from 'lucide-react';
 import { authService } from '../features/auth/services/authService';
 import { ApiError } from '../services/apiClient';
-import hrsjmLogo from '../assets/hrsjm_logo.png';
 
 /**
  * Extracts reset token from search params, hash fragment, or window location.
@@ -209,14 +208,9 @@ export const ResetPasswordPage: React.FC = () => {
       <header className="bg-[#011F39] border-b border-[#06294D] text-white shadow-md relative z-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3 group">
-            <img
-              src={hrsjmLogo}
-              alt="HRSJM Seal"
-              className="w-10 h-10 object-contain drop-shadow-md transition-transform group-hover:scale-105"
-            />
             <div>
               <div className="font-serif font-bold text-sm sm:text-base tracking-wide text-white leading-tight">
-                HUMAN RIGHTS SANRAKSHAN JAN MANCH
+                Human Rights &  Social Justice Mission
               </div>
               <div className="text-[10.5px] text-[#FAD465] font-medium tracking-wider">
                 मानव अधिकार एवं सामाजिक न्याय संरक्षण ट्रस्ट • National Portal
@@ -403,88 +397,79 @@ export const ResetPasswordPage: React.FC = () => {
                         <div className="flex items-center justify-between text-[11px]">
                           <span className="text-slate-500 font-medium">Strength:</span>
                           <span
-                            className={`font-bold ${
-                              passwordStrengthScore <= 1
+                            className={`font-bold ${passwordStrengthScore <= 1
                                 ? 'text-rose-600'
                                 : passwordStrengthScore <= 2
-                                ? 'text-amber-600'
-                                : passwordStrengthScore === 3
-                                ? 'text-blue-600'
-                                : 'text-emerald-600'
-                            }`}
+                                  ? 'text-amber-600'
+                                  : passwordStrengthScore === 3
+                                    ? 'text-blue-600'
+                                    : 'text-emerald-600'
+                              }`}
                           >
                             {passwordStrengthScore <= 1
                               ? 'Weak'
                               : passwordStrengthScore <= 2
-                              ? 'Fair'
-                              : passwordStrengthScore === 3
-                              ? 'Good'
-                              : 'Strong'}
+                                ? 'Fair'
+                                : passwordStrengthScore === 3
+                                  ? 'Good'
+                                  : 'Strong'}
                           </span>
                         </div>
                         <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden flex gap-1">
                           <div
-                            className={`h-full flex-1 rounded-full transition-all duration-300 ${
-                              passwordStrengthScore >= 1
+                            className={`h-full flex-1 rounded-full transition-all duration-300 ${passwordStrengthScore >= 1
                                 ? passwordStrengthScore === 1
                                   ? 'bg-rose-500'
                                   : passwordStrengthScore === 2
-                                  ? 'bg-amber-500'
-                                  : 'bg-emerald-500'
+                                    ? 'bg-amber-500'
+                                    : 'bg-emerald-500'
                                 : 'bg-slate-200'
-                            }`}
+                              }`}
                           />
                           <div
-                            className={`h-full flex-1 rounded-full transition-all duration-300 ${
-                              passwordStrengthScore >= 2
+                            className={`h-full flex-1 rounded-full transition-all duration-300 ${passwordStrengthScore >= 2
                                 ? passwordStrengthScore === 2
                                   ? 'bg-amber-500'
                                   : 'bg-emerald-500'
                                 : 'bg-slate-200'
-                            }`}
+                              }`}
                           />
                           <div
-                            className={`h-full flex-1 rounded-full transition-all duration-300 ${
-                              passwordStrengthScore >= 3 ? 'bg-emerald-500' : 'bg-slate-200'
-                            }`}
+                            className={`h-full flex-1 rounded-full transition-all duration-300 ${passwordStrengthScore >= 3 ? 'bg-emerald-500' : 'bg-slate-200'
+                              }`}
                           />
                           <div
-                            className={`h-full flex-1 rounded-full transition-all duration-300 ${
-                              passwordStrengthScore >= 4 ? 'bg-emerald-600' : 'bg-slate-200'
-                            }`}
+                            className={`h-full flex-1 rounded-full transition-all duration-300 ${passwordStrengthScore >= 4 ? 'bg-emerald-600' : 'bg-slate-200'
+                              }`}
                           />
                         </div>
 
                         {/* Rules Checklist */}
                         <div className="pt-1 grid grid-cols-2 gap-x-2 gap-y-1 text-[10.5px]">
                           <div
-                            className={`flex items-center gap-1 ${
-                              passwordChecks.minLength ? 'text-emerald-700' : 'text-slate-400'
-                            }`}
+                            className={`flex items-center gap-1 ${passwordChecks.minLength ? 'text-emerald-700' : 'text-slate-400'
+                              }`}
                           >
                             <Check size={12} className={passwordChecks.minLength ? 'opacity-100' : 'opacity-40'} />
                             <span>8+ characters</span>
                           </div>
                           <div
-                            className={`flex items-center gap-1 ${
-                              passwordChecks.hasUpper ? 'text-emerald-700' : 'text-slate-400'
-                            }`}
+                            className={`flex items-center gap-1 ${passwordChecks.hasUpper ? 'text-emerald-700' : 'text-slate-400'
+                              }`}
                           >
                             <Check size={12} className={passwordChecks.hasUpper ? 'opacity-100' : 'opacity-40'} />
                             <span>Uppercase letter</span>
                           </div>
                           <div
-                            className={`flex items-center gap-1 ${
-                              passwordChecks.hasLower ? 'text-emerald-700' : 'text-slate-400'
-                            }`}
+                            className={`flex items-center gap-1 ${passwordChecks.hasLower ? 'text-emerald-700' : 'text-slate-400'
+                              }`}
                           >
                             <Check size={12} className={passwordChecks.hasLower ? 'opacity-100' : 'opacity-40'} />
                             <span>Lowercase letter</span>
                           </div>
                           <div
-                            className={`flex items-center gap-1 ${
-                              passwordChecks.hasDigitOrSpecial ? 'text-emerald-700' : 'text-slate-400'
-                            }`}
+                            className={`flex items-center gap-1 ${passwordChecks.hasDigitOrSpecial ? 'text-emerald-700' : 'text-slate-400'
+                              }`}
                           >
                             <Check
                               size={12}
@@ -526,9 +511,8 @@ export const ResetPasswordPage: React.FC = () => {
 
                     {confirmPassword && (
                       <p
-                        className={`text-[11px] mt-1.5 font-medium flex items-center gap-1 ${
-                          passwordsMatch ? 'text-emerald-600' : 'text-rose-600'
-                        }`}
+                        className={`text-[11px] mt-1.5 font-medium flex items-center gap-1 ${passwordsMatch ? 'text-emerald-600' : 'text-rose-600'
+                          }`}
                       >
                         {passwordsMatch ? (
                           <>
@@ -584,7 +568,7 @@ export const ResetPasswordPage: React.FC = () => {
       {/* Footer */}
       <footer className="py-4 text-center text-xs text-slate-500 border-t border-slate-200/60 bg-white/50">
         <p className="flex items-center justify-center gap-2">
-          <span>Human Rights Sanrakshan Jan Manch (Regd. HR/0092/2019)</span>
+          <span>Human Rights &  Social Justice Mission (Regd. HR/0092/2019)</span>
           <span>•</span>
           <span className="inline-flex items-center gap-1 text-[#011F39] font-medium">
             <Sparkles size={12} className="text-[#FAD465]" />

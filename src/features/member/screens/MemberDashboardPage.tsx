@@ -42,6 +42,8 @@ export const MemberDashboardPage: React.FC = () => {
     '15 Sep 2026'
   );
 
+  console.log({ member })
+
   return (
     <div className="space-y-6 font-sans pb-16">
       {/* ════════════════════════════════════════════════════════════
@@ -82,7 +84,7 @@ export const MemberDashboardPage: React.FC = () => {
       <main className="w-full space-y-5 sm:space-y-6">
         {/* Active Member Status Card */}
         <div
-          onClick={() => navigate('/member/id-card')}
+          onClick={() => navigate('/member/details')}
           className="bg-white rounded-2xl sm:rounded-3xl border border-[#DCE4EC] p-3.5 sm:p-4 shadow-sm flex items-center justify-between gap-3 cursor-pointer hover:border-[#FAD465] hover:shadow-md transition"
         >
           <div className="flex items-center gap-3 min-w-0">
@@ -103,7 +105,7 @@ export const MemberDashboardPage: React.FC = () => {
             type="button"
             onClick={(e) => {
               e.stopPropagation();
-              navigate('/member/id-card');
+              navigate('/member/details');
             }}
             className="flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-xl border border-[#DCE4EC] bg-[#EDF2F7] hover:bg-slate-200 text-[#011F39] text-xs sm:text-sm font-bold transition shrink-0 cursor-pointer"
           >

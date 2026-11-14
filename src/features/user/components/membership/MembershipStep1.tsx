@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { User, Phone, Mail, Calendar, Shield, Camera, Upload, AlertCircle, Lock, Eye, EyeOff } from 'lucide-react';
+import { User, Phone, Mail, Shield, Camera, Upload, AlertCircle, Lock, Eye, EyeOff } from 'lucide-react';
+import { CalendarDatePicker } from '../../../../components/common/CalendarDatePicker';
 
 export interface Step1FormData {
   fullName: string;
@@ -182,20 +183,24 @@ export const MembershipStep1: React.FC<MembershipStep1Props> = ({
 
         {/* Date of Birth */}
         <div>
-          <label className="block text-[11px] font-bold text-slate-700 mb-1">
-            Date of Birth (Minimum 18 Years) *
-          </label>
-          <div className="relative">
-            <Calendar className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
-            <input
-              type="date"
-              required
-              value={formData.dob}
-              onChange={e => setFormData({ ...formData, dob: e.target.value })}
-              className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold focus:outline-hidden focus:ring-2 focus:ring-[#06294D]"
-            />
-          </div>
-          {errors.dob && <p className="text-[11px] text-rose-600 mt-1">{errors.dob}</p>}
+          <CalendarDatePicker
+            label="Date of Birth"
+            required
+            minAge={18}
+            value={formData.dob}
+            error={errors.dob}
+            placeholder="dd-mm-yyyy"
+            onChange={(selectedVal) => {
+              setFormData((prev) => ({ ...prev, dob: selectedVal }));
+              if (errors.dob) {
+                setErrors((prev) => {
+                  const updated = { ...prev };
+                  delete updated.dob;
+                  return updated;
+                });
+              }
+            }}
+          />
         </div>
 
         {/* Gender */}

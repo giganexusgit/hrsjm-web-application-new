@@ -8,7 +8,6 @@ import type {
   DateRange,
 } from '../types/donations.types';
 import {
-  INITIAL_DONATIONS,
   computeDonationStats,
   computeTabCounts,
 } from '../data/donationsFixtures';
@@ -31,7 +30,7 @@ export interface DonationsStoreState {
 type Listener = () => void;
 
 class DonationsStore {
-  private donations: Donation[] = INITIAL_DONATIONS;
+  private donations: Donation[] = [];
   private activeTab: DonationCategory = 'ALL';
   private search = '';
   private status: DonationStatus | null = null;
@@ -46,6 +45,7 @@ class DonationsStore {
 
   constructor() {
     this.cachedSnapshot = this.buildSnapshot();
+    this.fetchDonations().catch(() => {});
   }
 
   private buildSnapshot(): DonationsStoreState {

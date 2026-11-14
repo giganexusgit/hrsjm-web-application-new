@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { RefreshCw, Printer, ShieldCheck, Phone, MapPin, CheckCircle2 } from 'lucide-react';
+import { RefreshCw, Printer, Phone, MapPin } from 'lucide-react';
 import type { AdminProfile } from '../types/profile.types';
 import { generateQrMatrix } from '../utils/qrGenerator';
 import { profileService } from '../services/profileService';
-import { HrsjmLogo } from '@/components/common/HrsjmLogo';
+import idCardBg from '@/assets/id_card_bg.png';
+import hrsjmLogo from '@/assets/hrsjm_logo.png';
 
 interface IdCardSvgPreviewProps {
   profile: AdminProfile;
@@ -15,7 +16,12 @@ export const IdCardSvgPreview: React.FC<IdCardSvgPreviewProps> = ({
   interactive = true,
 }) => {
   const [isFlipped, setIsFlipped] = useState(false);
-  const qrMatrix = React.useMemo(() => generateQrMatrix(profile.memberId || 'HRSJM-00001', 25), [profile.memberId]);
+  const effectiveId = profile.memberId || 'HRSJM-00013';
+  const qrMatrix = React.useMemo(() => generateQrMatrix(effectiveId, 25), [effectiveId]);
+
+  const rawStatus = profile.accountStatus || 'Active';
+  const statusLabel = rawStatus.charAt(0).toUpperCase() + rawStatus.slice(1).toLowerCase();
+  const isActive = statusLabel.toLowerCase() === 'active';
 
   const handlePrint = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -23,246 +29,297 @@ export const IdCardSvgPreview: React.FC<IdCardSvgPreviewProps> = ({
   };
 
   return (
-    <div style={styles.outerContainer}>
+    <div className="flex flex-col items-center w-full min-w-0">
       {/* Action Bar */}
       {interactive && (
-        <div style={styles.actionBar}>
-          <div style={styles.cardSideBadge}>
-            <span style={styles.badgeIndicator} />
-            {isFlipped ? 'Back Side: Terms & Seal' : 'Front Side: Identification'}
+        <div className="flex items-center justify-between flex-wrap gap-2.5 w-full max-w-[440px] mb-4">
+          <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#06294D] bg-[#EEF2F6] px-2.5 py-1 rounded-full">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
+            <span>{isFlipped ? 'Back Side: Terms & Seal' : 'Front Side: Identification'}</span>
           </div>
 
-          <div style={styles.actionsGroup}>
+          <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={() => setIsFlipped((prev) => !prev)}
-              style={styles.actionBtn}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold bg-white border border-slate-300 text-[#06294D] hover:bg-slate-50 transition-colors cursor-pointer"
               title="Flip Card"
             >
-              <RefreshCw size={15} color="#06294D" />
+              <RefreshCw size={14} className="text-[#06294D]" />
               <span>Flip Card ({isFlipped ? 'Show Front' : 'Show Back'})</span>
             </button>
 
             <button
               type="button"
               onClick={handlePrint}
-              style={{ ...styles.actionBtn, backgroundColor: '#06294D', color: '#FFFFFF', borderColor: '#06294D' }}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold bg-[#06294D] border border-[#06294D] text-white hover:bg-[#083563] transition-colors cursor-pointer"
               title="Print or Save PDF"
             >
-              <Printer size={15} color="#FAD465" />
+              <Printer size={14} className="text-[#FAD465]" />
               <span>Print / Download PDF</span>
             </button>
           </div>
         </div>
       )}
 
-      {/* Card 3D Flip Perspective Container */}
+      {/* Landscape 3D Flip Perspective Container (1:1 Reference ID Card Ratio) */}
       <div
-        style={{
-          ...styles.cardPerspective,
-          cursor: interactive ? 'pointer' : 'default',
-        }}
         onClick={() => interactive && setIsFlipped((prev) => !prev)}
         title={interactive ? 'Click to flip card' : undefined}
+        className={`relative select-none transition-all duration-300 ${
+          interactive ? 'cursor-pointer hover:scale-[1.01]' : ''
+        }`}
+        style={{
+          width: '100%',
+          maxWidth: '440px',
+          aspectRatio: '85.6 / 54',
+          perspective: '1200px',
+        }}
       >
         <div
+          className="w-full h-full relative transition-transform duration-500"
           style={{
-            ...styles.cardFlipper,
+            transformStyle: 'preserve-3d',
             transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
           }}
         >
-          {/* ════════════════ FRONT SIDE ════════════════ */}
-          <div style={{ ...styles.cardFace, ...styles.cardFront }}>
-            {/* Top Navy Header Banner */}
-            <div style={styles.frontHeader}>
-              <div style={styles.headerBrandRow}>
-                <HrsjmLogo size="sm" variant="light" showWordmark={false} />
-                <div style={styles.brandTitles}>
-                  <div style={styles.trustNameEn}>HUMAN RIGHTS SANRAKSHAN JAN MANCH</div>
-                  <div style={styles.trustNameHi}>मानव अधिकार · सामाजिक न्याय संरक्षण ट्रस्ट</div>
-                  <div style={styles.trustRegd}>Regd No. HR/0092/2019 · Central Secretariat</div>
+          {/* ════════════════ FRONT SIDE (Reference Design) ════════════════ */}
+          <div
+            className="absolute inset-0 rounded-2xl overflow-hidden shadow-2xl border border-[#CAA048]/45 flex flex-col justify-between"
+            style={{
+              backgroundColor: '#031735',
+              backgroundImage: `url(${idCardBg})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              backfaceVisibility: 'hidden',
+              WebkitBackfaceVisibility: 'hidden',
+            }}
+          >
+            {/* 1. Header Cream Banner with Gold Curved Border */}
+            <div
+              className="absolute top-0 left-0 bg-[#FAF5EA] border-b-[1.5px] border-r-[1.5px] border-[#CAA048] flex items-center px-3.5 sm:px-4 z-10 shadow-xs"
+              style={{
+                width: '71%',
+                height: '33%',
+                borderBottomRightRadius: '24px',
+              }}
+            >
+              <div className="flex items-center gap-2.5 sm:gap-3 w-full">
+                {/* Official Seal Logo */}
+                <div className="w-9 h-9 sm:w-11 sm:h-11 shrink-0 flex items-center justify-center">
+                  <img
+                    src={hrsjmLogo}
+                    alt="HRSJM Seal"
+                    className="w-full h-full object-contain drop-shadow-xs"
+                  />
                 </div>
-              </div>
 
-              {/* Status Badge */}
-              <div style={styles.frontStatusPill}>
-                <CheckCircle2 size={11} color="#10B981" />
-                <span>{profile.accountStatus.toUpperCase()}</span>
+                {/* Identity Typography */}
+                <div className="flex flex-col justify-center min-w-0">
+                  <div className="font-serif font-black text-[#082046] text-sm sm:text-[16px] tracking-wide leading-none">
+                    HRSJM
+                  </div>
+                  <div className="font-extrabold text-[#082046] text-[6.5px] sm:text-[8px] uppercase tracking-wider leading-tight mt-0.5 whitespace-nowrap">
+                    HUMAN RIGHTS &amp; SOCIAL JUSTICE MISSION
+                  </div>
+                  <div className="font-bold text-[#082046] text-[8px] sm:text-[9.5px] leading-tight mt-0.5 flex items-center gap-1">
+                    <span>मानव अधिकार</span>
+                    <span className="text-[#CAA048] font-black">•</span>
+                    <span>सामाजिक न्याय</span>
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* Gold Ribbon Divider */}
-            <div style={styles.goldDivider} />
+            {/* 2. Status Pill (Top Right over Navy Area) */}
+            <div className="absolute top-3.5 right-3.5 z-10">
+              <span
+                className={`inline-flex items-center justify-center px-3.5 py-0.5 rounded-full text-white text-[9.5px] sm:text-[10.5px] font-bold tracking-wide shadow-xs ${
+                  isActive ? 'bg-[#1E6539]' : 'bg-amber-600'
+                }`}
+              >
+                {statusLabel}
+              </span>
+            </div>
 
-            {/* Front Card Body */}
-            <div style={styles.frontBody}>
-              {/* Photo & Role Section */}
-              <div style={styles.topProfileSection}>
-                <div style={styles.photoContainer}>
-                  {profile.avatar ? (
-                    <img
-                      src={profile.avatar}
-                      alt={profile.fullName}
-                      style={styles.photoImg}
-                    />
-                  ) : (
-                    <div style={styles.photoFallback}>
-                      <span style={styles.fallbackInitials}>
-                        {(profile.fullName || 'AD').slice(0, 2).toUpperCase()}
-                      </span>
-                    </div>
-                  )}
-                  <div style={styles.photoGoldBorder} />
+            {/* 3. Golden Swoosh Accent Line (Bottom Right Corner) */}
+            <svg
+              className="absolute right-0 bottom-0 pointer-events-none z-10"
+              width="130"
+              height="80"
+              viewBox="0 0 120 75"
+              fill="none"
+            >
+              <path
+                d="M 5 75 Q 65 62 120 18"
+                stroke="#CAA048"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                opacity="0.9"
+              />
+            </svg>
+
+            {/* 4. Card Body: Officer Info & Scannable QR Code */}
+            <div className="absolute bottom-0 left-0 right-0 h-[67%] px-4 sm:px-5 pb-3 sm:pb-3.5 flex items-center justify-between gap-3 z-10">
+              {/* Left Column: Full Name, Role/Designation, Key-Value Rows */}
+              <div className="flex-1 min-w-0 pr-1 flex flex-col justify-center">
+                <h3 className="text-white font-extrabold text-[15px] sm:text-[18px] tracking-tight leading-tight truncate">
+                  {profile.fullName}
+                </h3>
+                <div className="text-[#E5B842] font-bold text-[10px] sm:text-[11.5px] tracking-wide mt-0.5 mb-2 truncate">
+                  {profile.designation || profile.role}
                 </div>
 
-                <div style={styles.profileHeading}>
-                  <div style={styles.personName}>{profile.fullName}</div>
-                  <div style={styles.personRole}>{profile.role}</div>
-                  <div style={styles.personDesignation}>
-                    {profile.designation || 'National Executive Committee'}
-                  </div>
-                </div>
-              </div>
-
-              {/* Metadata Grid */}
-              <div style={styles.detailsGrid}>
-                <div style={styles.gridCol}>
-                  <div style={styles.gridItem}>
-                    <span style={styles.metaLabel}>Member ID</span>
-                    <span style={{ ...styles.metaVal, color: '#FAD465', fontWeight: 700 }}>
-                      {profile.memberId}
+                {/* Aligned Info Rows with Colons */}
+                <div className="space-y-0.5 text-[9px] sm:text-[10px] text-white leading-tight">
+                  <div className="flex items-center">
+                    <span className="text-white/85 font-normal w-[60px] sm:w-[66px] shrink-0">Member ID</span>
+                    <span className="text-white/85 mr-1.5">:</span>
+                    <span className="text-white font-semibold font-mono tracking-tight truncate">
+                      {effectiveId}
                     </span>
                   </div>
-                  <div style={styles.gridItem}>
-                    <span style={styles.metaLabel}>Date of Birth</span>
-                    <span style={styles.metaVal}>{profile.dateOfBirth || '15 Aug 1988'}</span>
-                  </div>
-                  <div style={styles.gridItem}>
-                    <span style={styles.metaLabel}>Issue Date</span>
-                    <span style={styles.metaVal}>{profile.issueDate || '12 Oct 2024'}</span>
-                  </div>
-                </div>
-
-                <div style={styles.gridCol}>
-                  <div style={styles.gridItem}>
-                    <span style={styles.metaLabel}>Admin Badge</span>
-                    <span style={styles.metaVal}>{profile.adminId}</span>
-                  </div>
-                  <div style={styles.gridItem}>
-                    <span style={styles.metaLabel}>Blood Group</span>
-                    <span style={{ ...styles.metaVal, color: '#EF4444', fontWeight: 700 }}>
-                      {profile.bloodGroup || 'O+'}
-                    </span>
-                  </div>
-                  <div style={styles.gridItem}>
-                    <span style={styles.metaLabel}>Valid Till</span>
-                    <span style={{ ...styles.metaVal, color: '#FAD465', fontWeight: 700 }}>
+                  <div className="flex items-center">
+                    <span className="text-white/85 font-normal w-[60px] sm:w-[66px] shrink-0">Valid Till</span>
+                    <span className="text-white/85 mr-1.5">:</span>
+                    <span className="text-white font-semibold tracking-tight truncate">
                       {profile.validTill || '31 Dec 2027'}
                     </span>
                   </div>
+                  <div className="flex items-center">
+                    <span className="text-white/85 font-normal w-[60px] sm:w-[66px] shrink-0">Joined On</span>
+                    <span className="text-white/85 mr-1.5">:</span>
+                    <span className="text-white font-semibold tracking-tight truncate">
+                      {profile.issueDate || '12 Oct 2024'}
+                    </span>
+                  </div>
                 </div>
               </div>
 
-              {/* Bottom Scannable QR & Verification Strip */}
-              <div style={styles.bottomQrStrip}>
-                <div style={styles.qrBlock}>
-                  {/* Vector SVG Scannable QR */}
+              {/* Right Column: Scannable QR Code Matrix + Tap to View */}
+              <div className="flex flex-col items-center shrink-0">
+                <div className="bg-white p-1.5 rounded-xl shadow-md w-[64px] h-[64px] sm:w-[74px] sm:h-[74px] flex items-center justify-center">
                   <svg
+                    width="100%"
+                    height="100%"
                     viewBox={`0 0 ${qrMatrix.length} ${qrMatrix.length}`}
-                    width={56}
-                    height={56}
-                    style={styles.qrSvg}
+                    className="block"
                   >
-                    <rect width="100%" height="100%" fill="#FFFFFF" rx="2" />
-                    {qrMatrix.map((row, r) =>
-                      row.map((val, c) =>
-                        val ? (
+                    <rect width={qrMatrix.length} height={qrMatrix.length} fill="#FFFFFF" />
+                    {qrMatrix.map((row: boolean[], r: number) =>
+                      row.map((filled: boolean, c: number) =>
+                        filled ? (
                           <rect
                             key={`${r}-${c}`}
                             x={c}
                             y={r}
-                            width={1}
-                            height={1}
-                            fill="#011F39"
+                            width="1"
+                            height="1"
+                            fill="#06294D"
                           />
                         ) : null
                       )
                     )}
                   </svg>
                 </div>
-
-                <div style={styles.verificationTextWrap}>
-                  <div style={styles.verifyTitle}>SECURE DIGITAL IDENTITY</div>
-                  <div style={styles.verifySub}>Scan with any scanner to verify official credential</div>
-                  <div style={styles.authorityNote}>Authorized by Central Governing Council</div>
-                </div>
+                <span className="text-white text-[8px] sm:text-[9px] font-medium tracking-tight mt-1 text-center opacity-90">
+                  Tap to View
+                </span>
               </div>
             </div>
           </div>
 
-          {/* ════════════════ BACK SIDE ════════════════ */}
-          <div style={{ ...styles.cardFace, ...styles.cardBack }}>
-            {/* Top Back Header */}
-            <div style={styles.backHeader}>
-              <div style={styles.backHeaderTitle}>TERMS & IDENTITY GOVERNANCE</div>
-              <div style={styles.backHeaderSub}>HRSJM Central Administrative Protocol</div>
+          {/* ════════════════ BACK SIDE (Regulatory & Admin Details) ════════════════ */}
+          <div
+            className="absolute inset-0 rounded-2xl overflow-hidden shadow-2xl border border-[#CAA048]/45 flex flex-col justify-between bg-[#06214A] p-4 text-white"
+            style={{
+              transform: 'rotateY(180deg)',
+              backfaceVisibility: 'hidden',
+              WebkitBackfaceVisibility: 'hidden',
+            }}
+          >
+            {/* Back Header */}
+            <div className="border-b border-[#CAA048]/30 pb-1.5 text-center">
+              <div className="text-[10px] font-extrabold tracking-wider text-[#FAD465] uppercase">
+                Central Registry &amp; Verification
+              </div>
+              <div className="text-[8px] text-slate-300">
+                Human Rights &amp; Social Justice Mission • Regd No. HR/0092/2019
+              </div>
             </div>
 
-            {/* Back Card Body */}
-            <div style={styles.backBody}>
-              <div style={styles.termsBox}>
-                <ul style={styles.termsList}>
-                  <li>This credential certifies the holder as an accredited administrative officer of HRSJM.</li>
-                  <li>The card remains the exclusive property of Human Rights Sanrakshan Jan Manch.</li>
-                  <li>Unauthorized reproduction, duplication, or tampering is strictly prohibited by law.</li>
-                  <li>In case of loss or damage, report immediately to the Central Secretariat.</li>
-                </ul>
-              </div>
-
-              {/* Emergency & Address Block */}
-              <div style={styles.backContactBlock}>
-                <div style={styles.contactRow}>
-                  <MapPin size={13} color="#06294D" style={{ flexShrink: 0, marginTop: 2 }} />
+            {/* Back Body: Officer Metadata, Address & Verification QR */}
+            <div className="grid grid-cols-3 gap-2 my-auto py-1 items-center">
+              <div className="col-span-2 text-[8px] text-slate-200 space-y-1">
+                <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[8.5px]">
                   <span>
-                    <strong>Secretariat:</strong> {profile.address || 'Human Rights Bhavan, Lodhi Road'},{' '}
+                    <strong className="text-[#E5B842]">Admin ID:</strong> {profile.adminId || 'ADMIN001'}
+                  </span>
+                  <span>
+                    <strong className="text-[#E5B842]">Blood:</strong>{' '}
+                    <span className="text-rose-300 font-bold">{profile.bloodGroup || 'O+'}</span>
+                  </span>
+                  <span>
+                    <strong className="text-[#E5B842]">DOB:</strong> {profile.dateOfBirth || '15 Aug 1988'}
+                  </span>
+                </div>
+
+                <div className="flex items-start gap-1 text-[7.5px] text-slate-300 leading-snug">
+                  <MapPin size={9} className="text-[#FAD465] shrink-0 mt-0.5" />
+                  <span>
+                    {profile.address || 'Human Rights Bhavan, Lodhi Road'},{' '}
                     {profile.city || 'New Delhi'} - {profile.pincode || '110003'}
                   </span>
                 </div>
-                <div style={styles.contactRow}>
-                  <Phone size={13} color="#06294D" style={{ flexShrink: 0, marginTop: 2 }} />
+
+                <div className="flex items-center gap-1.5 text-[7.5px] text-[#FAD465]">
+                  <Phone size={9} className="shrink-0" />
                   <span>
-                    <strong>Emergency:</strong> {profile.emergencyContact || '+91 98765 43211'} ·{' '}
-                    <strong>Helpline:</strong> +91 11 2345 6789
+                    Emergency: {profile.emergencyContact || '+91 98765 43211'} • Helpline: +91 11 2345 6789
                   </span>
                 </div>
               </div>
 
-              {/* Signatures & Seal Area */}
-              <div style={styles.signatureArea}>
-                <div style={styles.sigCol}>
-                  <div style={styles.sigLine} />
-                  <div style={styles.sigName}>{profile.fullName}</div>
-                  <div style={styles.sigRole}>Holder Signature</div>
+              {/* Verification QR */}
+              <div className="flex flex-col items-center justify-center">
+                <div className="bg-white p-1 rounded-md shadow-sm w-12 h-12 flex items-center justify-center">
+                  <svg
+                    width="100%"
+                    height="100%"
+                    viewBox={`0 0 ${qrMatrix.length} ${qrMatrix.length}`}
+                    className="block"
+                  >
+                    <rect width={qrMatrix.length} height={qrMatrix.length} fill="#FFFFFF" />
+                    {qrMatrix.map((row: boolean[], r: number) =>
+                      row.map((filled: boolean, c: number) =>
+                        filled ? (
+                          <rect
+                            key={`b-${r}-${c}`}
+                            x={c}
+                            y={r}
+                            width="1"
+                            height="1"
+                            fill="#06294D"
+                          />
+                        ) : null
+                      )
+                    )}
+                  </svg>
                 </div>
+                <span className="text-[7px] text-slate-300 mt-1">Official Scan</span>
+              </div>
+            </div>
 
-                {/* Golden Trust Seal */}
-                <div style={styles.goldSeal}>
-                  <div style={styles.sealInnerRing}>
-                    <ShieldCheck size={18} color="#C9971A" />
-                    <span style={styles.sealText}>TRUST SEAL</span>
-                  </div>
-                </div>
-
-                <div style={styles.sigCol}>
-                  <div style={styles.sigLine} />
-                  <div style={styles.sigName}>National Registrar</div>
-                  <div style={styles.sigRole}>Authorized Signatory</div>
-                </div>
+            {/* Signatory Footer */}
+            <div className="border-t border-[#CAA048]/30 pt-1.5 flex items-center justify-between text-[8px]">
+              <div>
+                <div className="w-20 border-b border-[#CAA048]/50 mb-0.5" />
+                <div className="font-bold text-white">National Registrar</div>
+                <div className="text-slate-400 text-[7px]">HRSJM Central Governing Council</div>
               </div>
 
-              {/* Card Footer Bar */}
-              <div style={styles.backFooterBar}>
-                <span>Registration No. HR/0092/2019 · Valid Across India</span>
+              <div className="px-2 py-0.5 rounded bg-[#CAA048]/20 border border-[#CAA048]/40 text-[#FAD465] text-[7.5px] font-bold tracking-wider">
+                ★ OFFICIAL ACCREDITED ★
               </div>
             </div>
           </div>
@@ -270,425 +327,4 @@ export const IdCardSvgPreview: React.FC<IdCardSvgPreviewProps> = ({
       </div>
     </div>
   );
-};
-
-const styles: Record<string, React.CSSProperties> = {
-  outerContainer: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    width: '100%',
-  },
-  actionBar: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    width: '100%',
-    maxWidth: '380px',
-    marginBottom: '16px',
-    flexWrap: 'wrap',
-    gap: '10px',
-  },
-  cardSideBadge: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: '6px',
-    fontSize: '12px',
-    fontWeight: 600,
-    color: '#06294D',
-    backgroundColor: '#EEF2F6',
-    padding: '4px 10px',
-    borderRadius: '20px',
-  },
-  badgeIndicator: {
-    width: '6px',
-    height: '6px',
-    borderRadius: '50%',
-    backgroundColor: '#059669',
-  },
-  actionsGroup: {
-    display: 'flex',
-    gap: '8px',
-  },
-  actionBtn: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: '6px',
-    padding: '7px 12px',
-    borderRadius: '6px',
-    fontSize: '12px',
-    fontWeight: 600,
-    cursor: 'pointer',
-    backgroundColor: '#FFFFFF',
-    border: '1px solid #CBD5E1',
-    color: '#06294D',
-    transition: 'all 0.2s',
-  },
-  cardPerspective: {
-    perspective: '1200px',
-    width: '360px',
-    height: '540px',
-    maxWidth: '100%',
-  },
-  cardFlipper: {
-    position: 'relative',
-    width: '100%',
-    height: '100%',
-    transformStyle: 'preserve-3d',
-    transition: 'transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1)',
-  },
-  cardFace: {
-    position: 'absolute',
-    width: '100%',
-    height: '100%',
-    backfaceVisibility: 'hidden',
-    borderRadius: '18px',
-    overflow: 'hidden',
-    boxShadow: '0 12px 32px rgba(1, 31, 57, 0.22), 0 2px 6px rgba(0,0,0,0.06)',
-    display: 'flex',
-    flexDirection: 'column',
-    boxSizing: 'border-box',
-    border: '1.5px solid rgba(250, 212, 101, 0.4)',
-  },
-  cardFront: {
-    backgroundColor: '#06294D',
-    color: '#FFFFFF',
-  },
-  frontHeader: {
-    backgroundColor: '#011F39',
-    padding: '14px 14px 10px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderTopLeftRadius: '16px',
-    borderTopRightRadius: '16px',
-  },
-  headerBrandRow: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '10px',
-  },
-  brandTitles: {
-    display: 'flex',
-    flexDirection: 'column',
-  },
-  trustNameEn: {
-    fontSize: '11px',
-    fontWeight: 800,
-    color: '#FFFFFF',
-    letterSpacing: '0.4px',
-    lineHeight: 1.2,
-  },
-  trustNameHi: {
-    fontSize: '9.5px',
-    fontWeight: 600,
-    color: '#FAD465',
-    lineHeight: 1.2,
-    marginTop: '2px',
-  },
-  trustRegd: {
-    fontSize: '7.5px',
-    color: '#94A3B8',
-    marginTop: '1px',
-  },
-  frontStatusPill: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '4px',
-    backgroundColor: 'rgba(16, 185, 129, 0.15)',
-    border: '1px solid #10B981',
-    color: '#10B981',
-    fontSize: '8.5px',
-    fontWeight: 800,
-    padding: '3px 7px',
-    borderRadius: '12px',
-    letterSpacing: '0.5px',
-    flexShrink: 0,
-  },
-  goldDivider: {
-    height: '3px',
-    background: 'linear-gradient(90deg, #FAD465 0%, #E9B82E 50%, #C9971A 100%)',
-    width: '100%',
-  },
-  frontBody: {
-    padding: '16px',
-    display: 'flex',
-    flexDirection: 'column',
-    flex: 1,
-    justifyContent: 'space-between',
-    backgroundColor: '#06294D',
-  },
-  topProfileSection: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '14px',
-    marginBottom: '14px',
-  },
-  photoContainer: {
-    position: 'relative',
-    width: '84px',
-    height: '96px',
-    borderRadius: '10px',
-    overflow: 'hidden',
-    backgroundColor: '#0F2D4A',
-    flexShrink: 0,
-    boxShadow: '0 4px 10px rgba(0,0,0,0.3)',
-  },
-  photoImg: {
-    width: '100%',
-    height: '100%',
-    objectFit: 'cover',
-  },
-  photoFallback: {
-    width: '100%',
-    height: '100%',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#0F2D4A',
-  },
-  fallbackInitials: {
-    fontSize: '28px',
-    fontWeight: 700,
-    color: '#FAD465',
-  },
-  photoGoldBorder: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    borderRadius: '10px',
-    border: '2px solid #FAD465',
-    pointerEvents: 'none',
-  },
-  profileHeading: {
-    display: 'flex',
-    flexDirection: 'column',
-    overflow: 'hidden',
-  },
-  personName: {
-    fontSize: '17px',
-    fontWeight: 800,
-    color: '#FFFFFF',
-    lineHeight: 1.25,
-    marginBottom: '3px',
-    letterSpacing: '0.2px',
-  },
-  personRole: {
-    fontSize: '12px',
-    fontWeight: 700,
-    color: '#FAD465',
-    textTransform: 'uppercase',
-    letterSpacing: '0.5px',
-    marginBottom: '2px',
-  },
-  personDesignation: {
-    fontSize: '10px',
-    color: '#DBE5EE',
-    lineHeight: 1.3,
-  },
-  detailsGrid: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    gap: '8px 12px',
-    backgroundColor: 'rgba(1, 31, 57, 0.6)',
-    padding: '10px 12px',
-    borderRadius: '10px',
-    border: '1px solid rgba(250, 212, 101, 0.2)',
-    marginBottom: '14px',
-  },
-  gridCol: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '8px',
-  },
-  gridItem: {
-    display: 'flex',
-    flexDirection: 'column',
-  },
-  metaLabel: {
-    fontSize: '9.5px',
-    color: '#94A3B8',
-    fontWeight: 500,
-    textTransform: 'uppercase',
-    letterSpacing: '0.4px',
-  },
-  metaVal: {
-    fontSize: '11.5px',
-    fontWeight: 600,
-    color: '#FFFFFF',
-    marginTop: '1px',
-  },
-  bottomQrStrip: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px',
-    backgroundColor: '#011F39',
-    padding: '8px 10px',
-    borderRadius: '10px',
-    border: '1px solid rgba(250, 212, 101, 0.25)',
-  },
-  qrBlock: {
-    backgroundColor: '#FFFFFF',
-    padding: '3px',
-    borderRadius: '6px',
-    flexShrink: 0,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  qrSvg: {
-    display: 'block',
-    borderRadius: '2px',
-  },
-  verificationTextWrap: {
-    display: 'flex',
-    flexDirection: 'column',
-    overflow: 'hidden',
-  },
-  verifyTitle: {
-    fontSize: '10px',
-    fontWeight: 800,
-    color: '#FAD465',
-    letterSpacing: '0.4px',
-  },
-  verifySub: {
-    fontSize: '8.5px',
-    color: '#CBD5E1',
-    lineHeight: 1.3,
-    marginTop: '1px',
-  },
-  authorityNote: {
-    fontSize: '7.5px',
-    color: '#94A3B8',
-    marginTop: '2px',
-  },
-  // BACK FACE STYLES
-  cardBack: {
-    backgroundColor: '#FFFFFF',
-    color: '#0F172A',
-    transform: 'rotateY(180deg)',
-  },
-  backHeader: {
-    backgroundColor: '#011F39',
-    padding: '12px 14px',
-    textAlign: 'center',
-    borderTopLeftRadius: '16px',
-    borderTopRightRadius: '16px',
-    borderBottom: '3px solid #FAD465',
-  },
-  backHeaderTitle: {
-    fontSize: '12px',
-    fontWeight: 800,
-    color: '#FFFFFF',
-    letterSpacing: '0.5px',
-  },
-  backHeaderSub: {
-    fontSize: '9px',
-    color: '#FAD465',
-    marginTop: '2px',
-    fontWeight: 500,
-  },
-  backBody: {
-    padding: '14px 16px',
-    display: 'flex',
-    flexDirection: 'column',
-    flex: 1,
-    justifyContent: 'space-between',
-    backgroundColor: '#F8FAFC',
-  },
-  termsBox: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: '8px',
-    padding: '10px 12px',
-    border: '1px solid #E2E8F0',
-  },
-  termsList: {
-    margin: 0,
-    paddingLeft: '16px',
-    fontSize: '9.5px',
-    color: '#334155',
-    lineHeight: 1.45,
-  },
-  backContactBlock: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '6px',
-    backgroundColor: '#EEF2F6',
-    padding: '8px 10px',
-    borderRadius: '8px',
-    fontSize: '9.5px',
-    color: '#334155',
-  },
-  contactRow: {
-    display: 'flex',
-    alignItems: 'flex-start',
-    gap: '6px',
-    lineHeight: 1.35,
-  },
-  signatureArea: {
-    display: 'flex',
-    alignItems: 'flex-end',
-    justifyContent: 'space-between',
-    paddingTop: '8px',
-    borderTop: '1px dashed #CBD5E1',
-  },
-  sigCol: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    width: '90px',
-  },
-  sigLine: {
-    width: '100%',
-    height: '1px',
-    backgroundColor: '#94A3B8',
-    marginBottom: '4px',
-  },
-  sigName: {
-    fontSize: '9px',
-    fontWeight: 700,
-    color: '#06294D',
-    textAlign: 'center',
-  },
-  sigRole: {
-    fontSize: '8px',
-    color: '#64748B',
-    textAlign: 'center',
-  },
-  goldSeal: {
-    width: '56px',
-    height: '56px',
-    borderRadius: '50%',
-    border: '2px double #C9971A',
-    backgroundColor: '#FAF5EA',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    boxShadow: '0 2px 6px rgba(201, 151, 26, 0.25)',
-  },
-  sealInnerRing: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  sealText: {
-    fontSize: '6.5px',
-    fontWeight: 800,
-    color: '#C9971A',
-    letterSpacing: '0.5px',
-    marginTop: '1px',
-  },
-  backFooterBar: {
-    backgroundColor: '#06294D',
-    color: '#FFFFFF',
-    padding: '4px 8px',
-    borderRadius: '6px',
-    textAlign: 'center',
-    fontSize: '8px',
-    fontWeight: 600,
-    letterSpacing: '0.3px',
-  },
 };

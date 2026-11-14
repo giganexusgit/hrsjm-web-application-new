@@ -5,9 +5,10 @@ import {
   MessageSquare,
   RefreshCw,
   Download,
+  Plus,
+  RotateCcw,
   ChevronLeft,
   ChevronRight,
-  LifeBuoy,
 } from 'lucide-react';
 import type {
   SupportTicket,
@@ -248,6 +249,20 @@ export const SupportTicketsListPage: React.FC = () => {
     return true;
   };
 
+  const handleResetFilters = () => {
+    setSearchQuery('');
+    setSelectedCategory('ALL');
+    setSelectedSource('ALL');
+    setFilters({
+      status: 'ALL',
+      category: 'ALL',
+      priority: 'ALL',
+      dateRange: 'ALL',
+      source: 'ALL',
+    });
+    setCurrentPage(1);
+  };
+
   const handleExportCsv = () => {
     const headers = [
       'Ticket ID',
@@ -286,32 +301,43 @@ export const SupportTicketsListPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
-      {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div style={styles.container}>
+      {/* Top Title & Header */}
+      <div style={styles.header}>
         <div>
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#FFF9E6] text-[#011F39] border border-[#FDE68A] mb-2 tracking-wide uppercase">
-            <LifeBuoy size={12} className="text-[#B45309]" />
-            <span>Citizen Helpdesk & Grievances</span>
+          <div style={styles.badgeRow}>
+            <span style={styles.topBadge}>CITIZEN HELPDESK & GRIEVANCES</span>
           </div>
-          <h1 className="font-serif text-2xl sm:text-3xl font-bold text-[#011F39]">
-            Support & Complaints
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
+          <h1 style={styles.title}>Support & Complaints</h1>
+          <p style={styles.subtitle}>
             Manage citizen grievances, membership issues, donation queries and legal consultations
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5 self-start sm:self-auto">
+        <div style={styles.headerActions}>
+          <button
+            type="button"
+            onClick={() => setCreateModalVisible(true)}
+            style={styles.newTicketBtn}
+            className="support-header-primary-btn"
+            title="Create a new support ticket or citizen complaint"
+          >
+            <Plus size={16} />
+            <span>New Ticket</span>
+          </button>
+
           <button
             type="button"
             onClick={handleRefresh}
-            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold bg-white hover:bg-slate-50 text-slate-700 border border-slate-200/90 shadow-2xs transition-colors cursor-pointer"
-            title="Refresh tickets"
+            style={styles.refreshBtn}
+            className="support-header-secondary-btn"
+            title="Refresh tickets list"
           >
             <RefreshCw
-              size={14}
-              className={isRefreshing ? 'animate-spin text-[#011F39]' : 'text-slate-500'}
+              size={15}
+              style={{
+                animation: isRefreshing ? 'spin 1s linear infinite' : 'none',
+              }}
             />
             <span>Refresh</span>
           </button>
@@ -319,10 +345,11 @@ export const SupportTicketsListPage: React.FC = () => {
           <button
             type="button"
             onClick={handleExportCsv}
-            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold bg-white hover:bg-slate-50 text-slate-700 border border-slate-200/90 shadow-2xs transition-colors cursor-pointer"
+            style={styles.exportBtn}
+            className="support-header-secondary-btn"
             title="Export filtered tickets to CSV"
           >
-            <Download size={14} className="text-slate-500" />
+            <Download size={15} />
             <span>Export CSV</span>
           </button>
         </div>
@@ -330,18 +357,8 @@ export const SupportTicketsListPage: React.FC = () => {
 
       {/* Success Notification Banner */}
       {successBanner && (
-        <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-3 rounded-xl text-sm font-medium flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="font-bold">✓</span>
-            <span>{successBanner}</span>
-          </div>
-          <button
-            type="button"
-            onClick={() => setSuccessBanner(null)}
-            className="text-emerald-700 hover:text-emerald-900 text-xs font-semibold"
-          >
-            Dismiss
-          </button>
+        <div style={styles.successBanner}>
+          <span>✓ {successBanner}</span>
         </div>
       )}
 
@@ -384,23 +401,42 @@ export const SupportTicketsListPage: React.FC = () => {
         }}
         activeFilterCount={activeFiltersCount}
         onOpenFilterModal={() => setFilterModalVisible(true)}
-        onOpenCreateModal={() => setCreateModalVisible(true)}
+        onResetFilters={handleResetFilters}
       />
 
       {/* Tickets List Area */}
       {paginatedTickets.length === 0 ? (
-        <div className="bg-white rounded-xl border border-slate-200 p-12 text-center shadow-xs">
-          <div className="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-3">
-            <MessageSquare size={28} className="text-slate-400" />
+        <div style={styles.emptyCard}>
+          <div style={styles.emptyIconCircle}>
+            <MessageSquare size={32} color="#718096" />
           </div>
-          <h3 className="font-serif font-bold text-lg text-slate-800 mb-1">
-            No support tickets found
-          </h3>
-          <p className="text-xs sm:text-sm text-slate-500 max-w-sm mx-auto">
+          <h3 style={styles.emptyTitle}>No support tickets found</h3>
+          <p style={styles.emptySubtitle}>
             {searchQuery || activeFiltersCount > 0
               ? 'Try adjusting your search criteria or resetting filters.'
               : 'No tickets currently registered under this status category.'}
           </p>
+          <div style={{ marginTop: '16px' }}>
+            {searchQuery || activeFiltersCount > 0 ? (
+              <button
+                type="button"
+                onClick={handleResetFilters}
+                style={styles.emptyResetBtn}
+              >
+                <RotateCcw size={14} />
+                <span>Reset All Filters</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setCreateModalVisible(true)}
+                style={styles.emptyCreateBtn}
+              >
+                <Plus size={15} />
+                <span>Create New Ticket</span>
+              </button>
+            )}
+          </div>
         </div>
       ) : (
         <div>
@@ -416,29 +452,29 @@ export const SupportTicketsListPage: React.FC = () => {
           ))}
 
           {/* Pagination Controls */}
-          <div className="bg-white rounded-xl border border-slate-200/90 px-4 py-3 shadow-xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-4">
-            <span className="text-xs text-slate-500 font-medium">
+          <div style={styles.paginationRow}>
+            <span style={styles.pageInfo}>
               Showing {(currentPage - 1) * pageSize + 1} to{' '}
               {Math.min(currentPage * pageSize, filteredTickets.length)} of{' '}
               {filteredTickets.length} tickets
             </span>
 
-            <div className="flex items-center gap-2 self-center sm:self-auto">
+            <div style={styles.pageControls}>
               <button
                 type="button"
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
-                className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold border ${
-                  currentPage === 1
-                    ? 'border-slate-200 bg-slate-50 text-slate-400 cursor-not-allowed'
-                    : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50 cursor-pointer shadow-2xs'
-                }`}
+                style={{
+                  ...styles.pageBtn,
+                  opacity: currentPage === 1 ? 0.5 : 1,
+                  cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                }}
               >
-                <ChevronLeft size={14} />
+                <ChevronLeft size={16} />
                 <span>Prev</span>
               </button>
 
-              <span className="text-xs font-bold text-slate-700 px-2">
+              <span style={styles.pageNumber}>
                 Page {currentPage} of {totalPages}
               </span>
 
@@ -446,14 +482,14 @@ export const SupportTicketsListPage: React.FC = () => {
                 type="button"
                 onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                 disabled={currentPage >= totalPages}
-                className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold border ${
-                  currentPage >= totalPages
-                    ? 'border-slate-200 bg-slate-50 text-slate-400 cursor-not-allowed'
-                    : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50 cursor-pointer shadow-2xs'
-                }`}
+                style={{
+                  ...styles.pageBtn,
+                  opacity: currentPage >= totalPages ? 0.5 : 1,
+                  cursor: currentPage >= totalPages ? 'not-allowed' : 'pointer',
+                }}
               >
                 <span>Next</span>
-                <ChevronRight size={14} />
+                <ChevronRight size={16} />
               </button>
             </div>
           </div>
@@ -499,4 +535,200 @@ export const SupportTicketsListPage: React.FC = () => {
       />
     </div>
   );
+};
+
+const styles: Record<string, React.CSSProperties> = {
+  container: {
+    maxWidth: '1440px',
+    margin: '0 auto',
+  },
+  header: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: '16px',
+    marginBottom: '24px',
+  },
+  badgeRow: {
+    marginBottom: '6px',
+  },
+  topBadge: {
+    fontSize: '11px',
+    fontWeight: 700,
+    color: '#011F39',
+    backgroundColor: '#FFF9E6',
+    border: '1px solid #FDE68A',
+    padding: '3px 10px',
+    borderRadius: '12px',
+    letterSpacing: '0.05em',
+  },
+  title: {
+    fontFamily: '"Playfair Display", Georgia, serif',
+    fontSize: '28px',
+    fontWeight: 700,
+    color: '#011F39',
+    margin: 0,
+  },
+  subtitle: {
+    fontSize: '14px',
+    color: '#34516D',
+    marginTop: '4px',
+  },
+  headerActions: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+    flexWrap: 'wrap',
+  },
+  newTicketBtn: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '7px',
+    padding: '9px 18px',
+    borderRadius: '8px',
+    border: '1px solid #E9B82E',
+    backgroundColor: '#FAD465',
+    color: '#011F39',
+    fontSize: '13px',
+    fontWeight: 700,
+    cursor: 'pointer',
+    boxShadow: '0 2px 8px rgba(250, 212, 101, 0.4)',
+    transition: 'all 0.15s ease',
+  },
+  refreshBtn: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '6px',
+    padding: '9px 15px',
+    borderRadius: '8px',
+    border: '1px solid #DCE4EC',
+    backgroundColor: '#FFFFFF',
+    color: '#011F39',
+    fontSize: '13px',
+    fontWeight: 600,
+    cursor: 'pointer',
+    transition: 'all 0.15s ease',
+    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.03)',
+  },
+  exportBtn: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '6px',
+    padding: '9px 15px',
+    borderRadius: '8px',
+    border: '1px solid #DCE4EC',
+    backgroundColor: '#FFFFFF',
+    color: '#011F39',
+    fontSize: '13px',
+    fontWeight: 600,
+    cursor: 'pointer',
+    transition: 'all 0.15s ease',
+    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.03)',
+  },
+  successBanner: {
+    backgroundColor: '#F0FDF4',
+    border: '1px solid #BBF7D0',
+    color: '#15803D',
+    padding: '12px 18px',
+    borderRadius: '8px',
+    fontSize: '14px',
+    fontWeight: 600,
+    marginBottom: '20px',
+  },
+  emptyCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: '16px',
+    border: '1px solid #DCE4EC',
+    padding: '48px 24px',
+    textAlign: 'center',
+  },
+  emptyResetBtn: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '6px',
+    padding: '8px 18px',
+    borderRadius: '8px',
+    border: '1px solid #CBD5E1',
+    backgroundColor: '#F1F5F9',
+    color: '#34516D',
+    fontSize: '13px',
+    fontWeight: 600,
+    cursor: 'pointer',
+    transition: 'all 0.15s ease',
+  },
+  emptyCreateBtn: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '6px',
+    padding: '8px 18px',
+    borderRadius: '8px',
+    border: '1px solid #E9B82E',
+    backgroundColor: '#FAD465',
+    color: '#011F39',
+    fontSize: '13px',
+    fontWeight: 700,
+    cursor: 'pointer',
+    transition: 'all 0.15s ease',
+  },
+  emptyIconCircle: {
+    width: '64px',
+    height: '64px',
+    borderRadius: '50%',
+    backgroundColor: '#EDF2F7',
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: '16px',
+  },
+  emptyTitle: {
+    fontFamily: '"Playfair Display", Georgia, serif',
+    fontSize: '20px',
+    fontWeight: 700,
+    color: '#011F39',
+    margin: '0 0 6px 0',
+  },
+  emptySubtitle: {
+    fontSize: '13px',
+    color: '#718096',
+    margin: 0,
+  },
+  paginationRow: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: '12px',
+    marginTop: '16px',
+    padding: '12px 16px',
+    backgroundColor: '#FFFFFF',
+    borderRadius: '8px',
+    border: '1px solid #DCE4EC',
+  },
+  pageInfo: {
+    fontSize: '13px',
+    color: '#718096',
+  },
+  pageControls: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+  },
+  pageBtn: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '4px',
+    padding: '6px 12px',
+    borderRadius: '6px',
+    border: '1px solid #DCE4EC',
+    backgroundColor: '#FFFFFF',
+    fontSize: '12px',
+    fontWeight: 600,
+    color: '#011F39',
+  },
+  pageNumber: {
+    fontSize: '12px',
+    fontWeight: 600,
+    color: '#34516D',
+  },
 };

@@ -5,7 +5,6 @@ import {
   X,
   ZoomIn,
   ZoomOut,
-  CheckCircle,
   Download,
   Printer,
   ShieldCheck,
@@ -135,24 +134,6 @@ export const ApplicationDocumentViewerModal: React.FC<ApplicationDocumentViewerM
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            {document.verified && (
-              <span
-                style={{
-                  fontSize: '11px',
-                  fontWeight: 800,
-                  padding: '4px 12px',
-                  borderRadius: '14px',
-                  backgroundColor: '#059669',
-                  color: '#FFFFFF',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '5px',
-                  boxShadow: '0 2px 6px rgba(5, 150, 105, 0.3)',
-                }}
-              >
-                <CheckCircle size={13} /> Verified
-              </span>
-            )}
             <button
               type="button"
               onClick={onClose}

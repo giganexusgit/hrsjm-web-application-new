@@ -215,9 +215,13 @@ export const RIGHTS_GUIDES: RightGuideItem[] = [
 
 interface UserRightsPageProps {
   isMember?: boolean;
+  isSeeker?: boolean;
 }
 
-export const UserRightsPage: React.FC<UserRightsPageProps> = ({ isMember = false }) => {
+export const UserRightsPage: React.FC<UserRightsPageProps> = ({
+  isMember = false,
+  isSeeker = false,
+}) => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<RightsCategoryKey>('ALL');
@@ -273,11 +277,17 @@ export const UserRightsPage: React.FC<UserRightsPageProps> = ({ isMember = false
   };
 
   const handleOpenRight = (rightId: string) => {
-    navigate(`/rights/${rightId}`);
+    if (isSeeker) {
+      navigate(`/seeker/rights/${rightId}`);
+    } else {
+      navigate(`/rights/${rightId}`);
+    }
   };
 
   const handleFileComplaint = () => {
-    if (isMember) {
+    if (isSeeker) {
+      navigate('/seeker/complaint');
+    } else if (isMember) {
       navigate('/member/support');
     } else {
       navigate('/support');

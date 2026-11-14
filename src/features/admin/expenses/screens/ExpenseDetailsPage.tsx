@@ -1,22 +1,23 @@
 import type React from 'react';
-import { useState, useSyncExternalStore } from 'react';
+import { useSyncExternalStore } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
   FileText,
   Printer,
-  Ban,
+  Download,
   AlertCircle,
-  Building2,
-  Calendar,
-  CreditCard,
-  User,
   Paperclip,
   ExternalLink,
 } from 'lucide-react';
 import { expensesStore } from '../store/expensesStore';
-import { ExpenseCancelModal } from '../components/ExpenseCancelModal';
 import { formatINR } from '../types/expenses.types';
+import {
+  printOfficialExpenseVoucher,
+  downloadOfficialExpenseVoucherPdf,
+} from '../utils/expenseReceiptGenerator';
+import { numberToIndianWords } from '../../donations/utils/donationReceiptGenerator';
+import hrsjmLogo from '../../../../assets/hrsjm_logo.png';
 
 export const ExpenseDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -24,9 +25,6 @@ export const ExpenseDetailsPage: React.FC = () => {
 
   const snapshot = useSyncExternalStore(expensesStore.subscribe, expensesStore.getSnapshot);
   const voucher = snapshot.vouchers.find((v) => v.id === id || v.voucher_number === id);
-
-  const [cancelModalOpen, setCancelModalOpen] = useState(false);
-  const [isCancelling, setIsCancelling] = useState(false);
 
   if (!voucher) {
     return (
@@ -75,24 +73,55 @@ export const ExpenseDetailsPage: React.FC = () => {
     }
   };
 
-  const handleConfirmCancel = async (reason: string) => {
-    setIsCancelling(true);
-    try {
-      await expensesStore.cancel(voucher.id, reason);
-      setCancelModalOpen(false);
-    } finally {
-      setIsCancelling(false);
-    }
-  };
+  const isWebApp = Boolean(
+    voucher.reference_number?.toUpperCase().startsWith('WEB-APP') ||
+    voucher.description?.includes('[Source: Web App]')
+  );
 
   const handlePrint = () => {
-    window.print();
+    printOfficialExpenseVoucher(voucher);
+  };
+
+  const handleDownloadPdf = () => {
+    downloadOfficialExpenseVoucherPdf(voucher);
   };
 
   return (
     <div style={styles.page}>
-      {/* Top Header */}
-      <div style={styles.topBar}>
+      <style>{`
+        @media print {
+          @page {
+            size: A4 portrait;
+            margin: 8mm 10mm;
+          }
+          html, body, #root, #root > div, main, .admin-content-inner {
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            background: #FFFFFF !important;
+            box-shadow: none !important;
+          }
+          aside, header, nav, .no-print, button {
+            display: none !important;
+          }
+          #printable-expense-voucher {
+            display: block !important;
+            margin: 0 auto !important;
+            padding: 14px 18px !important;
+            border: 2px solid #011F39 !important;
+            border-radius: 8px !important;
+            box-shadow: none !important;
+            page-break-inside: avoid !important;
+            width: 100% !important;
+            max-width: 820px !important;
+            background: #FFFFFF !important;
+          }
+        }
+      `}</style>
+
+      {/* Top Header Navigation & Actions Bar */}
+      <div style={styles.topBar} className="no-print">
         <button
           type="button"
           onClick={() => navigate('/admin/expenses')}
@@ -105,532 +134,754 @@ export const ExpenseDetailsPage: React.FC = () => {
         <div style={styles.topActions}>
           <button
             type="button"
+            onClick={handleDownloadPdf}
+            style={styles.downloadBtn}
+            title="Download high-resolution official PDF document"
+          >
+            <Download size={15} />
+            <span>Download PDF</span>
+          </button>
+
+          <button
+            type="button"
             onClick={handlePrint}
             style={styles.printBtn}
+            title="Open official single-page print preview"
           >
             <Printer size={15} />
             <span>Print Voucher</span>
           </button>
-
-          {!isCancelled && (
-            <button
-              type="button"
-              onClick={() => setCancelModalOpen(true)}
-              style={styles.cancelVoucherBtn}
-            >
-              <Ban size={15} />
-              <span>Void / Cancel Voucher</span>
-            </button>
-          )}
         </div>
       </div>
 
-      {/* Main Details Wrapper */}
-      <div style={styles.contentWrap}>
-        {/* Top Hero Banner */}
-        <div style={styles.heroCard}>
-          <div style={styles.heroTop}>
-            <div style={styles.heroLeft}>
-              <div style={styles.voucherIconCircle}>
-                <FileText size={20} color="#DC2626" />
-              </div>
-              <div>
-                <span style={styles.voucherIdLabel}>EXPENSE VOUCHER</span>
-                <h1 style={styles.voucherNum}>{voucher.voucher_number}</h1>
-              </div>
-            </div>
+      {/* Cancellation Notice Banner (only shown if record is already cancelled in database) */}
+      {isCancelled && (
+        <div style={styles.cancellationBanner} className="no-print">
+          <AlertCircle size={20} color="#DC2626" />
+          <div>
+            <strong style={{ color: '#991B1B', fontSize: '14px' }}>Voucher Voided / Cancelled</strong>
+            <p style={{ margin: '2px 0 0 0', color: '#B91C1C', fontSize: '13px' }}>
+              {voucher.cancellation_reason || 'This expense voucher has been cancelled and reversed in the general ledger.'}
+            </p>
+          </div>
+        </div>
+      )}
 
-            <div
-              style={{
-                ...styles.statusBadge,
-                backgroundColor: isCancelled ? '#FEE2E2' : '#E8F8F0',
-                color: isCancelled ? '#DC2626' : '#16A34A',
-                borderColor: isCancelled ? '#FECACA' : '#A7F3D0',
-              }}
-            >
-              <span
-                style={{
-                  ...styles.statusDot,
-                  backgroundColor: isCancelled ? '#DC2626' : '#16A34A',
-                }}
-              />
-              <span>{voucher.status}</span>
+      {/* Official Voucher Printable Receipt Slip */}
+      <div id="printable-expense-voucher" style={styles.receiptSlip}>
+        {/* Subtle Watermark */}
+        <div style={styles.watermark}>HRSJM VOUCHER</div>
+
+        {/* Letterhead Header */}
+        <div style={styles.letterhead}>
+          <div style={styles.logoWrap}>
+            <img src={hrsjmLogo} alt="HRSJM Logo" style={styles.logoImg} />
+          </div>
+          <div style={styles.orgInfo}>
+            <h1 style={styles.orgTitle}>HUMAN RIGHTS &amp; SOCIAL JUSTICE MISSION</h1>
+            <div style={styles.orgHindi}>मानव अधिकार एवं सामाजिक न्याय मिशन</div>
+            <div style={styles.orgTagline}>
+              National Organization for Human Rights Advocacy, Social Justice, Legal Aid &amp; Public Welfare
+            </div>
+            <div style={styles.orgRegLine}>
+              Registered under Societies Registration Act XXI of 1860 • NITI Aayog NGO-Darpan Regd: UP/2021/0285655 • Section 12A &amp; 80G Certified
+              <br />
+              Central Secretariat: New Delhi / Lucknow, Uttar Pradesh, India • contact@hrsjm.org • www.hrsjm.org
             </div>
           </div>
+        </div>
 
-          <div style={styles.amountBox}>
-            <span style={styles.amountLabel}>Total Outgoing Payment</span>
-            <div
-              style={{
-                ...styles.amountText,
-                color: isCancelled ? '#94A3B8' : '#0B2F52',
-                textDecoration: isCancelled ? 'line-through' : 'none',
-              }}
-            >
+        {/* Voucher Banner Ribbon */}
+        <div style={styles.voucherRibbon}>
+          <div>
+            <div style={styles.ribbonTitle}>
+              PAYMENT DISBURSEMENT VOUCHER
+              {isCancelled && <span style={styles.cancelledTag}>[VOIDED / CANCELLED]</span>}
+              {isWebApp && <span style={styles.webAppTag}>Web App</span>}
+            </div>
+            <div style={styles.ribbonSubtitle}>
+              Official Double-Entry Statutory Society Expenditure Receipt
+            </div>
+          </div>
+          <div style={styles.ribbonRight}>
+            <div style={styles.ribbonNumLabel}>Voucher Number</div>
+            <div style={styles.ribbonNumVal}>{voucher.voucher_number}</div>
+          </div>
+        </div>
+
+        {/* 4-Column Metadata Grid */}
+        <table style={styles.metaTable}>
+          <tbody>
+            <tr>
+              <td style={styles.metaLabel}>Voucher Date</td>
+              <td style={styles.metaVal}>{formatDate(voucher.expense_date)}</td>
+              <td style={styles.metaLabel}>Payment Method</td>
+              <td style={styles.metaVal}>
+                {voucher.payment_method === 'UPI'
+                  ? 'UPI'
+                  : voucher.payment_method === 'CASH'
+                  ? 'Cash'
+                  : voucher.payment_method === 'BANK_TRANSFER'
+                  ? 'Bank Transfer'
+                  : voucher.payment_method}
+              </td>
+            </tr>
+            <tr>
+              <td style={styles.metaLabel}>Disbursing Source</td>
+              <td style={styles.metaVal}>
+                {voucher.payment_method === 'UPI'
+                  ? 'UPI (Bank Account)'
+                  : voucher.payment_method === 'CASH'
+                  ? (voucher.paid_from_account?.account_name || 'Cash Account')
+                  : (voucher.paid_from_account?.account_name || 'Bank Account')}
+              </td>
+              <td style={styles.metaLabel}>External Ref / Bill #</td>
+              <td style={{ ...styles.metaVal, fontFamily: 'monospace' }}>{voucher.reference_number || '—'}</td>
+            </tr>
+            <tr>
+              <td style={styles.metaLabel}>Audit Status</td>
+              <td style={{ ...styles.metaVal, color: isCancelled ? '#DC2626' : '#15803D' }}>
+                {voucher.status === 'POSTED' ? 'AUDITED & POSTED' : voucher.status}
+              </td>
+              <td style={styles.metaLabel}>Recorded At</td>
+              <td style={styles.metaVal}>{formatDateTime(voucher.created_at)}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        {/* Beneficiary & Classification Table */}
+        <div style={styles.sectionTitle}>Disbursement Particulars &amp; Classification</div>
+        <table style={styles.particularsTable}>
+          <thead>
+            <tr>
+              <th style={styles.particularsThPayee}>Paid To (Recipient / Payee)</th>
+              <th style={styles.particularsThHead}>Expense Head (Classification)</th>
+              <th style={styles.particularsThPurpose}>Detailed Purpose &amp; Narration</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style={styles.particularsTd}>
+                <div style={{ fontSize: '13px', fontWeight: 800, color: '#011F39' }}>{voucher.paid_to}</div>
+                <div style={{ fontSize: '10.5px', color: '#64748B', marginTop: '2px' }}>Authorized Payee / Beneficiary</div>
+              </td>
+              <td style={styles.particularsTd}>
+                <div style={{ fontWeight: 700, color: '#011F39' }}>{voucher.expense_account?.account_name || 'Expense Head'}</div>
+                <div style={{ fontSize: '10.5px', color: '#64748B', fontFamily: 'monospace', marginTop: '2px' }}>
+                  A/c #{voucher.expense_account?.account_code || '5002'}
+                </div>
+              </td>
+              <td style={styles.particularsTd}>
+                <div style={{ color: '#334155', lineHeight: '1.45' }}>
+                  {voucher.description || 'Disbursement for approved organizational operations and activities.'}
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        {/* Amount Card with Amount in Words */}
+        <div style={styles.amountCard}>
+          <div style={styles.amountWordsBox}>
+            <div style={styles.amountWordsTitle}>Amount Passed for Payment (in Words)</div>
+            <div style={styles.amountWordsVal}>{numberToIndianWords(voucher.amount)}</div>
+          </div>
+          <div style={styles.amountDigitsBox}>
+            <div style={styles.amountDigitsTitle}>Total Disbursed (INR)</div>
+            <div style={{
+              ...styles.amountDigitsVal,
+              textDecoration: isCancelled ? 'line-through' : 'none',
+              color: isCancelled ? '#94A3B8' : '#011F39',
+            }}>
               {formatINR(voucher.amount)}
             </div>
           </div>
-
-          {isCancelled && voucher.cancellation_reason && (
-            <div style={styles.cancellationBox}>
-              <span style={styles.cancelReasonLabel}>Cancellation Audit Note:</span>
-              <p style={styles.cancelReasonText}>{voucher.cancellation_reason}</p>
-            </div>
-          )}
         </div>
 
-        {/* Section 1: Expense Information */}
-        <div style={styles.infoCard}>
-          <h2 style={styles.sectionHeading}>Expense Information</h2>
-
-          <div style={styles.dataGrid}>
-            <div style={styles.dataItem}>
-              <span style={styles.fieldLabel}>
-                <Calendar size={13} color="#64748B" />
-                <span>Expense Date</span>
+        {/* Double-Entry Journal Postings */}
+        <div style={styles.journalBox}>
+          <div style={styles.journalBoxHeader}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <FileText size={14} color="#011F39" />
+              <span style={{ fontWeight: 700 }}>Double-Entry General Ledger Postings</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span style={{ fontSize: '11px', color: '#64748B' }}>
+                Ref: {voucher.accounting_entry?.entry_number || 'JV-AUTO'}
               </span>
-              <span style={styles.fieldValue}>{formatDate(voucher.expense_date)}</span>
-            </div>
-
-            <div style={styles.dataItem}>
-              <span style={styles.fieldLabel}>
-                <Building2 size={13} color="#64748B" />
-                <span>Expense Account</span>
-              </span>
-              <span style={styles.fieldValueHighlight}>
-                {voucher.expense_account?.account_name || 'Expense Account'}
-              </span>
-            </div>
-
-            <div style={styles.dataItem}>
-              <span style={styles.fieldLabel}>
-                <User size={13} color="#64748B" />
-                <span>Paid To (Recipient)</span>
-              </span>
-              <span style={styles.fieldValue}>{voucher.paid_to}</span>
-            </div>
-
-            <div style={styles.dataItem}>
-              <span style={styles.fieldLabel}>
-                <CreditCard size={13} color="#64748B" />
-                <span>Paid From (Disbursing Source)</span>
-              </span>
-              <span style={styles.fieldValue}>
-                {voucher.paid_from_account?.account_name || 'Bank Account'}
-              </span>
-            </div>
-
-            <div style={styles.dataItem}>
-              <span style={styles.fieldLabel}>Payment Method</span>
-              <span style={styles.fieldValue}>{voucher.payment_method}</span>
-            </div>
-
-            <div style={styles.dataItem}>
-              <span style={styles.fieldLabel}>External Reference / Bill #</span>
-              <span style={styles.fieldValue}>{voucher.reference_number || '—'}</span>
-            </div>
-
-            <div style={styles.dataItem}>
-              <span style={styles.fieldLabel}>Recorded At</span>
-              <span style={styles.fieldValue}>{formatDateTime(voucher.created_at)}</span>
-            </div>
-
-            <div style={styles.dataItem}>
-              <span style={styles.fieldLabel}>Voucher Sequence</span>
-              <span style={styles.fieldValue}>{voucher.id}</span>
-            </div>
-          </div>
-
-          {/* Description */}
-          <div style={styles.descWrap}>
-            <span style={styles.fieldLabel}>Expense Purpose & Description</span>
-            <p style={styles.descText}>
-              {voucher.description || 'No description provided for this expense transaction.'}
-            </p>
-          </div>
-
-          {/* Bill Attachment */}
-          {voucher.attachment_url && (
-            <div style={styles.attachmentBox}>
-              <Paperclip size={15} color="#0284C7" />
-              <span style={styles.attachmentLabel}>Supporting Document / Receipt Bill:</span>
-              <a
-                href={voucher.attachment_url}
-                target="_blank"
-                rel="noreferrer"
-                style={styles.attachmentLink}
+              <button
+                type="button"
+                onClick={() => navigate(`/admin/accounting?search=${voucher.voucher_number || voucher.id}`)}
+                className="no-print"
+                style={styles.ledgerBtn}
               >
-                View Uploaded Receipt
-              </a>
+                <span>View in General Ledger</span>
+                <ExternalLink size={12} />
+              </button>
             </div>
-          )}
+          </div>
+
+          <table style={styles.journalSubTable}>
+            <thead>
+              <tr>
+                <th style={{ textAlign: 'left', padding: '6px 8px', color: '#475569', fontSize: '10.5px' }}>Account Code &amp; Name</th>
+                <th style={{ textAlign: 'left', padding: '6px 8px', color: '#475569', fontSize: '10.5px' }}>Accounting Entry Type</th>
+                <th style={{ textAlign: 'right', padding: '6px 8px', color: '#475569', fontSize: '10.5px' }}>Debit (Dr.)</th>
+                <th style={{ textAlign: 'right', padding: '6px 8px', color: '#475569', fontSize: '10.5px' }}>Credit (Cr.)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {lines.length > 0 ? (
+                lines.map((l) => {
+                  const debit = Number(l.debit_amount ?? l.debit ?? 0);
+                  const credit = Number(l.credit_amount ?? l.credit ?? 0);
+                  return (
+                    <tr key={l.id} style={{ borderTop: '1px solid #F1F5F9' }}>
+                      <td style={{ padding: '6px 8px', fontWeight: 600, color: '#0F172A' }}>
+                        {l.account?.account_name}
+                        {l.account?.account_code && (
+                          <span style={{ color: '#64748B', fontSize: '10.5px', marginLeft: '6px' }}>
+                            (A/c #{l.account.account_code})
+                          </span>
+                        )}
+                      </td>
+                      <td style={{ padding: '6px 8px', color: '#64748B' }}>
+                        {debit > 0 ? 'Dr. Expense Allocation' : 'Cr. Disbursing Asset'}
+                      </td>
+                      <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 600, color: debit > 0 ? '#15803D' : '#94A3B8' }}>
+                        {debit > 0 ? formatINR(debit) : '—'}
+                      </td>
+                      <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 600, color: credit > 0 ? '#C2410C' : '#94A3B8' }}>
+                        {credit > 0 ? formatINR(credit) : '—'}
+                      </td>
+                    </tr>
+                  );
+                })
+              ) : (
+                <tr style={{ borderTop: '1px solid #F1F5F9' }}>
+                  <td style={{ padding: '6px 8px', fontWeight: 600, color: '#0F172A' }}>
+                    {voucher.expense_account?.account_name || 'Expense Head'}
+                    {voucher.expense_account?.account_code && (
+                      <span style={{ color: '#64748B', fontSize: '10.5px', marginLeft: '6px' }}>
+                        (A/c #{voucher.expense_account.account_code})
+                      </span>
+                    )}
+                  </td>
+                  <td style={{ padding: '6px 8px', color: '#64748B' }}>Dr. Expense Allocation</td>
+                  <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 600, color: '#15803D' }}>
+                    {formatINR(voucher.amount)}
+                  </td>
+                  <td style={{ padding: '6px 8px', textAlign: 'right', color: '#94A3B8' }}>—</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
 
-        {/* Section 2: Journal Entry Posting */}
-        <div style={styles.infoCard}>
-          <div style={styles.journalHeader}>
-            <div>
-              <h2 style={styles.sectionHeading}>Double-Entry Journal Posting</h2>
-              <span style={styles.journalSubtext}>
-                General Ledger Reference: {voucher.accounting_entry?.reference_type || 'MANUAL_EXPENSE'} •{' '}
-                {voucher.accounting_entry?.entry_number || 'JV-AUTO'}
-              </span>
-            </div>
-            <button
-              type="button"
-              onClick={() => navigate(`/admin/accounting?search=${voucher.voucher_number || voucher.id}`)}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '6px 14px',
-                borderRadius: '8px',
-                fontSize: '12px',
-                fontWeight: 600,
-                color: '#011F39',
-                backgroundColor: '#EDF2F7',
-                border: '1px solid #DBE5EE',
-                cursor: 'pointer',
-                transition: 'all 0.15s ease',
-              }}
-            >
-              <span>View in General Ledger</span>
-              <ExternalLink size={13} />
-            </button>
+        {/* Attachment link if exists */}
+        {voucher.attachment_url && (
+          <div style={styles.attachmentBox} className="no-print">
+            <Paperclip size={15} color="#0284C7" />
+            <span style={{ fontSize: '12px', fontWeight: 600, color: '#0369A1' }}>Supporting Document:</span>
+            <a href={voucher.attachment_url} target="_blank" rel="noreferrer" style={{ fontSize: '12px', color: '#0284C7', textDecoration: 'underline' }}>
+              View Attached Bill / Invoice
+            </a>
+          </div>
+        )}
+
+        {/* Signatures & Seal Authorization Block */}
+        <div style={styles.signatureRow}>
+          <div style={styles.signCol}>
+            <div style={styles.signLine} />
+            <div style={styles.signTitle}>Prepared By</div>
+            <div style={styles.signRole}>Accounts Officer / Cashier</div>
           </div>
 
-          <div style={styles.journalTable}>
-            <div style={styles.journalTableHeader}>
-              <div style={{ flex: '3 1 300px' }}>Account Name</div>
-              <div style={{ flex: '1.2 1 120px', textAlign: 'right' }}>Debit (Dr)</div>
-              <div style={{ flex: '1.2 1 120px', textAlign: 'right' }}>Credit (Cr)</div>
+          <div style={styles.signCol}>
+            <div style={styles.sealGraphic}>
+              HRSJM<br />OFFICIAL<br />SEAL
             </div>
-
-            {lines.length > 0 ? (
-              lines.map((l) => {
-                const debit = Number(l.debit_amount ?? l.debit ?? 0);
-                const credit = Number(l.credit_amount ?? l.credit ?? 0);
-                return (
-                  <div key={l.id} style={styles.journalTableRow}>
-                    <div style={{ flex: '3 1 300px' }}>
-                      <span style={styles.accountText}>
-                        {l.account?.account_name || 'Account'}
-                      </span>
-                    </div>
-                    <div style={{ flex: '1.2 1 120px', textAlign: 'right' }}>
-                      <span style={{ color: debit > 0 ? '#15803D' : '#94A3B8', fontWeight: 600 }}>
-                        {debit > 0 ? formatINR(debit) : '—'}
-                      </span>
-                    </div>
-                    <div style={{ flex: '1.2 1 120px', textAlign: 'right' }}>
-                      <span style={{ color: credit > 0 ? '#C2410C' : '#94A3B8', fontWeight: 600 }}>
-                        {credit > 0 ? formatINR(credit) : '—'}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })
-            ) : (
-              <div style={styles.journalEmpty}>
-                No explicit journal lines registered. Journal entry will reflect on monthly balance sheet audit.
-              </div>
-            )}
+            <div style={styles.signTitle}>Verified &amp; Audited</div>
+            <div style={styles.signRole}>Internal Finance Auditor</div>
           </div>
+
+          <div style={styles.signCol}>
+            <div style={styles.signLine} />
+            <div style={styles.signTitle}>Authorized Signatory</div>
+            <div style={styles.signRole}>Treasurer / General Secretary</div>
+          </div>
+        </div>
+
+        {/* Official Statutory Footer */}
+        <div style={styles.footerNote}>
+          This is an official computer-generated payment disbursement voucher of <strong>Human Rights &amp; Social Justice Mission</strong>.
+          <br />
+          Certified for statutory society audit under the Societies Registration Act XXI of 1860. Retain for official accounting records.
         </div>
       </div>
-
-      {/* Cancel Modal */}
-      <ExpenseCancelModal
-        isOpen={cancelModalOpen}
-        onClose={() => setCancelModalOpen(false)}
-        onConfirm={handleConfirmCancel}
-        voucher={voucher}
-        isCancelling={isCancelling}
-      />
     </div>
   );
 };
 
 const styles: Record<string, React.CSSProperties> = {
   page: {
-    padding: '24px 32px',
-    maxWidth: '960px',
+    width: '100%',
+    maxWidth: '1100px',
     margin: '0 auto',
+    padding: '0 0 32px 0',
   },
   topBar: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: '16px',
-    marginBottom: '20px',
+    marginBottom: '16px',
     flexWrap: 'wrap',
   },
   backBtn: {
     display: 'inline-flex',
     alignItems: 'center',
     gap: '8px',
-    padding: '8px 14px',
-    borderRadius: '8px',
+    padding: '8px 16px',
+    borderRadius: '10px',
     border: '1px solid #CBD5E1',
     backgroundColor: '#FFFFFF',
     color: '#06294D',
     fontSize: '13px',
     fontWeight: 600,
     cursor: 'pointer',
+    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.04)',
+    transition: 'all 0.15s ease',
   },
   topActions: {
     display: 'flex',
     alignItems: 'center',
     gap: '10px',
   },
+  downloadBtn: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '6px',
+    padding: '8px 16px',
+    borderRadius: '10px',
+    border: '1px solid #BAE6FD',
+    backgroundColor: '#F0F9FF',
+    color: '#0284C7',
+    fontSize: '13px',
+    fontWeight: 700,
+    cursor: 'pointer',
+    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.04)',
+    transition: 'all 0.15s ease',
+  },
   printBtn: {
     display: 'inline-flex',
     alignItems: 'center',
     gap: '6px',
-    padding: '8px 16px',
-    borderRadius: '8px',
-    border: '1px solid #CBD5E1',
-    backgroundColor: '#FFFFFF',
-    color: '#334155',
+    padding: '8px 18px',
+    borderRadius: '10px',
+    border: '1px solid #011F39',
+    backgroundColor: '#011F39',
+    color: '#FAD465',
     fontSize: '13px',
-    fontWeight: 600,
+    fontWeight: 700,
     cursor: 'pointer',
+    boxShadow: '0 2px 4px rgba(1, 31, 57, 0.15)',
+    transition: 'all 0.15s ease',
   },
-  cancelVoucherBtn: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: '6px',
-    padding: '8px 16px',
-    borderRadius: '8px',
-    border: '1px solid #FECACA',
-    backgroundColor: '#FEF2F2',
-    color: '#DC2626',
-    fontSize: '13px',
-    fontWeight: 600,
-    cursor: 'pointer',
-  },
-  contentWrap: {
+  cancellationBanner: {
     display: 'flex',
-    flexDirection: 'column',
-    gap: '20px',
+    alignItems: 'flex-start',
+    gap: '12px',
+    padding: '14px 18px',
+    borderRadius: '8px',
+    backgroundColor: '#FEF2F2',
+    border: '1px solid #F87171',
+    marginBottom: '16px',
   },
-  heroCard: {
+
+  /* Receipt Slip Document Card */
+  receiptSlip: {
+    position: 'relative',
     backgroundColor: '#FFFFFF',
     borderRadius: '12px',
-    border: '1px solid #E2E8F0',
-    padding: '28px',
-    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
+    border: '2px solid #011F39',
+    padding: '28px 36px',
+    boxShadow: '0 4px 20px rgba(1, 31, 57, 0.08)',
+    overflow: 'hidden',
+    width: '100%',
   },
-  heroTop: {
+  watermark: {
+    position: 'absolute',
+    top: '48%',
+    left: '50%',
+    transform: 'translate(-50%, -50%) rotate(-24deg)',
+    fontSize: '68px',
+    fontWeight: 900,
+    color: 'rgba(1, 31, 57, 0.03)',
+    letterSpacing: '6px',
+    textTransform: 'uppercase',
+    pointerEvents: 'none',
+    whiteSpace: 'nowrap',
+    userSelect: 'none',
+  },
+
+  /* Letterhead */
+  letterhead: {
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: '20px',
+    gap: '20px',
+    borderBottom: '2px solid #011F39',
+    paddingBottom: '14px',
+    marginBottom: '16px',
   },
-  heroLeft: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '14px',
-  },
-  voucherIconCircle: {
-    width: '46px',
-    height: '46px',
-    borderRadius: '10px',
-    backgroundColor: '#FEF2F2',
-    border: '1px solid #FECACA',
+  logoWrap: {
+    width: '78px',
+    height: '78px',
+    flexShrink: 0,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  voucherIdLabel: {
-    fontSize: '11px',
-    fontWeight: 700,
-    color: '#64748B',
-    letterSpacing: '0.05em',
+  logoImg: {
+    width: '100%',
+    height: '100%',
+    objectFit: 'contain',
   },
-  voucherNum: {
-    margin: '2px 0 0 0',
-    fontSize: '24px',
+  orgInfo: {
+    flex: 1,
+    textAlign: 'center',
+  },
+  orgTitle: {
+    fontFamily: 'Playfair Display, Georgia, serif',
+    fontSize: '21px',
+    fontWeight: 900,
+    color: '#011F39',
+    letterSpacing: '0.5px',
+    margin: 0,
+    lineHeight: 1.2,
+  },
+  orgHindi: {
+    fontSize: '13px',
+    fontWeight: 700,
+    color: '#926A04',
+    marginTop: '3px',
+  },
+  orgTagline: {
+    fontSize: '10px',
+    color: '#475569',
+    fontStyle: 'italic',
+    marginTop: '2px',
+  },
+  orgRegLine: {
+    fontSize: '9.5px',
+    color: '#334155',
+    fontWeight: 600,
+    marginTop: '5px',
+    lineHeight: 1.4,
+  },
+
+  /* Voucher Ribbon */
+  voucherRibbon: {
+    background: 'linear-gradient(90deg, #011F39 0%, #06294D 100%)',
+    color: '#FAD465',
+    padding: '10px 18px',
+    borderRadius: '8px',
+    marginBottom: '16px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    border: '1px solid #E9B82E',
+  },
+  ribbonTitle: {
+    fontFamily: 'Playfair Display, Georgia, serif',
+    fontSize: '14px',
+    fontWeight: 800,
+    letterSpacing: '0.6px',
+    textTransform: 'uppercase',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+  },
+  cancelledTag: {
+    fontSize: '9px',
+    padding: '2px 6px',
+    borderRadius: '4px',
+    backgroundColor: '#DC2626',
+    color: '#FFFFFF',
+    fontWeight: 700,
+  },
+  webAppTag: {
+    fontSize: '9.5px',
+    padding: '2px 8px',
+    borderRadius: '4px',
+    backgroundColor: 'rgba(250, 212, 101, 0.25)',
+    border: '1px solid rgba(250, 212, 101, 0.5)',
+    color: '#FFFFFF',
+    fontWeight: 700,
+  },
+  ribbonSubtitle: {
+    fontSize: '10px',
+    color: '#FDF4DC',
+    marginTop: '2px',
+  },
+  ribbonRight: {
+    textAlign: 'right',
+  },
+  ribbonNumLabel: {
+    fontSize: '9px',
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px',
+    color: '#FDF4DC',
+  },
+  ribbonNumVal: {
+    fontFamily: 'monospace',
+    fontSize: '15px',
+    fontWeight: 800,
+    color: '#FFFFFF',
+  },
+
+  /* Metadata Table */
+  metaTable: {
+    width: '100%',
+    borderCollapse: 'collapse',
+    marginBottom: '16px',
+    backgroundColor: '#F8FAFC',
+    border: '1px solid #CBD5E1',
+    borderRadius: '8px',
+    fontSize: '11.5px',
+  },
+  metaLabel: {
+    padding: '8px 12px',
+    color: '#64748B',
+    fontWeight: 600,
+    fontSize: '10px',
+    textTransform: 'uppercase',
+    letterSpacing: '0.4px',
+    width: '25%',
+    border: '1px solid #E2E8F0',
+  },
+  metaVal: {
+    padding: '8px 12px',
+    fontWeight: 700,
+    color: '#0F172A',
+    width: '25%',
+    border: '1px solid #E2E8F0',
+  },
+
+  /* Section Title */
+  sectionTitle: {
+    fontSize: '11px',
+    fontWeight: 800,
+    textTransform: 'uppercase',
+    letterSpacing: '0.6px',
+    color: '#011F39',
+    borderBottom: '1.5px solid #011F39',
+    paddingBottom: '4px',
+    margin: '14px 0 10px 0',
+  },
+
+  /* Particulars Table */
+  particularsTable: {
+    width: '100%',
+    borderCollapse: 'collapse',
+    marginBottom: '14px',
+    fontSize: '11.5px',
+    border: '1px solid #CBD5E1',
+    borderRadius: '6px',
+  },
+  particularsThPayee: {
+    width: '28%',
+    backgroundColor: '#F1F5F9',
+    color: '#334155',
+    fontWeight: 700,
+    padding: '7px 12px',
+    border: '1px solid #CBD5E1',
+    textAlign: 'left',
+    fontSize: '10px',
+    textTransform: 'uppercase',
+  },
+  particularsThHead: {
+    width: '32%',
+    backgroundColor: '#F1F5F9',
+    color: '#334155',
+    fontWeight: 700,
+    padding: '7px 12px',
+    border: '1px solid #CBD5E1',
+    textAlign: 'left',
+    fontSize: '10px',
+    textTransform: 'uppercase',
+  },
+  particularsThPurpose: {
+    width: '40%',
+    backgroundColor: '#F1F5F9',
+    color: '#334155',
+    fontWeight: 700,
+    padding: '7px 12px',
+    border: '1px solid #CBD5E1',
+    textAlign: 'left',
+    fontSize: '10px',
+    textTransform: 'uppercase',
+  },
+  particularsTd: {
+    padding: '8px 12px',
+    border: '1px solid #E2E8F0',
+    verticalAlign: 'top',
+  },
+
+  /* Amount Box */
+  amountCard: {
+    backgroundColor: '#F8FAFC',
+    border: '1.5px solid #011F39',
+    borderRadius: '8px',
+    padding: '12px 16px',
+    margin: '14px 0',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: '20px',
+  },
+  amountWordsBox: {
+    flex: 1,
+  },
+  amountWordsTitle: {
+    fontSize: '9.5px',
+    fontWeight: 700,
+    textTransform: 'uppercase',
+    color: '#475569',
+    letterSpacing: '0.4px',
+  },
+  amountWordsVal: {
+    fontSize: '13px',
     fontWeight: 800,
     color: '#011F39',
-    fontFamily: 'Playfair Display, Georgia, serif',
+    marginTop: '3px',
   },
-  statusBadge: {
+  amountDigitsBox: {
+    textAlign: 'right',
+    paddingLeft: '20px',
+    borderLeft: '1.5px solid #CBD5E1',
+    minWidth: '180px',
+  },
+  amountDigitsTitle: {
+    fontSize: '9.5px',
+    fontWeight: 700,
+    textTransform: 'uppercase',
+    color: '#475569',
+  },
+  amountDigitsVal: {
+    fontSize: '24px',
+    fontWeight: 900,
+    fontFamily: 'Playfair Display, Georgia, serif',
+    lineHeight: 1.1,
+    marginTop: '3px',
+  },
+
+  /* Double-Entry Journal Table */
+  journalBox: {
+    backgroundColor: '#FAFAFA',
+    border: '1px solid #E2E8F0',
+    borderRadius: '8px',
+    padding: '12px 14px',
+    marginBottom: '14px',
+  },
+  journalBoxHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    fontSize: '11px',
+    borderBottom: '1px solid #E2E8F0',
+    paddingBottom: '8px',
+    marginBottom: '8px',
+  },
+  journalSubTable: {
+    width: '100%',
+    borderCollapse: 'collapse',
+    fontSize: '11.5px',
+  },
+  ledgerBtn: {
     display: 'inline-flex',
     alignItems: 'center',
-    gap: '6px',
-    padding: '6px 14px',
-    borderRadius: '16px',
-    fontSize: '13px',
-    fontWeight: 700,
-    border: '1px solid',
-  },
-  statusDot: {
-    width: '6px',
-    height: '6px',
-    borderRadius: '50%',
-  },
-  amountBox: {
-    padding: '20px',
-    backgroundColor: '#F8FAFC',
-    borderRadius: '8px',
-    border: '1px solid #E2E8F0',
-    display: 'flex',
-    flexDirection: 'column',
     gap: '4px',
-  },
-  amountLabel: {
-    fontSize: '12px',
-    fontWeight: 600,
-    color: '#64748B',
-    textTransform: 'uppercase',
-    letterSpacing: '0.03em',
-  },
-  amountText: {
-    fontSize: '32px',
-    fontWeight: 800,
-    fontFamily: 'Inter, sans-serif',
-  },
-  cancellationBox: {
-    marginTop: '16px',
-    padding: '14px',
-    backgroundColor: '#FEF2F2',
-    borderRadius: '8px',
-    border: '1px solid #FECACA',
-  },
-  cancelReasonLabel: {
-    fontSize: '12px',
-    fontWeight: 700,
-    color: '#991B1B',
-  },
-  cancelReasonText: {
-    margin: '4px 0 0 0',
-    fontSize: '13px',
-    color: '#B91C1C',
-  },
-  infoCard: {
+    padding: '4px 10px',
+    borderRadius: '6px',
+    border: '1px solid #CBD5E1',
     backgroundColor: '#FFFFFF',
-    borderRadius: '12px',
-    border: '1px solid #E2E8F0',
-    padding: '28px',
-    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
-  },
-  sectionHeading: {
-    margin: '0 0 16px 0',
-    fontSize: '17px',
-    fontWeight: 700,
-    color: '#011F39',
-    fontFamily: 'Playfair Display, Georgia, serif',
-  },
-  dataGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
-    gap: '16px',
-    marginBottom: '20px',
-  },
-  dataItem: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '4px',
-    padding: '10px 14px',
-    backgroundColor: '#F8FAFC',
-    borderRadius: '6px',
-  },
-  fieldLabel: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '6px',
-    fontSize: '12px',
-    fontWeight: 600,
-    color: '#64748B',
-  },
-  fieldValue: {
-    fontSize: '14px',
-    fontWeight: 600,
-    color: '#0F172A',
-  },
-  fieldValueHighlight: {
-    fontSize: '14px',
-    fontWeight: 700,
     color: '#0284C7',
+    fontSize: '11px',
+    fontWeight: 600,
+    cursor: 'pointer',
   },
-  descWrap: {
-    paddingTop: '16px',
-    borderTop: '1px solid #E2E8F0',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '6px',
-  },
-  descText: {
-    margin: 0,
-    fontSize: '14px',
-    lineHeight: 1.6,
-    color: '#334155',
-  },
+
+  /* Attachment Box */
   attachmentBox: {
-    marginTop: '16px',
-    padding: '12px 16px',
+    padding: '10px 14px',
     backgroundColor: '#F0F9FF',
-    borderRadius: '6px',
+    borderRadius: '8px',
     border: '1px solid #BAE6FD',
     display: 'flex',
     alignItems: 'center',
-    gap: '10px',
+    gap: '8px',
+    marginBottom: '14px',
   },
-  attachmentLabel: {
-    fontSize: '13px',
-    fontWeight: 600,
-    color: '#0369A1',
+
+  /* Signatures */
+  signatureRow: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    marginTop: '24px',
+    paddingTop: '16px',
+    borderTop: '1px dashed #CBD5E1',
   },
-  attachmentLink: {
-    fontSize: '13px',
-    fontWeight: 700,
-    color: '#0284C7',
-    textDecoration: 'underline',
+  signCol: {
+    textAlign: 'center',
+    width: '28%',
   },
-  journalHeader: {
-    marginBottom: '16px',
+  signLine: {
+    height: '38px',
+    borderBottom: '1px solid #011F39',
+    marginBottom: '6px',
   },
-  journalSubtext: {
-    fontSize: '12px',
+  signTitle: {
+    fontSize: '10.5px',
+    fontWeight: 800,
+    color: '#011F39',
+    textTransform: 'uppercase',
+  },
+  signRole: {
+    fontSize: '9px',
     color: '#64748B',
   },
-  journalTable: {
-    borderRadius: '8px',
-    border: '1px solid #E2E8F0',
-    overflow: 'hidden',
-  },
-  journalTableHeader: {
-    display: 'flex',
+  sealGraphic: {
+    width: '56px',
+    height: '56px',
+    borderRadius: '50%',
+    border: '1.5px dashed #06294D',
+    display: 'inline-flex',
     alignItems: 'center',
-    padding: '10px 16px',
-    backgroundColor: '#F8FAFC',
-    borderBottom: '1px solid #E2E8F0',
-    fontSize: '12px',
-    fontWeight: 700,
-    color: '#475569',
-    textTransform: 'uppercase',
-    letterSpacing: '0.04em',
-  },
-  journalTableRow: {
-    display: 'flex',
-    alignItems: 'center',
-    padding: '12px 16px',
-    borderBottom: '1px solid #F1F5F9',
-    backgroundColor: '#FFFFFF',
-    fontSize: '13.5px',
-  },
-  accountText: {
-    fontWeight: 600,
-    color: '#0F172A',
-  },
-  journalEmpty: {
-    padding: '24px',
+    justifyContent: 'center',
     textAlign: 'center',
-    fontSize: '13px',
-    color: '#94A3B8',
-    backgroundColor: '#FFFFFF',
+    fontSize: '7px',
+    fontWeight: 800,
+    color: '#06294D',
+    textTransform: 'uppercase',
+    padding: '3px',
+    lineHeight: 1.1,
+    backgroundColor: '#F8FAFC',
+    marginBottom: '4px',
   },
+
+  /* Footer Note */
+  footerNote: {
+    textAlign: 'center',
+    fontSize: '9px',
+    color: '#64748B',
+    marginTop: '18px',
+    borderTop: '1px solid #E2E8F0',
+    paddingTop: '10px',
+    lineHeight: 1.4,
+  },
+
   notFoundContainer: {
     padding: '80px 24px',
     textAlign: 'center',

@@ -180,9 +180,10 @@ class MemberStore {
     this.error = null;
 
     try {
-      const [membershipRes, userRes] = await Promise.allSettled([
+      const [membershipRes, userRes, impactRes] = await Promise.allSettled([
         memberService.getOwnMembership(),
         memberService.getOwnProfile(),
+        memberService.getOwnImpact(),
       ]);
 
       let changed = false;
@@ -190,14 +191,30 @@ class MemberStore {
       if (membershipRes.status === 'fulfilled' && membershipRes.value) {
         const memData = membershipRes.value.data || membershipRes.value;
         if (memData) {
+          const rawJoinDate =
+            memData.start_date ||
+            memData.applied_at ||
+            memData.created_at ||
+            memData.valid_from;
+          const rawValidUpto =
+            memData.expiry_date ||
+            memData.valid_until ||
+            memData.valid_upto;
+
           this.member = {
             ...this.member,
             id: memData.id || this.member.id,
             membershipNumber: memData.membership_number || this.member.membershipNumber,
             applicationNumber: memData.application_number || this.member.applicationNumber,
-            validFrom: memData.valid_from || this.member.validFrom,
-            validUpto: memData.valid_until || memData.valid_upto || this.member.validUpto,
-            categoryTitle: memData.category?.name || this.member.categoryTitle,
+            validFrom: rawJoinDate || this.member.validFrom,
+            validUpto: rawValidUpto || this.member.validUpto,
+            joiningDate: rawJoinDate || this.member.joiningDate,
+            categoryTitle:
+              memData.category?.name ||
+              memData.application_data?.post_title ||
+              memData.application_data?.category_title ||
+              memData.category_title ||
+              this.member.categoryTitle,
             status: (memData.status || this.member.status).toUpperCase() as MemberStatus,
           };
           changed = true;
@@ -214,6 +231,23 @@ class MemberStore {
             phone: uData.mobile_number || uData.phone || this.member.phone,
             avatarUrl: uData.avatar || uData.avatar_url || this.member.avatarUrl,
             bloodGroup: uData.blood_group || this.member.bloodGroup,
+          };
+          changed = true;
+        }
+      }
+
+      if (impactRes.status === 'fulfilled' && impactRes.value) {
+        const impact = impactRes.value.data || impactRes.value;
+        if (impact) {
+          this.member = {
+            ...this.member,
+            stats: {
+              ...this.member.stats,
+              totalDonated: impact.totalDonations !== undefined ? Number(impact.totalDonations) : this.member.stats.totalDonated,
+              donationCount: impact.causesSupported !== undefined ? Number(impact.causesSupported) : this.member.stats.donationCount,
+              eventsAttended: impact.eventsAttended !== undefined ? Number(impact.eventsAttended) : this.member.stats.eventsAttended,
+              ticketsCount: impact.complaintsSubmitted !== undefined ? Number(impact.complaintsSubmitted) : this.member.stats.ticketsCount,
+            },
           };
           changed = true;
         }

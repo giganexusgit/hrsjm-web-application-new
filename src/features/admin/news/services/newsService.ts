@@ -85,7 +85,17 @@ export function mapBackendNewsToUi(item: BackendNewsItem): NewsListItem {
     gallery: item.gallery || undefined,
     tags: item.tags || undefined,
     allowComments: item.allow_comments ?? true,
+    createdBy: (item as any).created_by ?? (item as any).createdBy ?? null,
   };
+}
+
+/**
+ * Returns true only for news articles created via the Admin module (excludes DB-seeded fixtures).
+ */
+export function isAdminCreatedNews(item: NewsListItem): boolean {
+  const idStr = String(item.id || '');
+  if (idStr.startsWith('20000000-') || idStr.startsWith('news-')) return false;
+  return Boolean(item.createdBy);
 }
 
 export const newsService = {

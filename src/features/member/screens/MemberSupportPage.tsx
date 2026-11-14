@@ -145,11 +145,13 @@ Verified Document Attachments:
       const generatedTicketNumber = `TKT-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
 
       try {
+        const formattedSubject = subject.trim().startsWith('[')
+          ? subject.trim()
+          : `[${helpCategories}] ${subject.trim()}`.slice(0, 200);
+
         await supportService.create({
-          category: helpCategories,
-          subject: subject.trim(),
+          subject: formattedSubject,
           description: structuredDescription,
-          priority: 'HIGH',
           source: 'web',
         });
       } catch (e) {

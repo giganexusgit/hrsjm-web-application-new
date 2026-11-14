@@ -1,5 +1,5 @@
 import type React from 'react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   X,
   Phone,
@@ -23,6 +23,7 @@ import { MemberStatusBadge } from './MemberStatusBadge';
 import { MemberIdCardModal } from './MemberIdCardModal';
 import { membersStore } from '../store/membersStore';
 import { useLockBodyScroll } from '@/hooks/useLockBodyScroll';
+import { getValidAvatarUrl } from '@/utils/avatar';
 
 interface MemberProfileModalProps {
   visible: boolean;
@@ -290,6 +291,14 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({
   const [activeTab, setActiveTab] = useState<ProfileTab>('overview');
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [showIdCardModal, setShowIdCardModal] = useState(false);
+  const [photoError, setPhotoError] = useState(false);
+
+  const photoUrl = member?.photo || (member as any)?.avatarUrl;
+  const validPhotoUrl = member ? getValidAvatarUrl(photoUrl) : null;
+
+  useEffect(() => {
+    setPhotoError(false);
+  }, [member?.id, photoUrl]);
 
   useLockBodyScroll(Boolean(visible && member));
 
@@ -360,24 +369,41 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-              <div
-                style={{
-                  width: '52px',
-                  height: '52px',
-                  borderRadius: '50%',
-                  backgroundColor: '#023158',
-                  color: '#FAD465',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '20px',
-                  fontWeight: 800,
-                  border: '2px solid #FAD465',
-                  flexShrink: 0,
-                }}
-              >
-                {member.name.charAt(0).toUpperCase()}
-              </div>
+              {validPhotoUrl && !photoError ? (
+                <img
+                  src={validPhotoUrl}
+                  alt=""
+                  onError={() => setPhotoError(true)}
+                  style={{
+                    width: '52px',
+                    height: '52px',
+                    borderRadius: '50%',
+                    objectFit: 'cover',
+                    border: '2px solid #FAD465',
+                    flexShrink: 0,
+                    backgroundColor: '#023158',
+                  }}
+                />
+              ) : (
+                <div
+                  style={{
+                    width: '52px',
+                    height: '52px',
+                    borderRadius: '50%',
+                    backgroundColor: '#023158',
+                    color: '#FAD465',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '20px',
+                    fontWeight: 800,
+                    border: '2px solid #FAD465',
+                    flexShrink: 0,
+                  }}
+                >
+                  {member.name.charAt(0).toUpperCase()}
+                </div>
+              )}
 
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>

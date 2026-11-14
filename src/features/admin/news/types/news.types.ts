@@ -41,6 +41,8 @@ export interface NewsListItem {
   allowComments?: boolean;
   /** Role visibility target */
   targetAudience?: string;
+  /** Admin user ID who created the article */
+  createdBy?: string | null;
 }
 
 export interface NewsStatsSummary {

@@ -66,7 +66,7 @@ export const RightsStatsCards: React.FC<RightsStatsCardsProps> = ({
   ];
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 w-full min-w-0">
       {cards.map((c) => {
         const IconComponent = c.icon;
         const isSelected = activeStatus === c.key;
@@ -76,14 +76,14 @@ export const RightsStatsCards: React.FC<RightsStatsCardsProps> = ({
             key={c.key}
             type="button"
             onClick={() => onSelectStatus && onSelectStatus(c.key)}
-            className={`text-left bg-white rounded-xl border p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md cursor-pointer ${
+            className={`w-full min-w-0 text-left bg-white rounded-xl border p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md cursor-pointer ${
               isSelected
                 ? `border-transparent ring-2 ${c.ringColor} shadow-md bg-slate-50/50`
                 : 'border-slate-200/90 shadow-xs hover:border-slate-300'
             }`}
           >
-            <div className="flex items-center justify-between mb-2.5">
-              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+            <div className="flex items-center justify-between gap-2 mb-2.5 min-w-0">
+              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider truncate">
                 {c.label}
               </span>
               <div

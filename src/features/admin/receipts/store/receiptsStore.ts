@@ -4,7 +4,6 @@ import type {
   UpdateReceiptPayload,
 } from '../types/receipts.types';
 import { receiptsService } from '../services/receiptsService';
-import { INITIAL_RECEIPT_ENTRIES } from '../data/receiptsFixtures';
 
 const STORAGE_KEY = 'hrsjm_local_receipts_v1';
 
@@ -33,19 +32,7 @@ class ReceiptsStore {
   }
 
   private loadInitial(): ReceiptEntryItem[] {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed;
-        }
-      }
-    } catch (e) {
-      console.warn('ReceiptsStore failed to parse localStorage:', e);
-    }
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_RECEIPT_ENTRIES));
-    return INITIAL_RECEIPT_ENTRIES;
+    return [];
   }
 
   private save(): void {

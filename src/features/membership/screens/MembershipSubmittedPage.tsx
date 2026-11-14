@@ -6,6 +6,7 @@ import {
   Printer,
   ArrowRight,
   Phone,
+  LayoutDashboard,
 } from 'lucide-react';
 import { useMembershipApply } from '../store/membershipApplyStore';
 import { Download } from 'lucide-react';
@@ -160,8 +161,22 @@ export const MembershipSubmittedPage: React.FC = () => {
             style={styles.primaryBtn}
           >
             <Clock size={16} />
-            <span>Track Application Status</span>
+            <span>Go to My Application</span>
             <ArrowRight size={16} />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => navigate('/user/dashboard')}
+            style={{
+              ...styles.outlineBtn,
+              backgroundColor: '#011F39',
+              color: '#FFFFFF',
+              borderColor: '#011F39',
+            }}
+          >
+            <LayoutDashboard size={16} />
+            <span>Go to User Dashboard</span>
           </button>
         </div>
 

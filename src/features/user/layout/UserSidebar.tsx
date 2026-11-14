@@ -5,7 +5,6 @@ import { USER_NAV_GROUPS } from './userNavItems';
 import { useUserAuth } from '../store/userAuthStore';
 import { executeSignOut } from '@/features/auth/store/authStore';
 import { useNavigate } from 'react-router-dom';
-import { HrsjmLogo } from '@/components/common/HrsjmLogo';
 
 interface UserSidebarProps {
   collapsed: boolean;
@@ -46,8 +45,7 @@ export const UserSidebar: React.FC<UserSidebarProps> = ({
         {/* Top Header / Brand Logo Section */}
         <div className="h-16 flex items-center justify-between px-4 border-b border-[#123F68] shrink-0">
           <div className="flex items-center gap-3 overflow-hidden">
-            <HrsjmLogo size="sm" variant="light" showWordmark={false} />
-            {(!collapsed || mobileOpen) && (
+            {(!collapsed || mobileOpen) ? (
               <div className="flex flex-col truncate">
                 <span className="text-base font-black tracking-tight text-white leading-tight">
                   HRSJM
@@ -55,6 +53,11 @@ export const UserSidebar: React.FC<UserSidebarProps> = ({
                 <span className="text-[9.5px] font-bold text-[#FAD465] uppercase tracking-wider leading-tight">
                   User Portal
                 </span>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center w-full">
+                <span className="text-sm font-black tracking-wider text-white">HRSJM</span>
+                <span className="text-[8px] font-bold text-[#FAD465] uppercase">Portal</span>
               </div>
             )}
           </div>
@@ -71,7 +74,7 @@ export const UserSidebar: React.FC<UserSidebarProps> = ({
         </div>
 
         {/* Scrollable Navigation Groups */}
-        <div className="flex-1 overflow-y-auto py-3 px-2 space-y-4 scrollbar-thin scrollbar-thumb-white/10">
+        <div data-sidebar="true" className="flex-1 overflow-y-auto py-3 px-2 space-y-4 scrollbar-thin scrollbar-thumb-white/10">
           {USER_NAV_GROUPS.map(group => (
             <div key={group.groupTitle} className="space-y-1">
               {(!collapsed || mobileOpen) ? (

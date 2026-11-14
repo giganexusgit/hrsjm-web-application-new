@@ -1,9 +1,34 @@
 import type React from 'react';
+import { useEffect, useSyncExternalStore } from 'react';
 import { Link } from 'react-router-dom';
 import { Calendar, MapPin, Users, ArrowRight } from 'lucide-react';
-import { DEMO_UPCOMING_EVENTS } from '../data/dashboardDemoData';
+import { eventsStore } from '@/features/admin/events/store/eventsStore';
 
 export const UpcomingEventsCard: React.FC = () => {
+  const snapshot = useSyncExternalStore(eventsStore.subscribe, eventsStore.getSnapshot);
+  const events = snapshot.events || [];
+
+  useEffect(() => {
+    eventsStore.fetchEvents();
+  }, []);
+
+  const upcomingEvents = events
+    .filter((e) => e.status === 'UPCOMING' || !e.status)
+    .slice(0, 3);
+
+  const formatEventDate = (isoStr?: string) => {
+    if (!isoStr) return { day: '--', month: '---' };
+    try {
+      const d = new Date(isoStr);
+      if (isNaN(d.getTime())) return { day: '--', month: '---' };
+      const day = d.getDate().toString().padStart(2, '0');
+      const month = d.toLocaleString('en-US', { month: 'short' });
+      return { day, month };
+    } catch {
+      return { day: '--', month: '---' };
+    }
+  };
+
   return (
     <div style={styles.card}>
       <div style={styles.header}>
@@ -24,31 +49,43 @@ export const UpcomingEventsCard: React.FC = () => {
       </div>
 
       <div style={styles.list}>
-        {DEMO_UPCOMING_EVENTS.map((event) => (
-          <div key={event.id} style={styles.eventItem}>
-            {/* Calendar Date Badge */}
-            <div style={styles.dateBadge}>
-              <span style={styles.dateDay}>{event.date.split(' ')[0]}</span>
-              <span style={styles.dateMonth}>{event.date.split(' ')[1]}</span>
-            </div>
-
-            {/* Event Info */}
-            <div style={styles.eventInfo}>
-              <div style={styles.categoryBadge}>{event.category}</div>
-              <h5 style={styles.eventTitle}>{event.title}</h5>
-              <div style={styles.metaRow}>
-                <div style={styles.metaItem}>
-                  <MapPin size={12} color="#718096" />
-                  <span>{event.location}</span>
+        {upcomingEvents.length === 0 ? (
+          <div style={styles.emptyContainer}>
+            <p style={styles.emptyText}>No upcoming events scheduled.</p>
+            <Link to="/admin/events" style={styles.createEventLink}>
+              View All Events
+            </Link>
+          </div>
+        ) : (
+          upcomingEvents.map((event) => {
+            const { day, month } = formatEventDate(event.startAt);
+            return (
+              <div key={event.id} style={styles.eventItem}>
+                {/* Calendar Date Badge */}
+                <div style={styles.dateBadge}>
+                  <span style={styles.dateDay}>{day}</span>
+                  <span style={styles.dateMonth}>{month}</span>
                 </div>
-                <div style={styles.metaItem}>
-                  <Users size={12} color="#718096" />
-                  <span>{event.registeredCount} Delegates</span>
+
+                {/* Event Info */}
+                <div style={styles.eventInfo}>
+                  <div style={styles.categoryBadge}>{event.category || 'EVENT'}</div>
+                  <h5 style={styles.eventTitle}>{event.title}</h5>
+                  <div style={styles.metaRow}>
+                    <div style={styles.metaItem}>
+                      <MapPin size={12} color="#718096" />
+                      <span>{event.location || 'Online / Venue'}</span>
+                    </div>
+                    <div style={styles.metaItem}>
+                      <Users size={12} color="#718096" />
+                      <span>{event.registrations || 0} Registered</span>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
-        ))}
+            );
+          })
+        )}
       </div>
     </div>
   );
@@ -112,6 +149,30 @@ const styles: Record<string, React.CSSProperties> = {
     flexDirection: 'column',
     gap: '12px',
     flex: 1,
+  },
+  emptyContainer: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '28px 16px',
+    textAlign: 'center',
+    gap: '8px',
+    backgroundColor: '#F8FAFC',
+    borderRadius: '8px',
+    border: '1px dashed #CBD5E1',
+    flex: 1,
+  },
+  emptyText: {
+    fontSize: '13px',
+    color: '#64748B',
+    margin: 0,
+  },
+  createEventLink: {
+    fontSize: '12.5px',
+    fontWeight: 600,
+    color: '#174A78',
+    textDecoration: 'none',
   },
   eventItem: {
     display: 'flex',
@@ -181,4 +242,3 @@ const styles: Record<string, React.CSSProperties> = {
     gap: '4px',
   },
 };
-

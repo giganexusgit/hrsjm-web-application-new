@@ -111,8 +111,8 @@ export const AddMemberPage: React.FC = () => {
     selectedGroup === 'national'
       ? 'National Council Cell'
       : selectedGroup === 'letter_pad'
-      ? 'Letter Pad Dignitary'
-      : 'District & State Unit';
+        ? 'Letter Pad Dignitary'
+        : 'District & State Unit';
 
   const groupCounts = useMemo(() => {
     return {
@@ -291,13 +291,12 @@ export const AddMemberPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => currentStep > 1 && setCurrentStep(1)}
-                className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition shadow-xs ${
-                  currentStep > 1
-                    ? 'bg-[#E9B82E] text-white cursor-pointer'
-                    : currentStep === 1
+                className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition shadow-xs ${currentStep > 1
+                  ? 'bg-[#E9B82E] text-white cursor-pointer'
+                  : currentStep === 1
                     ? 'bg-[#011F39] text-[#FAD465] border-2 border-[#E9B82E]'
                     : 'bg-slate-200 text-slate-500'
-                }`}
+                  }`}
               >
                 {currentStep > 1 ? <Check size={16} /> : '1'}
               </button>
@@ -307,9 +306,8 @@ export const AddMemberPage: React.FC = () => {
             </div>
 
             <div
-              className={`flex-1 h-0.5 mx-2 -mt-5 transition-colors ${
-                currentStep > 1 ? 'bg-[#E9B82E]' : 'bg-slate-200'
-              }`}
+              className={`flex-1 h-0.5 mx-2 -mt-5 transition-colors ${currentStep > 1 ? 'bg-[#E9B82E]' : 'bg-slate-200'
+                }`}
             />
 
             {/* Step 2 */}
@@ -320,13 +318,12 @@ export const AddMemberPage: React.FC = () => {
                   if (currentStep > 2) setCurrentStep(2);
                   else if (currentStep === 1 && validateStep1()) setCurrentStep(2);
                 }}
-                className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition shadow-xs ${
-                  currentStep > 2
-                    ? 'bg-[#E9B82E] text-white cursor-pointer'
-                    : currentStep === 2
+                className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition shadow-xs ${currentStep > 2
+                  ? 'bg-[#E9B82E] text-white cursor-pointer'
+                  : currentStep === 2
                     ? 'bg-[#011F39] text-[#FAD465] border-2 border-[#E9B82E]'
                     : 'bg-slate-200 text-slate-500'
-                }`}
+                  }`}
               >
                 {currentStep > 2 ? <Check size={16} /> : '2'}
               </button>
@@ -336,19 +333,17 @@ export const AddMemberPage: React.FC = () => {
             </div>
 
             <div
-              className={`flex-1 h-0.5 mx-2 -mt-5 transition-colors ${
-                currentStep > 2 ? 'bg-[#E9B82E]' : 'bg-slate-200'
-              }`}
+              className={`flex-1 h-0.5 mx-2 -mt-5 transition-colors ${currentStep > 2 ? 'bg-[#E9B82E]' : 'bg-slate-200'
+                }`}
             />
 
             {/* Step 3 */}
             <div className="flex flex-col items-center z-10">
               <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition shadow-xs ${
-                  currentStep === 3
-                    ? 'bg-[#011F39] text-[#FAD465] border-2 border-[#E9B82E]'
-                    : 'bg-slate-200 text-slate-500'
-                }`}
+                className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition shadow-xs ${currentStep === 3
+                  ? 'bg-[#011F39] text-[#FAD465] border-2 border-[#E9B82E]'
+                  : 'bg-slate-200 text-slate-500'
+                  }`}
               >
                 3
               </div>
@@ -375,11 +370,10 @@ export const AddMemberPage: React.FC = () => {
           <button
             type="button"
             onClick={() => setShowPostPicker(!showPostPicker)}
-            className={`w-full text-left p-4 rounded-2xl border-2 transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs ${
-              showPostPicker
-                ? 'border-[#06294D] bg-[#FAF7F0] ring-3 ring-[#06294D]/10'
-                : 'border-[#DCE4EC] hover:border-[#06294D] bg-white hover:bg-[#FAF7F0]/60'
-            }`}
+            className={`w-full text-left p-4 rounded-2xl border-2 transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs ${showPostPicker
+              ? 'border-[#06294D] bg-[#FAF7F0] ring-3 ring-[#06294D]/10'
+              : 'border-[#DCE4EC] hover:border-[#06294D] bg-white hover:bg-[#FAF7F0]/60'
+              }`}
           >
             <div className="flex items-center gap-3.5 min-w-0">
               <div className="w-12 h-12 rounded-xl bg-[#011F39] text-[#FAD465] border border-[#FAD465]/30 flex items-center justify-center shrink-0 shadow-xs">
@@ -412,11 +406,10 @@ export const AddMemberPage: React.FC = () => {
                 </div>
               </div>
               <div
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs ${
-                  showPostPicker
-                    ? 'bg-[#011F39] text-[#FAD465]'
-                    : 'bg-[#011F39]/5 text-[#011F39] hover:bg-[#011F39] hover:text-[#FAD465]'
-                }`}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs ${showPostPicker
+                  ? 'bg-[#011F39] text-[#FAD465]'
+                  : 'bg-[#011F39]/5 text-[#011F39] hover:bg-[#011F39] hover:text-[#FAD465]'
+                  }`}
               >
                 <span>{showPostPicker ? 'Close Picker' : 'Choose Post'}</span>
                 <ChevronDown size={14} className={`transition-transform duration-200 ${showPostPicker ? 'rotate-180' : ''}`} />
@@ -465,117 +458,105 @@ export const AddMemberPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setCadreTier('district_state')}
-                    className={`p-3 rounded-xl border-2 text-left transition-all cursor-pointer flex flex-col justify-between ${
-                      cadreTier === 'district_state'
-                        ? 'border-[#011F39] bg-[#011F39] text-white shadow-sm ring-2 ring-[#011F39]/20'
-                        : 'border-[#DCE4EC] bg-white hover:border-[#06294D] hover:bg-[#FAF7F0] text-[#011F39]'
-                    }`}
+                    className={`p-3 rounded-xl border-2 text-left transition-all cursor-pointer flex flex-col justify-between ${cadreTier === 'district_state'
+                      ? 'border-[#011F39] bg-[#011F39] text-white shadow-sm ring-2 ring-[#011F39]/20'
+                      : 'border-[#DCE4EC] bg-white hover:border-[#06294D] hover:bg-[#FAF7F0] text-[#011F39]'
+                      }`}
                   >
                     <div className="flex items-center justify-between mb-1">
                       <span
-                        className={`text-[9.5px] font-black uppercase px-1.5 py-0.5 rounded ${
-                          cadreTier === 'district_state'
-                            ? 'bg-[#FAD465] text-[#011F39]'
-                            : 'bg-[#FAF7F0] text-[#06294D] border border-[#DCE4EC]'
-                        }`}
+                        className={`text-[9.5px] font-black uppercase px-1.5 py-0.5 rounded ${cadreTier === 'district_state'
+                          ? 'bg-[#FAD465] text-[#011F39]'
+                          : 'bg-[#FAF7F0] text-[#06294D] border border-[#DCE4EC]'
+                          }`}
                       >
                         Tier 1
                       </span>
                       <span
-                        className={`text-[10.5px] font-bold ${
-                          cadreTier === 'district_state' ? 'text-[#FAD465]' : 'text-[#34516D]'
-                        }`}
+                        className={`text-[10.5px] font-bold ${cadreTier === 'district_state' ? 'text-[#FAD465]' : 'text-[#34516D]'
+                          }`}
                       >
                         {groupCounts.district_state} Posts
                       </span>
                     </div>
                     <div className={`text-xs font-bold leading-tight ${cadreTier === 'district_state' ? 'text-white' : 'text-[#011F39]'}`}>
-                      District &amp; State Units
+                      District & State Level Posts
                     </div>
                     <div
-                      className={`text-[10.5px] mt-0.5 leading-snug ${
-                        cadreTier === 'district_state' ? 'text-slate-200' : 'text-slate-500'
-                      }`}
+                      className={`text-[10.5px] mt-0.5 leading-snug ${cadreTier === 'district_state' ? 'text-slate-200' : 'text-slate-500'
+                        }`}
                     >
                       Active Members &amp; Unit Posts
                     </div>
                   </button>
 
-                  {/* Option 2: Letter Pad Dignitaries */}
+                  {/* Option 2: Letter Pad Posts */}
                   <button
                     type="button"
                     onClick={() => setCadreTier('letter_pad')}
-                    className={`p-3 rounded-xl border-2 text-left transition-all cursor-pointer flex flex-col justify-between ${
-                      cadreTier === 'letter_pad'
-                        ? 'border-[#011F39] bg-[#011F39] text-white shadow-sm ring-2 ring-[#011F39]/20'
-                        : 'border-[#DCE4EC] bg-white hover:border-[#06294D] hover:bg-[#FAF7F0] text-[#011F39]'
-                    }`}
+                    className={`p-3 rounded-xl border-2 text-left transition-all cursor-pointer flex flex-col justify-between ${cadreTier === 'letter_pad'
+                      ? 'border-[#011F39] bg-[#011F39] text-white shadow-sm ring-2 ring-[#011F39]/20'
+                      : 'border-[#DCE4EC] bg-white hover:border-[#06294D] hover:bg-[#FAF7F0] text-[#011F39]'
+                      }`}
                   >
                     <div className="flex items-center justify-between mb-1">
                       <span
-                        className={`text-[9.5px] font-black uppercase px-1.5 py-0.5 rounded ${
-                          cadreTier === 'letter_pad'
-                            ? 'bg-[#FAD465] text-[#011F39]'
-                            : 'bg-[#FAF7F0] text-[#06294D] border border-[#DCE4EC]'
-                        }`}
+                        className={`text-[9.5px] font-black uppercase px-1.5 py-0.5 rounded ${cadreTier === 'letter_pad'
+                          ? 'bg-[#FAD465] text-[#011F39]'
+                          : 'bg-[#FAF7F0] text-[#06294D] border border-[#DCE4EC]'
+                          }`}
                       >
                         Tier 2
                       </span>
                       <span
-                        className={`text-[10.5px] font-bold ${
-                          cadreTier === 'letter_pad' ? 'text-[#FAD465]' : 'text-[#34516D]'
-                        }`}
+                        className={`text-[10.5px] font-bold ${cadreTier === 'letter_pad' ? 'text-[#FAD465]' : 'text-[#34516D]'
+                          }`}
                       >
                         {groupCounts.letter_pad} Posts
                       </span>
                     </div>
                     <div className={`text-xs font-bold leading-tight ${cadreTier === 'letter_pad' ? 'text-white' : 'text-[#011F39]'}`}>
-                      Letter Pad Dignitaries
+                      Letter Pad Posts
                     </div>
                     <div
-                      className={`text-[10.5px] mt-0.5 leading-snug ${
-                        cadreTier === 'letter_pad' ? 'text-slate-200' : 'text-slate-500'
-                      }`}
+                      className={`text-[10.5px] mt-0.5 leading-snug ${cadreTier === 'letter_pad' ? 'text-slate-200' : 'text-slate-500'
+                        }`}
                     >
                       Lion, Counsellor, Ambassador, Director
                     </div>
                   </button>
 
-                  {/* Option 3: National Council Cells */}
+                  {/* Option 3: National Level Posts */}
                   <button
                     type="button"
                     onClick={() => setCadreTier('national')}
-                    className={`p-3 rounded-xl border-2 text-left transition-all cursor-pointer flex flex-col justify-between ${
-                      cadreTier === 'national'
-                        ? 'border-[#011F39] bg-[#011F39] text-white shadow-sm ring-2 ring-[#011F39]/20'
-                        : 'border-[#DCE4EC] bg-white hover:border-[#06294D] hover:bg-[#FAF7F0] text-[#011F39]'
-                    }`}
+                    className={`p-3 rounded-xl border-2 text-left transition-all cursor-pointer flex flex-col justify-between ${cadreTier === 'national'
+                      ? 'border-[#011F39] bg-[#011F39] text-white shadow-sm ring-2 ring-[#011F39]/20'
+                      : 'border-[#DCE4EC] bg-white hover:border-[#06294D] hover:bg-[#FAF7F0] text-[#011F39]'
+                      }`}
                   >
                     <div className="flex items-center justify-between mb-1">
                       <span
-                        className={`text-[9.5px] font-black uppercase px-1.5 py-0.5 rounded ${
-                          cadreTier === 'national'
-                            ? 'bg-[#FAD465] text-[#011F39]'
-                            : 'bg-[#FAF7F0] text-[#06294D] border border-[#DCE4EC]'
-                        }`}
+                        className={`text-[9.5px] font-black uppercase px-1.5 py-0.5 rounded ${cadreTier === 'national'
+                          ? 'bg-[#FAD465] text-[#011F39]'
+                          : 'bg-[#FAF7F0] text-[#06294D] border border-[#DCE4EC]'
+                          }`}
                       >
                         Tier 3
                       </span>
                       <span
-                        className={`text-[10.5px] font-bold ${
-                          cadreTier === 'national' ? 'text-[#FAD465]' : 'text-[#34516D]'
-                        }`}
+                        className={`text-[10.5px] font-bold ${cadreTier === 'national' ? 'text-[#FAD465]' : 'text-[#34516D]'
+                          }`}
                       >
                         {groupCounts.national} Posts
                       </span>
                     </div>
                     <div className={`text-xs font-bold leading-tight ${cadreTier === 'national' ? 'text-white' : 'text-[#011F39]'}`}>
-                      National Council Cells
+                      National Level Posts
                     </div>
                     <div
-                      className={`text-[10.5px] mt-0.5 leading-snug ${
-                        cadreTier === 'national' ? 'text-slate-200' : 'text-slate-500'
-                      }`}
+                      className={`text-[10.5px] mt-0.5 leading-snug ${cadreTier === 'national' ? 'text-slate-200' : 'text-slate-500'
+                        }`}
                     >
                       Legal, Minority, Woman, Political
                     </div>
@@ -590,8 +571,8 @@ export const AddMemberPage: React.FC = () => {
                   {cadreTier === 'district_state'
                     ? 'District & State Units'
                     : cadreTier === 'letter_pad'
-                    ? 'Letter Pad Dignitaries'
-                    : 'National Council Cells'}
+                      ? 'Letter Pad Posts'
+                      : 'National Level Post'}
                   :
                 </span>
                 <span className="text-[#34516D] lowercase font-medium">
@@ -613,8 +594,8 @@ export const AddMemberPage: React.FC = () => {
                       group === 'national'
                         ? 'National Council'
                         : group === 'letter_pad'
-                        ? 'Letter Pad Dignitary'
-                        : 'District & State';
+                          ? 'Letter Pad Dignitary'
+                          : 'District & State';
 
                     return (
                       <button
@@ -624,30 +605,27 @@ export const AddMemberPage: React.FC = () => {
                           setCategoryId(c.id);
                           setShowPostPicker(false);
                         }}
-                        className={`w-full p-3 rounded-xl border text-left transition flex items-center justify-between gap-3 cursor-pointer ${
-                          isCurrent
-                            ? 'bg-[#011F39] text-white border-[#011F39] ring-2 ring-[#011F39]/20 shadow-xs'
-                            : 'bg-white hover:bg-[#FAF7F0] text-[#34516D] border-[#DCE4EC] hover:border-[#06294D]'
-                        }`}
+                        className={`w-full p-3 rounded-xl border text-left transition flex items-center justify-between gap-3 cursor-pointer ${isCurrent
+                          ? 'bg-[#011F39] text-white border-[#011F39] ring-2 ring-[#011F39]/20 shadow-xs'
+                          : 'bg-white hover:bg-[#FAF7F0] text-[#34516D] border-[#DCE4EC] hover:border-[#06294D]'
+                          }`}
                       >
                         <div className="flex items-center gap-3 min-w-0">
                           {/* Selection Radio / Check Indicator */}
-                          <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 border ${
-                            isCurrent
-                              ? 'border-[#FAD465] bg-[#FAD465] text-[#011F39]'
-                              : 'border-slate-300 bg-slate-50'
-                          }`}>
+                          <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 border ${isCurrent
+                            ? 'border-[#FAD465] bg-[#FAD465] text-[#011F39]'
+                            : 'border-slate-300 bg-slate-50'
+                            }`}>
                             {isCurrent && <Check size={12} strokeWidth={3} />}
                           </div>
 
                           <div className="min-w-0">
                             <div className="flex items-center gap-2 mb-0.5 flex-wrap">
                               <span
-                                className={`text-[9.5px] font-extrabold uppercase px-1.5 py-0.5 rounded ${
-                                  isCurrent
-                                    ? 'bg-white/20 text-[#FAD465]'
-                                    : 'bg-[#EDF2F7] text-[#06294D]'
-                                }`}
+                                className={`text-[9.5px] font-extrabold uppercase px-1.5 py-0.5 rounded ${isCurrent
+                                  ? 'bg-white/20 text-[#FAD465]'
+                                  : 'bg-[#EDF2F7] text-[#06294D]'
+                                  }`}
                               >
                                 {groupBadge}
                               </span>
@@ -707,9 +685,8 @@ export const AddMemberPage: React.FC = () => {
                       setFullName(e.target.value);
                       if (errors.fullName) setErrors((prev) => ({ ...prev, fullName: '' }));
                     }}
-                    className={`w-full px-3.5 py-2 text-xs sm:text-sm rounded-xl border bg-white transition focus:outline-none ${
-                      errors.fullName ? 'border-red-400 bg-red-50/20' : 'border-[#DCE4EC] focus:border-[#06294D]'
-                    }`}
+                    className={`w-full px-3.5 py-2 text-xs sm:text-sm rounded-xl border bg-white transition focus:outline-none ${errors.fullName ? 'border-red-400 bg-red-50/20' : 'border-[#DCE4EC] focus:border-[#06294D]'
+                      }`}
                   />
                   {errors.fullName && <p className="text-[11px] text-red-600 mt-1">{errors.fullName}</p>}
                 </div>
@@ -726,9 +703,8 @@ export const AddMemberPage: React.FC = () => {
                       setPhone(e.target.value);
                       if (errors.phone) setErrors((prev) => ({ ...prev, phone: '' }));
                     }}
-                    className={`w-full px-3.5 py-2 text-xs sm:text-sm rounded-xl border bg-white transition focus:outline-none ${
-                      errors.phone ? 'border-red-400 bg-red-50/20' : 'border-[#DCE4EC] focus:border-[#06294D]'
-                    }`}
+                    className={`w-full px-3.5 py-2 text-xs sm:text-sm rounded-xl border bg-white transition focus:outline-none ${errors.phone ? 'border-red-400 bg-red-50/20' : 'border-[#DCE4EC] focus:border-[#06294D]'
+                      }`}
                   />
                   {errors.phone && <p className="text-[11px] text-red-600 mt-1">{errors.phone}</p>}
                 </div>
@@ -745,9 +721,8 @@ export const AddMemberPage: React.FC = () => {
                       setEmail(e.target.value);
                       if (errors.email) setErrors((prev) => ({ ...prev, email: '' }));
                     }}
-                    className={`w-full px-3.5 py-2 text-xs sm:text-sm rounded-xl border bg-white transition focus:outline-none ${
-                      errors.email ? 'border-red-400 bg-red-50/20' : 'border-[#DCE4EC] focus:border-[#06294D]'
-                    }`}
+                    className={`w-full px-3.5 py-2 text-xs sm:text-sm rounded-xl border bg-white transition focus:outline-none ${errors.email ? 'border-red-400 bg-red-50/20' : 'border-[#DCE4EC] focus:border-[#06294D]'
+                      }`}
                   />
                   {errors.email && <p className="text-[11px] text-red-600 mt-1">{errors.email}</p>}
                 </div>
@@ -834,9 +809,8 @@ export const AddMemberPage: React.FC = () => {
                     setAddress(e.target.value);
                     if (errors.address) setErrors((prev) => ({ ...prev, address: '' }));
                   }}
-                  className={`w-full px-3.5 py-2 text-xs sm:text-sm rounded-xl border bg-white transition focus:outline-none ${
-                    errors.address ? 'border-red-400 bg-red-50/20' : 'border-[#DCE4EC] focus:border-[#06294D]'
-                  }`}
+                  className={`w-full px-3.5 py-2 text-xs sm:text-sm rounded-xl border bg-white transition focus:outline-none ${errors.address ? 'border-red-400 bg-red-50/20' : 'border-[#DCE4EC] focus:border-[#06294D]'
+                    }`}
                 />
                 {errors.address && <p className="text-[11px] text-red-600 mt-1">{errors.address}</p>}
               </div>
@@ -870,9 +844,8 @@ export const AddMemberPage: React.FC = () => {
                         setCity(e.target.value);
                         if (errors.city) setErrors((prev) => ({ ...prev, city: '' }));
                       }}
-                      className={`w-full px-3.5 py-2 text-xs sm:text-sm rounded-xl border bg-white transition focus:outline-none ${
-                        errors.city ? 'border-red-400 bg-red-50/20' : 'border-[#DCE4EC] focus:border-[#06294D]'
-                      }`}
+                      className={`w-full px-3.5 py-2 text-xs sm:text-sm rounded-xl border bg-white transition focus:outline-none ${errors.city ? 'border-red-400 bg-red-50/20' : 'border-[#DCE4EC] focus:border-[#06294D]'
+                        }`}
                     >
                       <option value="">Select City / District</option>
                       {citiesForState.map((c) => (
@@ -890,9 +863,8 @@ export const AddMemberPage: React.FC = () => {
                         setCity(e.target.value);
                         if (errors.city) setErrors((prev) => ({ ...prev, city: '' }));
                       }}
-                      className={`w-full px-3.5 py-2 text-xs sm:text-sm rounded-xl border bg-white transition focus:outline-none ${
-                        errors.city ? 'border-red-400 bg-red-50/20' : 'border-[#DCE4EC] focus:border-[#06294D]'
-                      }`}
+                      className={`w-full px-3.5 py-2 text-xs sm:text-sm rounded-xl border bg-white transition focus:outline-none ${errors.city ? 'border-red-400 bg-red-50/20' : 'border-[#DCE4EC] focus:border-[#06294D]'
+                        }`}
                     />
                   )}
                   {errors.city && <p className="text-[11px] text-red-600 mt-1">{errors.city}</p>}
@@ -910,9 +882,8 @@ export const AddMemberPage: React.FC = () => {
                       setPincode(val);
                       if (errors.pincode) setErrors((prev) => ({ ...prev, pincode: '' }));
                     }}
-                    className={`w-full px-3.5 py-2 text-xs sm:text-sm rounded-xl border bg-white transition focus:outline-none ${
-                      errors.pincode ? 'border-red-400 bg-red-50/20' : 'border-[#DCE4EC] focus:border-[#06294D]'
-                    }`}
+                    className={`w-full px-3.5 py-2 text-xs sm:text-sm rounded-xl border bg-white transition focus:outline-none ${errors.pincode ? 'border-red-400 bg-red-50/20' : 'border-[#DCE4EC] focus:border-[#06294D]'
+                      }`}
                   />
                   {errors.pincode && <p className="text-[11px] text-red-600 mt-1">{errors.pincode}</p>}
                 </div>

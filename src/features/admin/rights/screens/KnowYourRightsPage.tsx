@@ -167,7 +167,7 @@ export const KnowYourRightsPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
+    <div className="w-full max-w-7xl mx-auto space-y-6 min-w-0">
       {/* Top Breadcrumb & Header */}
       <div className="space-y-2">
         {/* Breadcrumb */}
@@ -241,40 +241,44 @@ export const KnowYourRightsPage: React.FC = () => {
       />
 
       {/* Table Container */}
-      <div className="shadow-xs rounded-xl overflow-hidden">
-        <RightsListHeader />
+      <div className="w-full min-w-0 shadow-xs rounded-xl overflow-hidden">
+        <div className="w-full overflow-x-auto">
+          <div className="min-w-[820px]">
+            <RightsListHeader />
 
-        {filteredArticles.length > 0 ? (
-          filteredArticles.map((article) => (
-            <RightsCard
-              key={article.id}
-              article={article}
-              onPress={handleCardPress}
-              onMorePress={handleMorePress}
-            />
-          ))
-        ) : (
-          <div className="bg-white rounded-b-xl border border-slate-200 p-12 text-center shadow-xs">
-            <div className="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-3">
-              <AlertCircle size={28} className="text-slate-400" />
-            </div>
-            <h3 className="font-serif font-bold text-lg text-slate-800 mb-1">
-              No Rights Articles Found
-            </h3>
-            <p className="text-xs sm:text-sm text-slate-500 max-w-sm mx-auto mb-4">
-              No articles match the selected filters or search keyword. Try clearing filters or creating a new article.
-            </p>
-            {hasActiveFilters && (
-              <button
-                type="button"
-                onClick={handleResetFilters}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer shadow-2xs"
-              >
-                Clear All Filters
-              </button>
+            {filteredArticles.length > 0 ? (
+              filteredArticles.map((article) => (
+                <RightsCard
+                  key={article.id}
+                  article={article}
+                  onPress={handleCardPress}
+                  onMorePress={handleMorePress}
+                />
+              ))
+            ) : (
+              <div className="bg-white rounded-b-xl border border-slate-200 p-12 text-center shadow-xs">
+                <div className="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-3">
+                  <AlertCircle size={28} className="text-slate-400" />
+                </div>
+                <h3 className="font-serif font-bold text-lg text-slate-800 mb-1">
+                  No Rights Articles Found
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-500 max-w-sm mx-auto mb-4">
+                  No articles match the selected filters or search keyword. Try clearing filters or creating a new article.
+                </p>
+                {hasActiveFilters && (
+                  <button
+                    type="button"
+                    onClick={handleResetFilters}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer shadow-2xs"
+                  >
+                    Clear All Filters
+                  </button>
+                )}
+              </div>
             )}
           </div>
-        )}
+        </div>
       </div>
 
       {/* Filter Modal */}

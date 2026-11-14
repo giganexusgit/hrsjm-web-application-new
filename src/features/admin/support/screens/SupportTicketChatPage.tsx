@@ -1,5 +1,5 @@
 import type React from 'react';
-import { useSyncExternalStore } from 'react';
+import { useSyncExternalStore, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, User } from 'lucide-react';
 import { supportStore } from '../store/supportStore';
@@ -17,6 +17,12 @@ export const SupportTicketChatPage: React.FC = () => {
 
   const ticket = storeSnapshot.tickets.find((t) => t.id === id);
   const messages = id ? storeSnapshot.messagesByTicket[id] || [] : [];
+
+  useEffect(() => {
+    if (id) {
+      supportStore.markTicketViewed(id);
+    }
+  }, [id]);
 
   if (!ticket) {
     return (

@@ -8,7 +8,9 @@ const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Se
 
 export interface MembershipGrowthChartProps {
   initialGrowth?: { month: string; total: number }[];
+  growthData?: { month: string; total: number }[];
   totalMembers?: number;
+  currentCount?: number;
   activeMembers?: number;
 }
 
@@ -58,39 +60,43 @@ const computeDailyGrowthFromMembers = (
 
 export const MembershipGrowthChart: React.FC<MembershipGrowthChartProps> = ({
   initialGrowth,
+  growthData,
   totalMembers,
+  currentCount,
   activeMembers,
 }) => {
+  const effectiveGrowth = initialGrowth || growthData;
+  const effectiveTotal = totalMembers ?? currentCount;
   const [range, setRange] = useState<'7d' | '30d' | '6m' | '1y'>('6m');
   const [hoveredPoint, setHoveredPoint] = useState<ExtendedGrowthPoint | null>(null);
   const [cachedData, setCachedData] = useState<Record<string, ExtendedGrowthPoint[]>>(() => {
     const initial: Record<string, ExtendedGrowthPoint[]> = {};
-    if (initialGrowth && initialGrowth.length > 0) {
-      initial['6m'] = parseMonthlyGrowth(initialGrowth);
+    if (effectiveGrowth && effectiveGrowth.length > 0) {
+      initial['6m'] = parseMonthlyGrowth(effectiveGrowth);
     }
     return initial;
   });
   const [isLoading, setIsLoading] = useState(false);
   const [isLiveConnected, setIsLiveConnected] = useState(false);
   const [membersCount, setMembersCount] = useState<{ total?: number; active?: number }>({
-    total: totalMembers,
+    total: effectiveTotal,
     active: activeMembers,
   });
 
   // Sync when initial props arrive or change
   useEffect(() => {
-    if (initialGrowth && initialGrowth.length > 0) {
-      const parsed = parseMonthlyGrowth(initialGrowth);
+    if (effectiveGrowth && effectiveGrowth.length > 0) {
+      const parsed = parseMonthlyGrowth(effectiveGrowth);
       setCachedData((prev) => ({ ...prev, '6m': parsed }));
       setIsLiveConnected(true);
     }
-  }, [initialGrowth]);
+  }, [effectiveGrowth]);
 
   useEffect(() => {
-    if (totalMembers !== undefined || activeMembers !== undefined) {
-      setMembersCount({ total: totalMembers, active: activeMembers });
+    if (effectiveTotal !== undefined || activeMembers !== undefined) {
+      setMembersCount({ total: effectiveTotal, active: activeMembers });
     }
-  }, [totalMembers, activeMembers]);
+  }, [effectiveTotal, activeMembers]);
 
   // Load data for the requested range from live API
   const loadDataForRange = useCallback(
@@ -157,7 +163,7 @@ export const MembershipGrowthChart: React.FC<MembershipGrowthChartProps> = ({
   const floorVal = Math.max(0, Math.floor(minVal - paddingY));
   const ceilVal = Math.ceil(maxVal + paddingY);
 
-  const width = 640;
+  const width = 960;
   const height = 240;
   const padLeft = 46;
   const padRight = 24;
@@ -367,6 +373,7 @@ export const MembershipGrowthChart: React.FC<MembershipGrowthChartProps> = ({
 
 const styles: Record<string, React.CSSProperties> = {
   card: {
+    width: '100%',
     backgroundColor: '#FFFFFF',
     border: '1px solid #DCE4EC',
     borderRadius: '12px',

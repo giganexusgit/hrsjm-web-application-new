@@ -1,5 +1,5 @@
 import type React from 'react';
-import { useState, useSyncExternalStore } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronRight, Calendar, Plus, Sparkles } from 'lucide-react';
 import { eventsStore } from '../store/eventsStore';
@@ -20,6 +20,10 @@ export const EventsListPage: React.FC = () => {
   const [selectedFormat, setSelectedFormat] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [createModalOpen, setCreateModalOpen] = useState(false);
+
+  useEffect(() => {
+    eventsStore.fetchEvents().catch(() => {});
+  }, []);
 
   // Filter events
   const filteredEvents = events.filter((e) => {

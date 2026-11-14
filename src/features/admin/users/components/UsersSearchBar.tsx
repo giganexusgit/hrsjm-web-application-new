@@ -18,15 +18,20 @@ export const UsersSearchBar: React.FC<UsersSearchBarProps> = ({
     <div
       style={{
         display: 'flex',
+        flexWrap: 'wrap',
         alignItems: 'center',
         gap: '12px',
-        marginBottom: '20px',
+        marginBottom: '8px',
+        width: '100%',
+        minWidth: 0,
+        boxSizing: 'border-box',
       }}
     >
       {/* Search Input Box */}
       <div
         style={{
-          flex: 1,
+          flex: '1 1 240px',
+          minWidth: 0,
           position: 'relative',
           display: 'flex',
           alignItems: 'center',

@@ -2,7 +2,7 @@ import type { AdminSettingsState } from '../types/settings.types';
 
 export const INITIAL_SETTINGS: AdminSettingsState = {
   organization: {
-    trustName: 'Human Rights Sanrakshan Jan Manch',
+    trustName: 'Human Rights &  Social Justice Mission',
     hindiName: 'मानव अधिकार एवं सामाजिक न्याय संरक्षण ट्रस्ट',
     registrationNumber: 'HR/0092/2019',
     urn80G: 'AAATH1234KF20214',

@@ -1,9 +1,22 @@
 import type React from 'react';
+import { useEffect, useSyncExternalStore } from 'react';
 import { Link } from 'react-router-dom';
 import { UsersRound, ArrowRight } from 'lucide-react';
-import { DEMO_RECENT_MEMBERS } from '../data/dashboardDemoData';
+import { membersStore } from '@/features/admin/members/store/membersStore';
 
 export const RecentMembersTable: React.FC = () => {
+  const storeSnapshot = useSyncExternalStore(
+    membersStore.subscribe,
+    membersStore.getSnapshot
+  );
+  const members = storeSnapshot.members.slice(0, 5);
+
+  useEffect(() => {
+    if (storeSnapshot.members.length === 0) {
+      membersStore.fetchMembers().catch(() => {});
+    }
+  }, [storeSnapshot.members.length]);
+
   return (
     <div style={styles.card}>
       <div style={styles.header}>
@@ -35,30 +48,40 @@ export const RecentMembersTable: React.FC = () => {
             </tr>
           </thead>
           <tbody>
-            {DEMO_RECENT_MEMBERS.map((member) => (
-              <tr key={member.id} style={styles.tr}>
-                <td style={styles.td}>
-                  <div style={styles.memberCell}>
-                    <div style={styles.avatar}>
-                      {member.name
-                        .split(' ')
-                        .map((n) => n[0])
-                        .slice(0, 2)
-                        .join('')}
-                    </div>
-                    <span style={styles.memberName}>{member.name}</span>
-                  </div>
-                </td>
-                <td style={styles.td}>
-                  <span style={styles.codeBadge}>{member.memberId}</span>
-                </td>
-                <td style={styles.td}>{member.category}</td>
-                <td style={styles.td}>{member.joinedDate}</td>
-                <td style={{ ...styles.td, textAlign: 'right' }}>
-                  <span style={styles.activePill}>Active</span>
+            {members.length === 0 ? (
+              <tr>
+                <td colSpan={5} style={{ ...styles.td, textAlign: 'center', padding: '32px 16px', color: '#64748B' }}>
+                  No members found in directory.
                 </td>
               </tr>
-            ))}
+            ) : (
+              members.map((member) => (
+                <tr key={member.id} style={styles.tr}>
+                  <td style={styles.td}>
+                    <div style={styles.memberCell}>
+                      <div style={styles.avatar}>
+                        {(member.name || 'Member')
+                          .split(' ')
+                          .map((n) => n[0])
+                          .slice(0, 2)
+                          .join('')}
+                      </div>
+                      <span style={styles.memberName}>{member.name}</span>
+                    </div>
+                  </td>
+                  <td style={styles.td}>
+                    <span style={styles.codeBadge}>{member.membershipId}</span>
+                  </td>
+                  <td style={styles.td}>{member.categoryName || 'General Member'}</td>
+                  <td style={styles.td}>
+                    {member.joinedDate ? new Date(member.joinedDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
+                  </td>
+                  <td style={{ ...styles.td, textAlign: 'right' }}>
+                    <span style={styles.activePill}>{member.status || 'Active'}</span>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
@@ -78,40 +101,41 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: '18px',
-    flexWrap: 'wrap',
+    marginBottom: '16px',
     gap: '12px',
+    flexWrap: 'wrap',
   },
   titleWrap: {
     display: 'flex',
     alignItems: 'center',
-    gap: '10px',
+    gap: '12px',
   },
   iconWrap: {
-    width: '36px',
-    height: '36px',
+    width: '38px',
+    height: '38px',
     borderRadius: '8px',
-    backgroundColor: '#EDF2F7',
+    backgroundColor: 'rgba(6, 41, 77, 0.08)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
   },
   title: {
-    fontSize: '16px',
-    fontWeight: 700,
-    color: '#0B2F52',
     margin: 0,
+    fontSize: '16px',
+    fontWeight: 600,
+    color: '#06294D',
   },
   subtitle: {
+    margin: '2px 0 0',
     fontSize: '12px',
-    color: '#718096',
-    margin: '2px 0 0 0',
+    color: '#64748B',
   },
   viewAllLink: {
     display: 'inline-flex',
     alignItems: 'center',
     gap: '6px',
-    fontSize: '12.5px',
+    fontSize: '13px',
     fontWeight: 600,
     color: '#174A78',
     textDecoration: 'none',
@@ -123,27 +147,25 @@ const styles: Record<string, React.CSSProperties> = {
     width: '100%',
     borderCollapse: 'collapse',
     textAlign: 'left',
-    fontSize: '13px',
   },
   theadRow: {
-    borderBottom: '1.5px solid #E2E8F0',
+    borderBottom: '1px solid #E2E8F0',
   },
   th: {
     padding: '10px 12px',
-    fontSize: '11.5px',
+    fontSize: '11px',
     fontWeight: 700,
-    color: '#718096',
+    color: '#64748B',
     textTransform: 'uppercase',
-    letterSpacing: '0.04em',
+    letterSpacing: '0.5px',
   },
   tr: {
     borderBottom: '1px solid #F1F5F9',
-    transition: 'background-color 0.12s',
   },
   td: {
     padding: '12px',
-    color: '#34516D',
-    whiteSpace: 'nowrap',
+    fontSize: '13px',
+    color: '#1E293B',
   },
   memberCell: {
     display: 'flex',
@@ -151,38 +173,39 @@ const styles: Record<string, React.CSSProperties> = {
     gap: '10px',
   },
   avatar: {
-    width: '30px',
-    height: '30px',
+    width: '32px',
+    height: '32px',
     borderRadius: '50%',
     backgroundColor: '#06294D',
-    color: '#FAD465',
+    color: '#FFFFFF',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     fontSize: '11px',
     fontWeight: 700,
+    flexShrink: 0,
   },
   memberName: {
     fontWeight: 600,
-    color: '#0B2F52',
+    color: '#06294D',
   },
   codeBadge: {
-    fontFamily: 'monospace',
-    fontSize: '12px',
-    backgroundColor: '#FAF7F0',
-    border: '1px solid #DCE4EC',
-    padding: '2px 6px',
+    padding: '3px 8px',
+    backgroundColor: '#F1F5F9',
     borderRadius: '4px',
-    color: '#06294D',
+    fontSize: '12px',
     fontWeight: 600,
+    color: '#334155',
+    fontFamily: 'monospace',
   },
   activePill: {
-    backgroundColor: '#EAF7EE',
+    display: 'inline-block',
+    padding: '3px 10px',
+    backgroundColor: 'rgba(22, 163, 74, 0.1)',
     color: '#16A34A',
-    padding: '3px 9px',
-    borderRadius: '999px',
-    fontSize: '11.5px',
+    borderRadius: '9999px',
+    fontSize: '11px',
     fontWeight: 600,
+    textTransform: 'capitalize',
   },
 };
-

@@ -1,3 +1,4 @@
+import { useSyncExternalStore } from 'react';
 import type {
   CreateTicketBody,
   SupportTicket,
@@ -5,32 +6,158 @@ import type {
   TicketStatsData,
   TicketStatus,
 } from '../types/support.types';
-import { INITIAL_SUPPORT_MESSAGES, INITIAL_SUPPORT_TICKETS } from '../data/supportFixtures';
 import { supportService } from '../services/supportService';
 
 const STORAGE_KEY_TICKETS = 'hrsjm_local_support_tickets_v1';
 const STORAGE_KEY_MESSAGES = 'hrsjm_local_support_messages_v1';
+const STORAGE_KEY_VIEWED_TICKETS = 'hrsjm_admin_viewed_tickets_v1';
+const STORAGE_KEY_VIEWED_MESSAGES = 'hrsjm_admin_viewed_messages_v1';
 
 class SupportStore {
   private tickets: SupportTicket[] = [];
   private messagesByTicket: Record<string, SupportTicketMessage[]> = {};
+  private viewedTicketIds: Set<string> = new Set();
+  private viewedMessageIds: Set<string> = new Set();
   private listeners: Set<() => void> = new Set();
   private version = 0;
   private cachedSnapshot: {
     tickets: SupportTicket[];
     messagesByTicket: Record<string, SupportTicketMessage[]>;
+    unviewedCount: number;
     version: number;
   };
 
   constructor() {
     this.tickets = this.loadPersistedTickets();
     this.messagesByTicket = this.loadPersistedMessages();
+    this.viewedTicketIds = this.loadViewedTickets();
+    this.viewedMessageIds = this.loadViewedMessages();
     this.sortInternal();
     this.cachedSnapshot = {
       tickets: this.tickets,
       messagesByTicket: this.messagesByTicket,
+      unviewedCount: this.getUnviewedCount(),
       version: this.version,
     };
+  }
+
+  private loadViewedTickets(): Set<string> {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const raw = window.localStorage.getItem(STORAGE_KEY_VIEWED_TICKETS);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) {
+            return new Set(parsed);
+          }
+        }
+        // Baseline for initial seed tickets: mark them as viewed so they don't produce fake notification badges
+        const baseline = new Set(this.tickets.map((t) => t.id));
+        window.localStorage.setItem(STORAGE_KEY_VIEWED_TICKETS, JSON.stringify(Array.from(baseline)));
+        return baseline;
+      }
+    } catch {
+      // ignore
+    }
+    return new Set(this.tickets.map((t) => t.id));
+  }
+
+  private loadViewedMessages(): Set<string> {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const raw = window.localStorage.getItem(STORAGE_KEY_VIEWED_MESSAGES);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) {
+            return new Set(parsed);
+          }
+        }
+        const allMsgIds: string[] = [];
+        Object.values(this.messagesByTicket).forEach((msgs) => {
+          msgs.forEach((m) => allMsgIds.push(m.id));
+        });
+        const baseline = new Set(allMsgIds);
+        window.localStorage.setItem(STORAGE_KEY_VIEWED_MESSAGES, JSON.stringify(Array.from(baseline)));
+        return baseline;
+      }
+    } catch {
+      // ignore
+    }
+    return new Set();
+  }
+
+  public getUnviewedCount(): number {
+    let unviewedTickets = 0;
+    // Count open/submitted tickets not yet viewed by admin
+    for (const t of this.tickets) {
+      if ((t.status === 'SUBMITTED' || t.status === 'UNDER_REVIEW') && !this.viewedTicketIds.has(t.id)) {
+        unviewedTickets++;
+      }
+    }
+
+    // Count incoming messages from citizens not yet viewed by admin
+    let unviewedMessages = 0;
+    for (const ticketId in this.messagesByTicket) {
+      const msgs = this.messagesByTicket[ticketId] || [];
+      for (const m of msgs) {
+        const isCitizenMsg = m.author_id !== 'admin-001' && !m.author?.roles?.includes('ADMIN');
+        if (isCitizenMsg && !this.viewedMessageIds.has(m.id)) {
+          unviewedMessages++;
+        }
+      }
+    }
+
+    return unviewedTickets + unviewedMessages;
+  }
+
+  public isTicketViewed(ticketId: string): boolean {
+    return this.viewedTicketIds.has(ticketId);
+  }
+
+  public markTicketViewed(ticketId: string): void {
+    if (!ticketId) return;
+    let changed = false;
+    if (!this.viewedTicketIds.has(ticketId)) {
+      this.viewedTicketIds.add(ticketId);
+      changed = true;
+    }
+    const msgs = this.messagesByTicket[ticketId] || [];
+    for (const m of msgs) {
+      if (!this.viewedMessageIds.has(m.id)) {
+        this.viewedMessageIds.add(m.id);
+        changed = true;
+      }
+    }
+    if (changed) {
+      this.persistViewed();
+      this.notify();
+    }
+  }
+
+  public markMessageViewed(messageId: string): void {
+    if (!messageId) return;
+    if (!this.viewedMessageIds.has(messageId)) {
+      this.viewedMessageIds.add(messageId);
+      this.persistViewed();
+      this.notify();
+    }
+  }
+
+  private persistViewed(): void {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        window.localStorage.setItem(
+          STORAGE_KEY_VIEWED_TICKETS,
+          JSON.stringify(Array.from(this.viewedTicketIds))
+        );
+        window.localStorage.setItem(
+          STORAGE_KEY_VIEWED_MESSAGES,
+          JSON.stringify(Array.from(this.viewedMessageIds))
+        );
+      }
+    } catch {
+      // ignore
+    }
   }
 
   private sortInternal(): void {
@@ -48,14 +175,14 @@ class SupportStore {
         if (raw) {
           const parsed = JSON.parse(raw);
           if (Array.isArray(parsed) && parsed.length > 0) {
-            return parsed;
+            return parsed.filter((t: any) => t.id && !t.id.startsWith('tkt-00'));
           }
         }
       }
     } catch {
       // Fallback
     }
-    return [...INITIAL_SUPPORT_TICKETS];
+    return [];
   }
 
   private loadPersistedMessages(): Record<string, SupportTicketMessage[]> {
@@ -72,7 +199,7 @@ class SupportStore {
     } catch {
       // Fallback
     }
-    return { ...INITIAL_SUPPORT_MESSAGES };
+    return {};
   }
 
   private persist(): void {
@@ -91,6 +218,7 @@ class SupportStore {
     this.cachedSnapshot = {
       tickets: [...this.tickets],
       messagesByTicket: { ...this.messagesByTicket },
+      unviewedCount: this.getUnviewedCount(),
       version: this.version,
     };
     this.persist();
@@ -107,6 +235,7 @@ class SupportStore {
   public getSnapshot = (): {
     tickets: SupportTicket[];
     messagesByTicket: Record<string, SupportTicketMessage[]>;
+    unviewedCount: number;
     version: number;
   } => {
     return this.cachedSnapshot;
@@ -150,21 +279,13 @@ class SupportStore {
     try {
       const res = await supportService.list({ limit: 100 });
       const items = res?.items || (Array.isArray(res) ? res : []);
-      if (Array.isArray(items) && items.length > 0) {
-        const localMap = new Map<string, SupportTicket>();
-        this.tickets.forEach((t) => localMap.set(t.id, t));
-        items.forEach((remote: SupportTicket) => {
-          localMap.set(remote.id, {
-            ...localMap.get(remote.id),
-            ...remote,
-          });
-        });
-        this.tickets = Array.from(localMap.values());
+      if (Array.isArray(items)) {
+        this.tickets = items;
         this.sortInternal();
         this.notify();
       }
     } catch {
-      // Offline fallback: use local fixtures
+      // In offline mode, retain real local items only
     }
   }
 
@@ -285,4 +406,9 @@ class SupportStore {
 }
 
 export const supportStore = new SupportStore();
+
+export function useUnviewedSupportCount(): number {
+  const snapshot = useSyncExternalStore(supportStore.subscribe, supportStore.getSnapshot);
+  return snapshot.unviewedCount;
+}
 

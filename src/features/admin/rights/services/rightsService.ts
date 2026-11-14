@@ -6,7 +6,6 @@ import type {
   RightsStatsSummary,
   RightsStatus,
 } from '../types/rights.types';
-import { INITIAL_RIGHTS_FIXTURES } from '../data/rightsFixtures';
 
 export interface BackendRightItem {
   id: string;
@@ -136,8 +135,8 @@ export const rightsService = {
       };
     } catch {
       return {
-        items: [...INITIAL_RIGHTS_FIXTURES],
-        total: INITIAL_RIGHTS_FIXTURES.length,
+        items: [],
+        total: 0,
       };
     }
   },
@@ -147,7 +146,7 @@ export const rightsService = {
       const data = await apiClient.get<BackendRightItem>(ENDPOINTS.rights.getById(id));
       return mapBackendRightToUi(data);
     } catch {
-      return INITIAL_RIGHTS_FIXTURES.find((r) => r.id === id) || null;
+      return null;
     }
   },
 

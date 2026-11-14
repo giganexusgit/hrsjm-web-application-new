@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   CheckCircle2,
   Clock,
@@ -9,6 +10,7 @@ import {
   ArrowRight,
   ShieldCheck,
   MapPin,
+  LayoutDashboard,
 } from 'lucide-react';
 import type { MembershipPostData } from '../../data/membershipCategoriesData';
 import type { Step1FormData } from './MembershipStep1';
@@ -31,6 +33,7 @@ export const MembershipSubmitted: React.FC<MembershipSubmittedProps> = ({
   onGoToStatus,
   onReset,
 }) => {
+  const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
 
   const handleCopyId = () => {
@@ -163,21 +166,30 @@ export const MembershipSubmitted: React.FC<MembershipSubmittedProps> = ({
           <span>Download Acknowledgement PDF</span>
         </button>
 
-        <div className="flex items-center gap-2.5 w-full sm:w-auto">
+        <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
           <button
             type="button"
             onClick={onReset}
-            className="w-1/2 sm:w-auto px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 cursor-pointer"
+            className="px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 cursor-pointer"
           >
             All Categories
           </button>
           <button
             type="button"
             onClick={onGoToStatus}
-            className="w-1/2 sm:w-auto px-5 py-2.5 rounded-xl bg-[#FAD465] hover:bg-[#E9B82E] active:bg-[#D4A416] text-[#011F39] text-xs font-black shadow-md hover:shadow-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 border border-[#E9B82E]"
+            className="px-5 py-2.5 rounded-xl bg-[#FAD465] hover:bg-[#E9B82E] active:bg-[#D4A416] text-[#011F39] text-xs font-black shadow-md hover:shadow-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 border border-[#E9B82E]"
           >
-            <span>Track Status</span>
+            <Clock className="w-3.5 h-3.5" />
+            <span>Go to My Application</span>
             <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate('/user/dashboard')}
+            className="px-5 py-2.5 rounded-xl bg-[#011F39] hover:bg-[#06294D] text-[#FAD465] text-xs font-bold shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5"
+          >
+            <LayoutDashboard className="w-3.5 h-3.5" />
+            <span>Go to User Dashboard</span>
           </button>
         </div>
       </div>

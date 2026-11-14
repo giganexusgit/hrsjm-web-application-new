@@ -240,28 +240,8 @@ export const seekerService = {
       // ignore
     }
 
-    // Sync into Admin Assistance Store so it immediately shows in /admin/assistance
-    try {
-      assistanceStore.createRequest({
-        full_name: record.fullName,
-        mobile: record.phone,
-        email: record.email || '',
-        requested_amount: record.requestedAmount,
-        reason: `${record.cause}: ${record.description.slice(0, 80)}`,
-        description: record.description,
-        urgency: record.urgency,
-        documents: allFiles.map((f) => ({
-          document_name: f.docTitle || f.name,
-          file_name: f.name,
-          file_size: f.formattedSize,
-          mime_type: f.type,
-          uri: f.previewUrl || f.uri || '',
-          url: f.previewUrl || f.uri || '',
-        })),
-      });
-    } catch (storeErr) {
-      console.warn('Could not sync to assistanceStore:', storeErr);
-    }
+    // Refresh Admin Assistance Store from backend (avoid duplicate POST)
+    assistanceStore.fetchRequests().catch(() => {});
 
     return record;
   },

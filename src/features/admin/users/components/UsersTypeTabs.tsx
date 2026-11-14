@@ -31,12 +31,13 @@ export const UsersTypeTabs: React.FC<UsersTypeTabsProps> = ({
     <div
       style={{
         display: 'flex',
+        flexWrap: 'wrap',
         alignItems: 'center',
         gap: '8px',
-        overflowX: 'auto',
-        paddingBottom: '8px',
+        width: '100%',
+        minWidth: 0,
+        paddingBottom: '4px',
         marginBottom: '16px',
-        scrollbarWidth: 'thin',
       }}
     >
       {tabs.map(tab => {

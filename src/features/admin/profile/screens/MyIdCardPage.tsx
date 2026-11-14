@@ -242,7 +242,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   layout: {
     display: 'grid',
-    gridTemplateColumns: 'minmax(360px, 420px) minmax(0, 1fr)',
+    gridTemplateColumns: 'minmax(360px, 480px) minmax(0, 1fr)',
     gap: '32px',
     alignItems: 'start',
   },

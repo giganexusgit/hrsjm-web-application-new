@@ -24,8 +24,12 @@ import {
   X,
   FileCheck,
   Loader2,
+  Clock,
+  LayoutDashboard,
 } from 'lucide-react';
-import hrsjmLogo from '../assets/hrsjm_logo.png';
+import { authStore } from '../features/auth/store/authStore';
+import { authService } from '../features/auth/services/authService';
+import { userAuthStore } from '../features/user/store/userAuthStore';
 import {
   ALL_MEMBERSHIP_POSTS,
   DISTRICT_STATE_POSTS,
@@ -35,6 +39,7 @@ import {
   STATE_CITIES,
   CATEGORY_UUID_MAP,
 } from '../features/membership/data/membershipCategoriesData';
+import { INDIA_LOCATIONS } from '../features/user/data/indiaLocations';
 import { membershipService } from '../features/membership/services/membershipService';
 import {
   formatDateToDMY,
@@ -42,6 +47,8 @@ import {
 } from '../utils/age';
 import { CalendarDatePicker } from '../components/common/CalendarDatePicker';
 import { ApiError } from '../services/apiClient';
+import { GlobalPaymentModal } from '@/features/payments';
+import type { PaymentReceiptDetails } from '@/features/payments';
 import type {
   AddressInfoForm,
   DocumentsForm,
@@ -87,7 +94,7 @@ export const MemberRegistrationPage: React.FC = () => {
           return matched ? { ...current, id: matched.id } : current;
         });
       }
-    }).catch(() => {});
+    }).catch(() => { });
   }, []);
 
   // Category Filter in Step 0
@@ -113,8 +120,8 @@ export const MemberRegistrationPage: React.FC = () => {
     addressLine1: '',
     addressLine2: '',
     country: 'India',
-    state: 'Delhi NCR',
-    city: 'New Delhi',
+    state: '',
+    city: '',
     pincode: '',
   });
 
@@ -135,6 +142,7 @@ export const MemberRegistrationPage: React.FC = () => {
   const [documentErrors, setDocumentErrors] = useState<Record<string, string>>({});
   const [serverError, setServerError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
 
   // Duplicate Check Feedback
   const [checkingPhone, setCheckingPhone] = useState(false);
@@ -474,7 +482,7 @@ export const MemberRegistrationPage: React.FC = () => {
   };
 
   /**
-   * Final Submission
+   * Final Submission Trigger: Validates and triggers Cashfree payment gateway modal
    */
   const handleFinalSubmit = async () => {
     setServerError(null);
@@ -483,6 +491,20 @@ export const MemberRegistrationPage: React.FC = () => {
       return;
     }
 
+    // If an official fee is required, launch Cashfree Payment Gateway first
+    if (selectedPost.feeAmount && selectedPost.feeAmount > 0) {
+      setIsPaymentModalOpen(true);
+      return;
+    }
+
+    // Zero-fee or complimentary category: submit directly
+    await executeSubmission();
+  };
+
+  /**
+   * Execute application submission to backend & local store with payment receipt
+   */
+  const executeSubmission = async (paymentDetails?: PaymentReceiptDetails) => {
     setSubmitting(true);
     const cleanMobile = personal.mobileNumber.replace(/\D/g, '').slice(-10);
     const cleanEmail = personal.email.trim().toLowerCase();
@@ -493,8 +515,8 @@ export const MemberRegistrationPage: React.FC = () => {
       const targetCategoryId = isUUID
         ? selectedPost.id
         : CATEGORY_UUID_MAP[selectedPost.id] ||
-          CATEGORY_UUID_MAP[selectedPost.slug || ''] ||
-          '82f72f9c-b79e-470d-8160-f29b392e28b4';
+        CATEGORY_UUID_MAP[selectedPost.slug || ''] ||
+        '82f72f9c-b79e-470d-8160-f29b392e28b4';
 
       const record = await membershipService.submitApplication({
         category_id: targetCategoryId,
@@ -521,6 +543,15 @@ export const MemberRegistrationPage: React.FC = () => {
           fee: selectedPost.fee,
           validity: selectedPost.validity,
           qualification: selectedPost.qualification,
+          payment: paymentDetails ? {
+            orderId: paymentDetails.orderId,
+            transactionId: paymentDetails.transactionId,
+            receiptNumber: paymentDetails.receiptNumber,
+            method: paymentDetails.paymentMethod,
+            amount: paymentDetails.amount,
+            status: paymentDetails.status,
+            paidAt: paymentDetails.paidAt || new Date().toISOString(),
+          } : undefined,
           documents: [
             ...(documents.identityProof ? [{
               type: 'identity',
@@ -567,8 +598,8 @@ export const MemberRegistrationPage: React.FC = () => {
           const appDocs = [
             ...(documents.identityProof ? [{
               id: `doc-${record.id}-idproof`,
-              title: documents.identityProof.name || 'Identity Proof (Aadhaar / Voter ID)',
-              fileName: documents.identityProof.fileName || 'identity_proof.pdf',
+              title: documents.identityProof.name || 'Aadhaar Card (Optional)',
+              fileName: documents.identityProof.fileName || 'aadhaar_card.pdf',
               fileSize: documents.identityProof.fileSize || '1.8 MB',
               uploadDate: 'Today',
               verified: true,
@@ -609,10 +640,47 @@ export const MemberRegistrationPage: React.FC = () => {
           if (record.applicationId) {
             localStorage.setItem(`hrsjm_app_docs_${record.applicationId}`, JSON.stringify(appDocs));
           }
-        } catch {}
+        } catch { }
       }
 
-      setPhase(4); // Move to complete view
+      // Ensure application ID is stored for status retrieval across the portal
+      if (typeof window !== 'undefined' && record?.applicationId) {
+        try {
+          localStorage.setItem('hrsjm_user_membership_app_id', record.applicationId);
+        } catch { }
+      }
+
+      // Ensure valid authenticated session so user is not bounced to sign-in
+      try {
+        if (!authStore.getSnapshot().isAuthenticated) {
+          try {
+            const session = await authService.login({
+              identifier: cleanMobile,
+              password: personal.password,
+            });
+            if (session?.user) {
+              authStore.setUserDirectly(session.user, session.access_token, session.refresh_token);
+              userAuthStore.setUser(session.user as any);
+            }
+          } catch {
+            const applicantUser: any = {
+              id: record.id || `user-${Date.now()}`,
+              full_name: personal.fullName.trim(),
+              mobile_number: cleanMobile,
+              email: cleanEmail,
+              roles: ['USER'],
+              account_type: 'user',
+              membership_status: 'UNDER_REVIEW',
+            };
+            authStore.setUserDirectly(applicantUser, `hrsjm_session_${Date.now()}`);
+            userAuthStore.setUser(applicantUser);
+          }
+        }
+      } catch (authErr) {
+        console.warn('Post-registration session establishment warning:', authErr);
+      }
+
+      setPhase(4); // Move to complete view (Image 2)
     } catch (err: unknown) {
       let message = 'Unable to submit membership application. Please check details and try again.';
       if (err instanceof ApiError) {
@@ -625,6 +693,7 @@ export const MemberRegistrationPage: React.FC = () => {
         message = err.message;
       }
       setServerError(message);
+      window.scrollTo({ top: 100, behavior: 'smooth' });
     } finally {
       setSubmitting(false);
     }
@@ -638,12 +707,7 @@ export const MemberRegistrationPage: React.FC = () => {
       <div className="min-h-screen bg-[#FAF7F0] flex flex-col justify-center items-center px-4 py-12 font-sans">
         <div className="w-full max-w-md bg-white rounded-3xl shadow-xl border border-slate-100 p-8 text-center">
           <div className="flex items-center justify-center gap-3 mb-6">
-            <img
-              src={hrsjmLogo}
-              alt="HRSJM Official Crest"
-              className="w-12 h-12 object-contain shrink-0"
-            />
-            <div className="text-left">
+            <div className="text-center">
               <div className="text-base font-black text-[#011F39] font-serif leading-none tracking-wide">
                 HRSJM
               </div>
@@ -813,18 +877,20 @@ export const MemberRegistrationPage: React.FC = () => {
           {/* Actions */}
           <div className="space-y-3">
             <button
-              onClick={() => navigate('/login?role=member')}
+              onClick={() => navigate(`/user/membership-status?id=${encodeURIComponent(submittedRecord.applicationId)}`)}
               className="w-full py-3.5 px-4 rounded-xl bg-[#FAD465] hover:bg-[#E9B82E] text-[#011F39] font-bold text-xs uppercase tracking-wider shadow-md hover:shadow-lg transition flex items-center justify-center gap-2 cursor-pointer"
             >
-              <span>Login to Member Portal</span>
+              <Clock size={16} />
+              <span>Go to My Application</span>
               <ArrowRight size={16} />
             </button>
 
             <button
-              onClick={() => navigate('/')}
-              className="w-full py-3 px-4 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-semibold text-xs transition cursor-pointer"
+              onClick={() => navigate('/user/dashboard')}
+              className="w-full py-3 px-4 rounded-xl bg-[#011F39] hover:bg-[#06294D] text-[#FAD465] border border-[#06294D] font-bold text-xs uppercase tracking-wider transition flex items-center justify-center gap-2 cursor-pointer"
             >
-              Return to Homepage
+              <LayoutDashboard size={16} />
+              <span>Go to User Dashboard</span>
             </button>
           </div>
         </div>
@@ -840,10 +906,10 @@ export const MemberRegistrationPage: React.FC = () => {
       categoryFilter === 'district_state'
         ? DISTRICT_STATE_POSTS
         : categoryFilter === 'letter_pad'
-        ? LETTER_PAD_POSTS
-        : categoryFilter === 'national'
-        ? NATIONAL_LEVEL_POSTS
-        : ALL_MEMBERSHIP_POSTS;
+          ? LETTER_PAD_POSTS
+          : categoryFilter === 'national'
+            ? NATIONAL_LEVEL_POSTS
+            : ALL_MEMBERSHIP_POSTS;
 
     return (
       <div className="min-h-screen bg-[#FAF7F0] flex flex-col font-sans">
@@ -856,11 +922,6 @@ export const MemberRegistrationPage: React.FC = () => {
             </Link>
 
             <div className="flex items-center gap-2.5">
-              <img
-                src={hrsjmLogo}
-                alt="HRSJM Official Crest"
-                className="w-8 h-8 object-contain shrink-0"
-              />
               <div className="flex flex-col">
                 <span className="text-sm font-black tracking-wider text-white font-serif leading-none">HRSJM</span>
                 <span className="text-[9px] font-bold text-[#FAD465] tracking-widest uppercase mt-0.5">Membership Categories</span>
@@ -877,11 +938,7 @@ export const MemberRegistrationPage: React.FC = () => {
         <section className="bg-gradient-to-b from-[#011F39] via-[#06294D] to-[#0B2F52] text-white pt-9 pb-14 px-4 text-center relative overflow-hidden">
           <div className="absolute top-0 right-1/4 w-80 h-80 bg-[#FAD465]/10 rounded-full blur-3xl pointer-events-none" />
           <div className="max-w-3xl mx-auto relative z-10 space-y-2.5">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-[10px] font-bold text-[#FAD465] tracking-widest uppercase">
-              <span>Constitutional Movement</span>
-              <span>•</span>
-              <span>Official Cadre Membership</span>
-            </div>
+
 
             <h1 className="text-2xl sm:text-3.5xl font-extrabold font-serif tracking-tight text-white leading-tight">
               <span style={{ color: '#FFFFFF' }}>Apply for </span>
@@ -900,43 +957,39 @@ export const MemberRegistrationPage: React.FC = () => {
           <div className="flex flex-wrap items-center justify-center gap-1.5 mb-6 bg-white p-1.5 rounded-xl shadow-xs border border-slate-200/80 max-w-2xl mx-auto">
             <button
               onClick={() => setCategoryFilter('all')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-                categoryFilter === 'all'
-                  ? 'bg-[#011F39] text-[#FAD465] shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-              }`}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${categoryFilter === 'all'
+                ? 'bg-[#011F39] text-[#FAD465] shadow-xs'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                }`}
             >
               All Official Posts ({ALL_MEMBERSHIP_POSTS.length})
             </button>
             <button
               onClick={() => setCategoryFilter('district_state')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-                categoryFilter === 'district_state'
-                  ? 'bg-[#011F39] text-[#FAD465] shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-              }`}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${categoryFilter === 'district_state'
+                ? 'bg-[#011F39] text-[#FAD465] shadow-xs'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                }`}
             >
-              District &amp; State Units
+              District & State Level Posts
             </button>
             <button
               onClick={() => setCategoryFilter('letter_pad')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-                categoryFilter === 'letter_pad'
-                  ? 'bg-[#011F39] text-[#FAD465] shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-              }`}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${categoryFilter === 'letter_pad'
+                ? 'bg-[#011F39] text-[#FAD465] shadow-xs'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                }`}
             >
-              Letter Pad Dignitaries
+              Letter Pad Posts
             </button>
             <button
               onClick={() => setCategoryFilter('national')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-                categoryFilter === 'national'
-                  ? 'bg-[#011F39] text-[#FAD465] shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-              }`}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${categoryFilter === 'national'
+                ? 'bg-[#011F39] text-[#FAD465] shadow-xs'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                }`}
             >
-              National Council Cells
+              National Level Posts
             </button>
           </div>
 
@@ -947,9 +1000,8 @@ export const MemberRegistrationPage: React.FC = () => {
               return (
                 <div
                   key={post.id}
-                  className={`bg-white rounded-xl p-4 shadow-xs hover:shadow-md transition-all duration-200 border flex flex-col justify-between group ${
-                    isSelected ? 'border-[#011F39] ring-2 ring-[#011F39]/15' : 'border-slate-200/80 hover:border-slate-300'
-                  }`}
+                  className={`bg-white rounded-xl p-4 shadow-xs hover:shadow-md transition-all duration-200 border flex flex-col justify-between group ${isSelected ? 'border-[#011F39] ring-2 ring-[#011F39]/15' : 'border-slate-200/80 hover:border-slate-300'
+                    }`}
                 >
                   <div>
                     {/* Top Post Badge & Fee */}
@@ -1022,11 +1074,6 @@ export const MemberRegistrationPage: React.FC = () => {
           </button>
 
           <div className="flex items-center gap-2.5">
-            <img
-              src={hrsjmLogo}
-              alt="HRSJM Official Crest"
-              className="w-8 h-8 object-contain shrink-0"
-            />
             <div className="flex flex-col">
               <span className="text-sm font-black tracking-wider text-white font-serif leading-none">HRSJM</span>
               <span className="text-[9px] font-bold text-[#FAD465] tracking-widest uppercase mt-0.5">Apply for Membership</span>
@@ -1063,13 +1110,12 @@ export const MemberRegistrationPage: React.FC = () => {
               {/* Step 1 */}
               <div className="flex flex-col items-center z-10">
                 <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shadow-sm transition ${
-                    phase > 1
-                      ? 'bg-[#E9B82E] text-white'
-                      : phase === 1
+                  className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shadow-sm transition ${phase > 1
+                    ? 'bg-[#E9B82E] text-white'
+                    : phase === 1
                       ? 'bg-[#011F39] text-[#FAD465] border-2 border-[#E9B82E]'
                       : 'bg-slate-100 text-slate-400 border border-slate-200'
-                  }`}
+                    }`}
                 >
                   {phase > 1 ? <Check size={16} /> : '1'}
                 </div>
@@ -1083,13 +1129,12 @@ export const MemberRegistrationPage: React.FC = () => {
               {/* Step 2 */}
               <div className="flex flex-col items-center z-10">
                 <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shadow-sm transition ${
-                    phase > 2
-                      ? 'bg-[#E9B82E] text-white'
-                      : phase === 2
+                  className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shadow-sm transition ${phase > 2
+                    ? 'bg-[#E9B82E] text-white'
+                    : phase === 2
                       ? 'bg-[#011F39] text-[#FAD465] border-2 border-[#E9B82E]'
                       : 'bg-slate-100 text-slate-400 border border-slate-200'
-                  }`}
+                    }`}
                 >
                   {phase > 2 ? <Check size={16} /> : '2'}
                 </div>
@@ -1103,11 +1148,10 @@ export const MemberRegistrationPage: React.FC = () => {
               {/* Step 3 */}
               <div className="flex flex-col items-center z-10">
                 <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shadow-sm transition ${
-                    phase === 3
-                      ? 'bg-[#011F39] text-[#FAD465] border-2 border-[#E9B82E]'
-                      : 'bg-slate-100 text-slate-400 border border-slate-200'
-                  }`}
+                  className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shadow-sm transition ${phase === 3
+                    ? 'bg-[#011F39] text-[#FAD465] border-2 border-[#E9B82E]'
+                    : 'bg-slate-100 text-slate-400 border border-slate-200'
+                    }`}
                 >
                   3
                 </div>
@@ -1227,13 +1271,12 @@ export const MemberRegistrationPage: React.FC = () => {
                   Full Name <span className="text-rose-500">*</span>
                 </label>
                 <div
-                  className={`flex items-center px-3.5 py-2.5 bg-slate-50 border rounded-xl transition ${
-                    personalErrors.fullName
-                      ? 'border-rose-300 bg-rose-50/20'
-                      : focusedField === 'fullName'
+                  className={`flex items-center px-3.5 py-2.5 bg-slate-50 border rounded-xl transition ${personalErrors.fullName
+                    ? 'border-rose-300 bg-rose-50/20'
+                    : focusedField === 'fullName'
                       ? 'border-[#011F39] bg-white ring-2 ring-[#011F39]/10'
                       : 'border-slate-200'
-                  }`}
+                    }`}
                 >
                   <User size={18} className="text-slate-400 mr-2.5 shrink-0" />
                   <input
@@ -1316,13 +1359,12 @@ export const MemberRegistrationPage: React.FC = () => {
                   Mobile Number <span className="text-rose-500">*</span>
                 </label>
                 <div
-                  className={`flex items-center px-3.5 py-2.5 bg-slate-50 border rounded-xl transition ${
-                    personalErrors.mobileNumber
-                      ? 'border-rose-300 bg-rose-50/20'
-                      : focusedField === 'phone'
+                  className={`flex items-center px-3.5 py-2.5 bg-slate-50 border rounded-xl transition ${personalErrors.mobileNumber
+                    ? 'border-rose-300 bg-rose-50/20'
+                    : focusedField === 'phone'
                       ? 'border-[#011F39] bg-white ring-2 ring-[#011F39]/10'
                       : 'border-slate-200'
-                  }`}
+                    }`}
                 >
                   <Phone size={18} className="text-slate-400 mr-2 shrink-0" />
                   <span className="text-xs font-bold text-slate-600 bg-slate-200/70 px-2 py-0.5 rounded-md mr-2.5 select-none">
@@ -1360,13 +1402,12 @@ export const MemberRegistrationPage: React.FC = () => {
                   Email Address <span className="text-rose-500">*</span>
                 </label>
                 <div
-                  className={`flex items-center px-3.5 py-2.5 bg-slate-50 border rounded-xl transition ${
-                    personalErrors.email
-                      ? 'border-rose-300 bg-rose-50/20'
-                      : focusedField === 'email'
+                  className={`flex items-center px-3.5 py-2.5 bg-slate-50 border rounded-xl transition ${personalErrors.email
+                    ? 'border-rose-300 bg-rose-50/20'
+                    : focusedField === 'email'
                       ? 'border-[#011F39] bg-white ring-2 ring-[#011F39]/10'
                       : 'border-slate-200'
-                  }`}
+                    }`}
                 >
                   <Mail size={18} className="text-slate-400 mr-2.5 shrink-0" />
                   <input
@@ -1399,13 +1440,12 @@ export const MemberRegistrationPage: React.FC = () => {
                   Nearby Police Station <span className="text-rose-500">*</span>
                 </label>
                 <div
-                  className={`flex items-center px-3.5 py-2.5 bg-slate-50 border rounded-xl transition ${
-                    personalErrors.policeStation
-                      ? 'border-rose-300 bg-rose-50/20'
-                      : focusedField === 'ps'
+                  className={`flex items-center px-3.5 py-2.5 bg-slate-50 border rounded-xl transition ${personalErrors.policeStation
+                    ? 'border-rose-300 bg-rose-50/20'
+                    : focusedField === 'ps'
                       ? 'border-[#011F39] bg-white ring-2 ring-[#011F39]/10'
                       : 'border-slate-200'
-                  }`}
+                    }`}
                 >
                   <Building size={18} className="text-slate-400 mr-2.5 shrink-0" />
                   <input
@@ -1434,13 +1474,12 @@ export const MemberRegistrationPage: React.FC = () => {
                     Password <span className="text-rose-500">*</span>
                   </label>
                   <div
-                    className={`flex items-center px-3.5 py-2.5 bg-slate-50 border rounded-xl transition ${
-                      personalErrors.password
-                        ? 'border-rose-300 bg-rose-50/20'
-                        : focusedField === 'pwd'
+                    className={`flex items-center px-3.5 py-2.5 bg-slate-50 border rounded-xl transition ${personalErrors.password
+                      ? 'border-rose-300 bg-rose-50/20'
+                      : focusedField === 'pwd'
                         ? 'border-[#011F39] bg-white ring-2 ring-[#011F39]/10'
                         : 'border-slate-200'
-                    }`}
+                      }`}
                   >
                     <Lock size={18} className="text-slate-400 mr-2.5 shrink-0" />
                     <input
@@ -1475,13 +1514,12 @@ export const MemberRegistrationPage: React.FC = () => {
                     Confirm Password <span className="text-rose-500">*</span>
                   </label>
                   <div
-                    className={`flex items-center px-3.5 py-2.5 bg-slate-50 border rounded-xl transition ${
-                      personalErrors.confirmPassword
-                        ? 'border-rose-300 bg-rose-50/20'
-                        : focusedField === 'cpwd'
+                    className={`flex items-center px-3.5 py-2.5 bg-slate-50 border rounded-xl transition ${personalErrors.confirmPassword
+                      ? 'border-rose-300 bg-rose-50/20'
+                      : focusedField === 'cpwd'
                         ? 'border-[#011F39] bg-white ring-2 ring-[#011F39]/10'
                         : 'border-slate-200'
-                    }`}
+                      }`}
                   >
                     <Lock size={18} className="text-slate-400 mr-2.5 shrink-0" />
                     <input
@@ -1575,9 +1613,8 @@ export const MemberRegistrationPage: React.FC = () => {
                   Address Line 1 <span className="text-rose-500">*</span>
                 </label>
                 <div
-                  className={`flex items-center px-3.5 py-2.5 bg-slate-50 border rounded-xl transition ${
-                    addressErrors.addressLine1 ? 'border-rose-300 bg-rose-50/20' : 'border-slate-200'
-                  }`}
+                  className={`flex items-center px-3.5 py-2.5 bg-slate-50 border rounded-xl transition ${addressErrors.addressLine1 ? 'border-rose-300 bg-rose-50/20' : 'border-slate-200'
+                    }`}
                 >
                   <MapPin size={18} className="text-slate-400 mr-2.5 shrink-0" />
                   <input
@@ -1620,16 +1657,19 @@ export const MemberRegistrationPage: React.FC = () => {
                   <label className="block text-xs font-semibold text-slate-700 mb-1.5">
                     State <span className="text-rose-500">*</span>
                   </label>
-                  <div className="flex items-center px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl">
+                  <div
+                    className={`flex items-center px-3.5 py-2.5 bg-slate-50 border rounded-xl transition ${addressErrors.state ? 'border-rose-300 bg-rose-50/20' : 'border-slate-200'
+                      }`}
+                  >
                     <select
                       value={address.state}
                       onChange={e => {
                         const newState = e.target.value;
-                        const defaultCity = STATE_CITIES[newState]?.[0] || 'Main City';
-                        setAddress(a => ({ ...a, state: newState, city: defaultCity }));
+                        setAddress(a => ({ ...a, state: newState, city: '' }));
                       }}
                       className="w-full bg-transparent text-sm text-slate-900 focus:outline-none font-medium cursor-pointer"
                     >
+                      <option value="">Select State *</option>
                       {INDIAN_STATES.map(st => (
                         <option key={st} value={st}>
                           {st}
@@ -1637,6 +1677,9 @@ export const MemberRegistrationPage: React.FC = () => {
                       ))}
                     </select>
                   </div>
+                  {addressErrors.state && (
+                    <p className="text-[11px] text-rose-600 mt-1 font-medium">{addressErrors.state}</p>
+                  )}
                 </div>
 
                 {/* City */}
@@ -1644,21 +1687,37 @@ export const MemberRegistrationPage: React.FC = () => {
                   <label className="block text-xs font-semibold text-slate-700 mb-1.5">
                     City / District <span className="text-rose-500">*</span>
                   </label>
-                  <div className="flex items-center px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl">
-                    <input
-                      type="text"
-                      list="city-options"
+                  <div
+                    className={`flex items-center px-3.5 py-2.5 bg-slate-50 border rounded-xl transition ${addressErrors.city ? 'border-rose-300 bg-rose-50/20' : 'border-slate-200'
+                      }`}
+                  >
+                    <select
                       value={address.city}
-                      placeholder="City / District *"
-                      onChange={e => setAddress(a => ({ ...a, city: e.target.value }))}
-                      className="w-full bg-transparent text-sm text-slate-900 focus:outline-none font-medium"
-                    />
-                    <datalist id="city-options">
-                      {(STATE_CITIES[address.state] || []).map(c => (
-                        <option key={c} value={c} />
+                      disabled={!address.state}
+                      onChange={e => {
+                        const newCity = e.target.value;
+                        setAddress(a => ({ ...a, city: newCity }));
+                        if (addressErrors.city) setAddressErrors(err => ({ ...err, city: '' }));
+                      }}
+                      className="w-full bg-transparent text-sm text-slate-900 focus:outline-none font-medium cursor-pointer disabled:text-slate-400 disabled:cursor-not-allowed"
+                    >
+                      <option value="">
+                        {address.state ? 'Select City / District *' : 'Select State First *'}
+                      </option>
+                      {(
+                        STATE_CITIES[address.state] ||
+                        INDIA_LOCATIONS.find(loc => loc.name === address.state)?.cities ||
+                        []
+                      ).map(c => (
+                        <option key={c} value={c}>
+                          {c}
+                        </option>
                       ))}
-                    </datalist>
+                    </select>
                   </div>
+                  {addressErrors.city && (
+                    <p className="text-[11px] text-rose-600 mt-1 font-medium">{addressErrors.city}</p>
+                  )}
                 </div>
               </div>
 
@@ -1670,9 +1729,8 @@ export const MemberRegistrationPage: React.FC = () => {
                     PIN Code <span className="text-rose-500">*</span>
                   </label>
                   <div
-                    className={`flex items-center px-3.5 py-2.5 bg-slate-50 border rounded-xl transition ${
-                      addressErrors.pincode ? 'border-rose-300 bg-rose-50/20' : 'border-slate-200'
-                    }`}
+                    className={`flex items-center px-3.5 py-2.5 bg-slate-50 border rounded-xl transition ${addressErrors.pincode ? 'border-rose-300 bg-rose-50/20' : 'border-slate-200'
+                      }`}
                   >
                     <input
                       type="text"
@@ -1739,16 +1797,16 @@ export const MemberRegistrationPage: React.FC = () => {
 
               {/* 4 Document Upload Cards in Responsive 2-Col Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* 1. Identity Proof */}
+                {/* 1. Aadhaar Card (Optional Identity Proof) */}
                 <div className={`p-4 rounded-2xl border transition ${documents.identityProof ? 'bg-emerald-50/40 border-emerald-200' : documentErrors.identity ? 'bg-rose-50/30 border-rose-200' : 'bg-slate-50 border-slate-200'}`}>
                   <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center gap-2">
                       <FileCheck size={18} className={documents.identityProof ? 'text-emerald-600' : 'text-slate-400'} />
                       <span className="text-xs font-bold text-[#011F39]">
-                        1. Identity Proof <span className="text-slate-400 font-normal text-[10px]">(Optional)</span>
+                        1. Aadhaar Card <span className="text-slate-400 font-normal text-[10px]">(Optional)</span>
                       </span>
                     </div>
-                    <span className="text-[10px] text-slate-400">Aadhaar, Voter ID, Passport, PAN</span>
+                    <span className="text-[10px] text-slate-400">Aadhaar Card (UIDAI)</span>
                   </div>
 
                   {documents.identityProof ? (
@@ -1768,9 +1826,9 @@ export const MemberRegistrationPage: React.FC = () => {
                     <div className="mt-2">
                       <label htmlFor={identityUploadId} className="w-full py-2 px-3 border border-dashed border-slate-300 rounded-xl text-center block text-xs font-semibold text-slate-600 hover:border-[#011F39] hover:bg-white transition cursor-pointer">
                         <Upload size={14} className="inline mr-1.5" />
-                        <span>Select Identity Proof File</span>
+                        <span>Select Aadhaar Card File</span>
                       </label>
-                      <input id={identityUploadId} type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={e => handleDocumentUpload('identity', 'Identity Proof', e)} className="hidden" />
+                      <input id={identityUploadId} type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={e => handleDocumentUpload('identity', 'Aadhaar Card', e)} className="hidden" />
                     </div>
                   )}
                   {documentErrors.identity && <p className="text-[11px] text-rose-600 mt-1 font-medium">{documentErrors.identity}</p>}
@@ -1972,6 +2030,29 @@ export const MemberRegistrationPage: React.FC = () => {
       <footer className="w-full text-center py-4 text-xs text-slate-400">
         © 2026 Human Rights Sanrakshan Sansthan (HRSJM). All rights reserved.
       </footer>
+
+      {/* Cashfree Payment Gateway Modal */}
+      <GlobalPaymentModal
+        isOpen={isPaymentModalOpen}
+        onClose={() => {
+          setIsPaymentModalOpen(false);
+          setSubmitting(false);
+        }}
+        payload={{
+          purpose: 'membership',
+          amount: selectedPost.feeAmount || 800,
+          title: `Membership Application: ${selectedPost.postName}`,
+          subtitle: `Tenure: ${selectedPost.validity}`,
+          entityId: selectedPost.id,
+          donorName: personal.fullName.trim(),
+          donorMobile: personal.mobileNumber.replace(/\D/g, '').slice(-10),
+          donorEmail: personal.email.trim().toLowerCase(),
+        }}
+        onSuccess={async (receipt) => {
+          setIsPaymentModalOpen(false);
+          await executeSubmission(receipt);
+        }}
+      />
     </div>
   );
 };

@@ -1,11 +1,11 @@
 import type React from 'react';
 import { MessageSquare, Clock, CheckCircle2, Archive, AlertCircle } from 'lucide-react';
-import type { TicketStatsData, TicketTabKey } from '../types/support.types';
+import type { TicketStatsData } from '../types/support.types';
 
 interface SupportStatsCardsProps {
   stats: TicketStatsData;
-  activeTab: TicketTabKey;
-  onSelectTab: (tabKey: TicketTabKey) => void;
+  activeTab: string;
+  onSelectTab: (tabKey: any) => void;
 }
 
 export const SupportStatsCards: React.FC<SupportStatsCardsProps> = ({
@@ -13,27 +13,18 @@ export const SupportStatsCards: React.FC<SupportStatsCardsProps> = ({
   activeTab,
   onSelectTab,
 }) => {
-  const cards: Array<{
-    id: TicketTabKey;
-    title: string;
-    count: number;
-    subtitle: string;
-    icon: React.ComponentType<{ size?: number; className?: string }>;
-    accentColor: string;
-    iconBg: string;
-    iconColor: string;
-    ringColor: string;
-  }> = [
+  const cards = [
     {
       id: 'ALL',
       title: 'Total Tickets',
       count: stats.total,
-      subtitle: 'All grievances & inquiries',
+      subtitle: 'All support grievances',
       icon: MessageSquare,
       accentColor: '#011F39',
-      iconBg: 'bg-[#011F39]/10',
-      iconColor: 'text-[#011F39]',
-      ringColor: 'ring-[#011F39]',
+      bgColor: '#EDF2F7',
+      borderColor: '#DCE4EC',
+      activeBorder: '#011F39',
+      activeBg: '#F8FAFC',
     },
     {
       id: 'SUBMITTED',
@@ -42,9 +33,10 @@ export const SupportStatsCards: React.FC<SupportStatsCardsProps> = ({
       subtitle: 'Awaiting triage or review',
       icon: AlertCircle,
       accentColor: '#D97706',
-      iconBg: 'bg-amber-100',
-      iconColor: 'text-amber-700',
-      ringColor: 'ring-amber-500',
+      bgColor: '#FFF9E6',
+      borderColor: '#FDE68A',
+      activeBorder: '#D97706',
+      activeBg: '#FFFDF7',
     },
     {
       id: 'UNDER_REVIEW',
@@ -53,20 +45,22 @@ export const SupportStatsCards: React.FC<SupportStatsCardsProps> = ({
       subtitle: 'Under active investigation',
       icon: Clock,
       accentColor: '#0284C7',
-      iconBg: 'bg-sky-100',
-      iconColor: 'text-sky-700',
-      ringColor: 'ring-sky-500',
+      bgColor: '#EFF6FF',
+      borderColor: '#BAE6FD',
+      activeBorder: '#0284C7',
+      activeBg: '#F0F9FF',
     },
     {
       id: 'RESOLVED',
       title: 'Resolved',
       count: stats.resolved,
-      subtitle: 'Solutions delivered to citizens',
+      subtitle: 'Delivered solutions',
       icon: CheckCircle2,
       accentColor: '#16A34A',
-      iconBg: 'bg-emerald-100',
-      iconColor: 'text-emerald-700',
-      ringColor: 'ring-emerald-500',
+      bgColor: '#F0FDF4',
+      borderColor: '#BBF7D0',
+      activeBorder: '#16A34A',
+      activeBg: '#F0FDF4',
     },
     {
       id: 'CLOSED',
@@ -75,50 +69,161 @@ export const SupportStatsCards: React.FC<SupportStatsCardsProps> = ({
       subtitle: 'Archived resolved cases',
       icon: Archive,
       accentColor: '#475569',
-      iconBg: 'bg-slate-100',
-      iconColor: 'text-slate-600',
-      ringColor: 'ring-slate-500',
+      bgColor: '#F1F5F9',
+      borderColor: '#CBD5E1',
+      activeBorder: '#475569',
+      activeBg: '#F8FAFC',
     },
   ];
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5 mb-6">
+    <div className="support-stats-grid" style={styles.grid}>
       {cards.map((c) => {
         const Icon = c.icon;
         const isActive = activeTab === c.id;
-
         return (
           <button
             key={c.id}
             type="button"
             onClick={() => onSelectTab(c.id)}
-            className={`text-left bg-white rounded-xl border p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md cursor-pointer ${
-              isActive
-                ? `border-transparent ring-2 ${c.ringColor} shadow-md bg-slate-50/50`
-                : 'border-slate-200/90 shadow-xs hover:border-slate-300'
-            }`}
+            style={{
+              ...styles.card,
+              backgroundColor: isActive ? c.activeBg : '#FFFFFF',
+              borderColor: isActive ? c.activeBorder : '#E2E8F0',
+              boxShadow: isActive
+                ? `0 6px 18px -4px ${c.accentColor}26, 0 2px 4px rgba(0, 0, 0, 0.04)`
+                : '0 1px 3px rgba(0, 0, 0, 0.04)',
+              transform: isActive ? 'translateY(-1px)' : 'none',
+            }}
+            className="support-stat-card"
           >
-            <div className="flex items-center justify-between mb-2.5">
-              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                {c.title}
-              </span>
+            {/* Top Accent Strip for Active Card */}
+            <div
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                height: '3px',
+                backgroundColor: isActive ? c.activeBorder : 'transparent',
+                borderRadius: '12px 12px 0 0',
+                transition: 'all 0.2s ease',
+              }}
+            />
+
+            <div style={styles.topRow}>
+              <div style={styles.textCol}>
+                <span style={styles.cardTitle}>{c.title}</span>
+                <div style={{ ...styles.countText, color: c.accentColor }}>{c.count}</div>
+              </div>
               <div
-                className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${c.iconBg} ${c.iconColor}`}
+                style={{
+                  ...styles.iconBadge,
+                  backgroundColor: c.bgColor,
+                  color: c.accentColor,
+                  border: `1px solid ${c.borderColor}`,
+                }}
               >
-                <Icon size={18} />
+                <Icon size={19} />
               </div>
             </div>
 
-            <div className="font-serif font-bold text-2xl lg:text-3xl text-slate-900 tracking-tight leading-none mb-1.5">
-              {c.count}
-            </div>
-
-            <div className="text-[11px] text-slate-500 font-medium truncate">
-              {c.subtitle}
+            <div style={styles.subtitleRow}>
+              <span style={styles.subtitleText}>{c.subtitle}</span>
+              {isActive && (
+                <span
+                  style={{
+                    ...styles.activeIndicator,
+                    backgroundColor: c.accentColor,
+                  }}
+                />
+              )}
             </div>
           </button>
         );
       })}
     </div>
   );
+};
+
+const styles: Record<string, React.CSSProperties> = {
+  grid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+    gap: '14px',
+    marginBottom: '20px',
+  },
+  card: {
+    position: 'relative',
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'space-between',
+    borderRadius: '12px',
+    borderWidth: '1px',
+    borderStyle: 'solid',
+    padding: '16px 18px',
+    cursor: 'pointer',
+    textAlign: 'left',
+    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+    minHeight: '110px',
+    overflow: 'hidden',
+    outline: 'none',
+  },
+  topRow: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: '8px',
+    marginBottom: '8px',
+  },
+  textCol: {
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  cardTitle: {
+    fontSize: '11.5px',
+    fontWeight: 600,
+    textTransform: 'uppercase',
+    letterSpacing: '0.06em',
+    color: '#64748B',
+    marginBottom: '4px',
+  },
+  countText: {
+    fontFamily: '"Inter", system-ui, -apple-system, sans-serif',
+    fontSize: '28px',
+    fontWeight: 800,
+    lineHeight: 1.1,
+    letterSpacing: '-0.02em',
+  },
+  iconBadge: {
+    width: '38px',
+    height: '38px',
+    borderRadius: '10px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+    transition: 'transform 0.2s ease',
+  },
+  subtitleRow: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: '6px',
+    marginTop: 'auto',
+  },
+  subtitleText: {
+    fontSize: '11.5px',
+    color: '#64748B',
+    lineHeight: 1.3,
+    whiteSpace: 'nowrap',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+  },
+  activeIndicator: {
+    width: '6px',
+    height: '6px',
+    borderRadius: '50%',
+    flexShrink: 0,
+  },
 };

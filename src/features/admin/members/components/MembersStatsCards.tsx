@@ -62,10 +62,8 @@ export const MembersStatsCards: React.FC<MembersStatsCardsProps> = ({
 
   return (
     <div
+      className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
       style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-        gap: '16px',
         marginBottom: '20px',
       }}
     >
@@ -76,6 +74,7 @@ export const MembersStatsCards: React.FC<MembersStatsCardsProps> = ({
             key={card.id}
             onClick={() => onSelectTab(card.id)}
             style={{
+              minWidth: 0,
               backgroundColor: '#FFFFFF',
               borderRadius: '12px',
               padding: '18px 20px',

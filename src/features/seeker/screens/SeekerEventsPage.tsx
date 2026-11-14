@@ -9,6 +9,7 @@ import {
   HeartHandshake,
 } from 'lucide-react';
 import { eventsStore } from '@/features/admin/events/store/eventsStore';
+import { isAdminCreatedEvent } from '@/features/admin/events/services/eventsService';
 import type { EventListItem } from '@/features/admin/events/types/events.types';
 import { filterEventsForRole } from '@/features/content';
 import { EventDonationModal } from '@/features/admin/events/components/EventDonationModal';
@@ -90,9 +91,10 @@ export const SeekerEventsPage: React.FC = () => {
   const snapshot = useSyncExternalStore(eventsStore.subscribe, eventsStore.getSnapshot);
 
   const events = useMemo(() => {
-    const roleEvents = filterEventsForRole(snapshot.events, 'SEEKER');
+    const adminEvents = snapshot.events.filter(isAdminCreatedEvent);
+    const roleEvents = filterEventsForRole(adminEvents, 'SEEKER');
     if (roleEvents.length > 0) return roleEvents;
-    return filterEventsForRole(snapshot.events, 'USER');
+    return filterEventsForRole(adminEvents, 'USER');
   }, [snapshot.events]);
 
   const [loading, setLoading] = useState(snapshot.events.length === 0);

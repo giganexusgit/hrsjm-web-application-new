@@ -58,13 +58,33 @@ function buildUrl(endpoint: string, params?: Record<string, string | number | bo
 
 async function request<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
   const { params, body, skipAuth, headers: customHeaders, ...fetchInit } = options;
-  const effectiveParams =
-    params ||
-    (options &&
-    typeof options === 'object' &&
-    !('headers' in options || 'body' in options || 'skipAuth' in options || 'method' in options || 'signal' in options)
-      ? (options as Record<string, any>)
-      : undefined);
+  let effectiveParams = params;
+  if (!effectiveParams && options && typeof options === 'object') {
+    const knownOptionKeys = new Set([
+      'params',
+      'body',
+      'skipAuth',
+      'headers',
+      'method',
+      'signal',
+      'mode',
+      'credentials',
+      'cache',
+      'redirect',
+      'referrer',
+      'referrerPolicy',
+      'integrity',
+      'keepalive',
+      'window',
+    ]);
+    const extraKeys = Object.keys(options).filter((k) => !knownOptionKeys.has(k));
+    if (extraKeys.length > 0) {
+      effectiveParams = {} as Record<string, any>;
+      for (const k of extraKeys) {
+        effectiveParams[k] = (options as Record<string, any>)[k];
+      }
+    }
+  }
   const url = buildUrl(endpoint, effectiveParams);
 
   const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;

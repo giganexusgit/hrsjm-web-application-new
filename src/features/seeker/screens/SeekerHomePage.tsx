@@ -26,8 +26,11 @@ import { SeekerHeroBanner } from '../components/SeekerHeroBanner';
 import { SeekerTimelineStepper } from '../components/SeekerTimelineStepper';
 import { useSeekerStore } from '../store/seekerStore';
 import { eventsStore } from '@/features/admin/events/store/eventsStore';
+import { isAdminCreatedEvent } from '@/features/admin/events/services/eventsService';
 import { newsStore } from '@/features/admin/news/store/newsStore';
 import { filterEventsForRole, filterNewsForRole } from '@/features/content';
+import { assistanceService } from '@/features/admin/assistance/services/assistanceService';
+import type { AssistanceRequest } from '@/features/admin/assistance/types/assistance.types';
 
 // Exact APK Data Sets
 const RIGHTS_CATEGORIES = [
@@ -50,68 +53,29 @@ const IMPACT_STATS = {
   casesResolved: '1,850+',
 };
 
-const UPCOMING_EVENTS = [
-  {
-    id: 'evt-1',
-    day: '25',
-    month: 'NOV',
-    category: 'Free Clinic',
-    title: 'Free Legal Aid & Health Camp for Underprivileged Communities',
-    location: 'Bandra Community Center, Mumbai',
-    image: '/assets/images/about-hero-community.png',
-  },
-  {
-    id: 'evt-2',
-    day: '08',
-    month: 'DEC',
-    category: 'Relief Activity',
-    title: 'Winter Blanket & Emergency Ration Relief Drive',
-    location: 'Civil Relief Grounds, Pune, Maharashtra',
-    image: '/assets/images/contact-cta-hands.jpg',
-  },
-  {
-    id: 'evt-3',
-    day: '15',
-    month: 'DEC',
-    category: 'Workshop',
-    title: 'Constitutional Rights & Legal Literacy Workshop',
-    location: 'District Town Hall, Thane, Maharashtra',
-    image: '/assets/images/event-legal-awareness.jpg',
-  },
-];
-
-const LATEST_NEWS = [
-  {
-    id: 'news-1',
-    category: 'LEGAL EMPOWERMENT',
-    title: 'HRSJM Secures Direct Healthcare Subsidies for 120 Marginalized Families in Maharashtra',
-    date: '14 Oct 2026',
-    image: '/assets/images/contact-hero-building.jpg',
-  },
-  {
-    id: 'news-2',
-    category: 'RELIEF INITIATIVE',
-    title: 'Emergency Medical Relief Campaign Mobilizes Financial Aid for High-Risk Cardiology Patients',
-    date: '02 Oct 2026',
-    image: '/assets/images/about-hero-rally.jpg',
-  },
-];
-
 export const SeekerHomePage: React.FC = () => {
   const navigate = useNavigate();
   const { requests, loadAll } = useSeekerStore();
   const [videoModalOpen, setVideoModalOpen] = useState(false);
 
+  const [approvedCauses, setApprovedCauses] = useState<AssistanceRequest[]>([]);
+
   useEffect(() => {
     loadAll().catch(() => {});
+    eventsStore.fetchEvents().catch(() => {});
+    newsStore.fetchNews().catch(() => {});
+    assistanceService
+      .listApproved({ limit: 4 })
+      .then((items) => setApprovedCauses(items || []))
+      .catch(() => setApprovedCauses([]));
   }, [loadAll]);
 
   const eventsSnapshot = useSyncExternalStore(eventsStore.subscribe, eventsStore.getSnapshot);
   const newsSnapshot = useSyncExternalStore(newsStore.subscribe, newsStore.getSnapshot);
 
   const seekerEvents = useMemo(() => {
-    const authorized = filterEventsForRole(eventsSnapshot.events, 'SEEKER');
-    if (!authorized || authorized.length === 0) return UPCOMING_EVENTS;
+    const authorized = filterEventsForRole(eventsSnapshot.events.filter(isAdminCreatedEvent), 'SEEKER');
+    if (!authorized || authorized.length === 0) return [];
     return authorized.slice(0, 3).map((e) => {
       const dt = new Date(e.startAt || e.created_at || '');
       const day = !isNaN(dt.getTime()) ? String(dt.getDate()).padStart(2, '0') : '25';
@@ -132,7 +96,7 @@ export const SeekerHomePage: React.FC = () => {
 
   const seekerNews = useMemo(() => {
     const authorized = filterNewsForRole(newsSnapshot.news, 'SEEKER');
-    if (!authorized || authorized.length === 0) return LATEST_NEWS;
+    if (!authorized || authorized.length === 0) return [];
     return authorized.slice(0, 2).map((n) => ({
       id: n.id,
       category: (n.category || 'RELIEF INITIATIVE').toUpperCase(),
@@ -313,6 +277,65 @@ export const SeekerHomePage: React.FC = () => {
         </div>
       </section>
 
+      {/* 3B. VERIFIED AID & RELIEF CAUSES (Live from Backend API) */}
+      {approvedCauses.length > 0 && (
+        <section className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-base sm:text-lg font-bold font-['Playfair_Display',Georgia,serif] text-[#0B2F52]">
+              Verified Aid & Relief Causes
+            </h2>
+            <Link to="/seeker/causes" className="text-xs font-bold text-[#174A78] hover:underline">
+              View All →
+            </Link>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {approvedCauses.slice(0, 4).map((cause) => {
+              const target = Number(cause.requested_amount || 0);
+              const raised = Number(cause.raised_amount || 0);
+              const pct = target > 0 ? Math.min(100, Math.round((raised / target) * 100)) : 0;
+              return (
+                <Link
+                  key={cause.id}
+                  to={`/seeker/causes?search=${encodeURIComponent(cause.full_name || cause.reason || '')}`}
+                  className="bg-white rounded-2xl border border-[#E2E8F0] p-4 shadow-xs hover:border-[#FAD465] transition flex flex-col justify-between gap-2.5"
+                >
+                  <div>
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
+                        Approved Cause
+                      </span>
+                      <span className="text-[11px] font-semibold text-slate-500">
+                        {cause.reason}
+                      </span>
+                    </div>
+                    <h3 className="text-sm font-bold text-[#0B2F52] line-clamp-1">
+                      {cause.full_name}
+                    </h3>
+                    {cause.description && (
+                      <p className="text-xs text-slate-500 line-clamp-2 mt-1">
+                        {cause.description.replace(/\s*\[(Location|Urgency|Age):[^\]]+\]/gi, '').trim()}
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <div className="flex items-center justify-between text-[11px] font-semibold text-slate-600 mb-1">
+                      <span>₹{raised.toLocaleString('en-IN')} raised</span>
+                      <span>Goal: ₹{target.toLocaleString('en-IN')}</span>
+                    </div>
+                    <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-[#06294D] rounded-full"
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
       {/* 4. 24x7 EMERGENCY SOCIAL & LEGAL HELPLINE BANNER (Exact APK helplineBanner style) */}
       <section>
         <div
@@ -386,18 +409,25 @@ export const SeekerHomePage: React.FC = () => {
           <h2 className="text-base sm:text-lg font-bold font-['Playfair_Display',Georgia,serif] text-[#0B2F52]">
             Relief & Assistance Programs
           </h2>
-          <span className="text-xs font-semibold text-[#718096]">Core NGO Initiatives</span>
+          <Link
+            to="/seeker/about"
+            className="text-xs font-semibold text-[#0B2F52] hover:text-[#C9971A] flex items-center gap-1 transition cursor-pointer"
+          >
+            <span>Learn More</span>
+            <ArrowRight size={13} />
+          </Link>
         </div>
 
         <div className="grid grid-cols-4 gap-2 sm:gap-3">
           {WHAT_WE_DO_ITEMS.map((item) => {
             const Icon = item.icon;
             return (
-              <div
+              <Link
                 key={item.id}
-                className="flex flex-col items-center justify-center py-3 px-1 bg-white rounded-2xl border border-[#E2E8F0] shadow-xs min-h-[90px] text-center"
+                to="/seeker/about"
+                className="flex flex-col items-center justify-center py-3 px-1 bg-white rounded-2xl border border-[#E2E8F0] hover:border-[#0B2F52]/40 hover:shadow-xs transition min-h-[90px] text-center group cursor-pointer"
               >
-                <div className="w-9 h-9 rounded-full bg-[#EDF2F7] text-[#06294D] flex items-center justify-center mb-1.5">
+                <div className="w-9 h-9 rounded-full bg-[#EDF2F7] text-[#06294D] group-hover:bg-[#06294D] group-hover:text-white transition flex items-center justify-center mb-1.5">
                   <Icon size={18} strokeWidth={1.8} />
                 </div>
                 <span className="text-[11px] font-semibold text-[#06294D] leading-[14px]">
@@ -408,7 +438,7 @@ export const SeekerHomePage: React.FC = () => {
                     </React.Fragment>
                   ))}
                 </span>
-              </div>
+              </Link>
             );
           })}
         </div>
@@ -428,10 +458,14 @@ export const SeekerHomePage: React.FC = () => {
                 Our Impact
               </h2>
             </div>
-            <div className="text-[11px] font-bold text-[#FAD465] flex items-center gap-1">
-              <span>Nationwide Relief</span>
-              <ArrowRight size={13} />
-            </div>
+            <Link
+              to="/seeker/about"
+              className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-[#FAD465] hover:text-amber-300 transition-colors cursor-pointer group"
+              aria-label="View Details on Our Impact"
+            >
+              <span>View Details</span>
+              <ArrowRight size={14} className="transition-transform group-hover:translate-x-0.5" />
+            </Link>
           </div>
 
           {/* 3 Metric Tiles (Exact APK Layout) */}
@@ -537,14 +571,21 @@ export const SeekerHomePage: React.FC = () => {
           <h2 className="text-base sm:lg font-bold font-['Playfair_Display',Georgia,serif] text-[#0B2F52]">
             Stories of Hope & News
           </h2>
-          <span className="text-xs font-semibold text-[#718096]">Recent Impact Updates</span>
+          <Link
+            to="/seeker/news"
+            className="text-xs font-semibold text-[#0B2F52] hover:text-[#C9971A] flex items-center gap-1 transition cursor-pointer"
+          >
+            <span>View All</span>
+            <ArrowRight size={13} />
+          </Link>
         </div>
 
         <div className="space-y-2.5">
           {seekerNews.map((news) => (
-            <div
+            <Link
               key={news.id}
-              className="bg-white rounded-2xl border border-[#E2E8F0] p-3 shadow-xs flex items-center justify-between gap-3 hover:border-[#FAD465] transition"
+              to="/seeker/news"
+              className="bg-white rounded-2xl border border-[#E2E8F0] p-3 shadow-xs flex items-center justify-between gap-3 hover:border-[#FAD465] transition group cursor-pointer"
             >
               <img
                 src={news.image}
@@ -559,16 +600,16 @@ export const SeekerHomePage: React.FC = () => {
                 <div className="text-[10px] font-bold tracking-wider text-[#C9971A] uppercase">
                   {news.category}
                 </div>
-                <h4 className="text-xs font-bold text-[#0B2F52] leading-snug line-clamp-2 mt-0.5">
+                <h4 className="text-xs font-bold text-[#0B2F52] leading-snug line-clamp-2 mt-0.5 group-hover:text-[#C9971A] transition">
                   {news.title}
                 </h4>
                 <div className="text-[10px] text-[#718096] mt-1">{news.date}</div>
               </div>
 
-              <div className="w-7 h-7 rounded-full bg-[#EDF2F7] text-[#06294D] flex items-center justify-center shrink-0">
+              <div className="w-7 h-7 rounded-full bg-[#EDF2F7] text-[#06294D] group-hover:bg-[#06294D] group-hover:text-white transition flex items-center justify-center shrink-0">
                 <ArrowRight size={13} />
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       </section>
@@ -579,13 +620,13 @@ export const SeekerHomePage: React.FC = () => {
           <h2 className="text-base sm:text-lg font-bold font-['Playfair_Display',Georgia,serif] text-[#0B2F52]">
             About HRSJM
           </h2>
-          <button
-            type="button"
-            onClick={() => setVideoModalOpen(true)}
-            className="text-xs font-bold text-[#174A78] hover:underline cursor-pointer"
+          <Link
+            to="/seeker/about"
+            className="text-xs font-semibold text-[#0B2F52] hover:text-[#C9971A] flex items-center gap-1 transition cursor-pointer"
           >
-            View More →
-          </button>
+            <span>View More</span>
+            <ArrowRight size={13} />
+          </Link>
         </div>
 
         <div className="flex items-center gap-4">

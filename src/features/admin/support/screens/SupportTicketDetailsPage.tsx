@@ -1,5 +1,5 @@
 import type React from 'react';
-import { useState, useMemo, useSyncExternalStore } from 'react';
+import { useState, useMemo, useSyncExternalStore, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -105,6 +105,12 @@ export const SupportTicketDetailsPage: React.FC = () => {
 
   const ticket = storeSnapshot.tickets.find((t) => t.id === id);
   const messages = id ? storeSnapshot.messagesByTicket[id] || [] : [];
+
+  useEffect(() => {
+    if (id) {
+      supportStore.markTicketViewed(id);
+    }
+  }, [id]);
 
   const [statusModalTarget, setStatusModalTarget] = useState<TicketStatus | null>(null);
   const [successBanner, setSuccessBanner] = useState<string | null>(null);

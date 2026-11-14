@@ -1,9 +1,9 @@
-import type React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { executeSignOut } from '@/features/auth/store/authStore';
 import { ChevronLeft, ChevronRight, X, LogOut } from 'lucide-react';
 import { MEMBER_NAV_GROUPS } from './memberNavItems';
-import { HrsjmLogo } from '../common/HrsjmLogo';
+import { useMemberUnreadCount } from '../../features/member/store/memberNotificationsStore';
 
 interface MemberSidebarProps {
   collapsed: boolean;
@@ -19,6 +19,19 @@ export const MemberSidebar: React.FC<MemberSidebarProps> = ({
   onCloseMobile,
 }) => {
   const navigate = useNavigate();
+  const unreadCount = useMemberUnreadCount();
+  const navScrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const saved = sessionStorage.getItem('member_sidebar_scroll_top');
+    if (saved && navScrollRef.current) {
+      navScrollRef.current.scrollTop = Number(saved);
+    }
+  }, []);
+
+  const handleNavScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    sessionStorage.setItem('member_sidebar_scroll_top', String(e.currentTarget.scrollTop));
+  };
 
   const handleSignOut = async () => {
     if (mobileOpen) onCloseMobile();
@@ -48,12 +61,25 @@ export const MemberSidebar: React.FC<MemberSidebarProps> = ({
         {/* Brand / Logo Section */}
         <div style={styles.header}>
           <div style={styles.logoWrap}>
-            <HrsjmLogo
-              size="md"
-              variant="light"
-              showWordmark={!collapsed}
-              subtitle="MEMBER PORTAL"
-            />
+            {!collapsed ? (
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ fontSize: '15px', fontWeight: 900, color: '#FFFFFF', letterSpacing: '0.04em', fontFamily: 'serif', lineHeight: 1.2 }}>
+                  HRSJM
+                </span>
+                <span style={{ fontSize: '9px', fontWeight: 700, color: '#FAD465', textTransform: 'uppercase', letterSpacing: '0.08em', lineHeight: 1.2 }}>
+                  MEMBER PORTAL
+                </span>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
+                <span style={{ fontSize: '13px', fontWeight: 900, color: '#FFFFFF', letterSpacing: '0.05em' }}>
+                  HRSJM
+                </span>
+                <span style={{ fontSize: '7.5px', fontWeight: 700, color: '#FAD465', textTransform: 'uppercase' }}>
+                  Member
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Mobile Close Button */}
@@ -68,7 +94,12 @@ export const MemberSidebar: React.FC<MemberSidebarProps> = ({
         </div>
 
         {/* Navigation Groups List */}
-        <div style={styles.navScrollArea}>
+        <div
+          ref={navScrollRef}
+          onScroll={handleNavScroll}
+          data-sidebar="true"
+          style={styles.navScrollArea}
+        >
           {MEMBER_NAV_GROUPS.map((group) => (
             <div key={group.groupTitle} style={styles.groupContainer}>
               {!collapsed && (
@@ -122,17 +153,33 @@ export const MemberSidebar: React.FC<MemberSidebarProps> = ({
                             </span>
                           )}
 
-                          {!collapsed && item.badge && (
-                            <span
-                              style={{
-                                ...styles.badge,
-                                backgroundColor: isActive ? '#FAD465' : 'rgba(250, 212, 101, 0.2)',
-                                color: isActive ? '#011F39' : '#FAD465',
-                              }}
-                            >
-                              {item.badge}
-                            </span>
-                          )}
+                          {(() => {
+                            const effectiveBadge =
+                              item.id === 'notifications'
+                                ? unreadCount > 0
+                                  ? unreadCount > 99
+                                    ? '99+'
+                                    : String(unreadCount)
+                                  : undefined
+                                : item.badge;
+
+                            return (
+                              !collapsed &&
+                              effectiveBadge && (
+                                <span
+                                  style={{
+                                    ...styles.badge,
+                                    backgroundColor: isActive
+                                      ? '#FAD465'
+                                      : 'rgba(250, 212, 101, 0.2)',
+                                    color: isActive ? '#011F39' : '#FAD465',
+                                  }}
+                                >
+                                  {effectiveBadge}
+                                </span>
+                              )
+                            );
+                          })()}
                         </>
                       )}
                     </NavLink>

@@ -73,7 +73,7 @@ export const MemberCertificatePage: React.FC = () => {
               {/* Certificate Header */}
               <div style={styles.certHeader}>
                 <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '8px' }}>
-                  <HrsjmLogo size="lg" variant="dark" showWordmark={false} />
+                  <HrsjmLogo size="lg" variant="dark" showWordmark={false} showIcon={true} />
                 </div>
                 <div style={styles.certOrgName}>HUMAN RIGHTS & SOCIAL JUSTICE MISSION</div>
                 <div style={styles.certOrgSub}>

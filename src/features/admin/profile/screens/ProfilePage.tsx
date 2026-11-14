@@ -250,6 +250,8 @@ export const ProfilePage: React.FC = () => {
 
 const styles: Record<string, React.CSSProperties> = {
   container: {
+    width: '100%',
+    minWidth: 0,
     padding: '24px 32px 60px',
     maxWidth: '1440px',
     margin: '0 auto',
@@ -500,7 +502,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     gap: '10px',
     width: '100%',
-    maxWidth: '360px',
+    maxWidth: '440px',
   },
   footerDetailsBtn: {
     flex: 1,

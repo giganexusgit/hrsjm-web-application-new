@@ -86,6 +86,14 @@ class UserAuthStore {
     this.setUser(null);
   };
 
+  public setUnreadNotificationsCount = (count: number): void => {
+    this.state = {
+      ...this.state,
+      unreadNotificationsCount: Math.max(0, count),
+    };
+    this.notify();
+  };
+
   public updateAssistanceStatus = (status: 'PENDING' | 'APPROVED' | 'REJECTED' | null): void => {
     if (!this.state.user) return;
     const updated: UserProfile = {
@@ -171,6 +179,7 @@ export const useUserAuth = () => {
     ...state,
     setUser: userAuthStore.setUser,
     signOut: userAuthStore.signOut,
+    setUnreadNotificationsCount: userAuthStore.setUnreadNotificationsCount,
     updateAssistanceStatus: userAuthStore.updateAssistanceStatus,
     updateMembershipStatus: userAuthStore.updateMembershipStatus,
     getMatchedSeekerApplication: userAuthStore.getMatchedSeekerApplication,

@@ -10,177 +10,26 @@ import {
   Trash2,
   CheckCheck,
 } from 'lucide-react';
-import { useCurrentMember } from '../store/memberStore';
-import { notificationsService } from '@/features/admin/notifications/services/notificationsService';
-import { filterBroadcastsForRole } from '@/features/content';
-
-interface MemberNotice {
-  id: string;
-  category: 'MEMBERSHIP' | 'EVENT' | 'RECEIPT' | 'BULLETIN' | 'SUPPORT';
-  title: string;
-  message: string;
-  timestamp: string;
-  isRead: boolean;
-  priority: 'HIGH' | 'NORMAL' | 'URGENT';
-  actionPath?: string;
-  actionLabel?: string;
-}
+import { useMemberNotifications, type MemberNotice } from '../store/memberNotificationsStore';
 
 export const MemberNotificationsPage: React.FC = () => {
   const navigate = useNavigate();
-  const { member } = useCurrentMember();
-
-  const [notices, setNotices] = useState<MemberNotice[]>(() => {
-    const rawBroadcasts = notificationsService.getBroadcasts();
-    const authorizedBroadcasts = filterBroadcastsForRole(rawBroadcasts, 'MEMBER');
-
-    const mappedBroadcasts: MemberNotice[] = authorizedBroadcasts.map((b) => ({
-      id: `bc-${b.id}`,
-      category: 'BULLETIN',
-      title: b.title,
-      message: b.body,
-      timestamp: b.sent_at
-        ? new Date(b.sent_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
-        : 'Recent Broadcast',
-      isRead: false,
-      priority: b.priority === 'URGENT' ? 'URGENT' : b.priority === 'HIGH' ? 'HIGH' : 'NORMAL',
-      actionPath: '/member/dashboard',
-      actionLabel: 'View Bulletin',
-    }));
-
-    const defaultMemberNotices: MemberNotice[] = [
-      {
-        id: 'notif-1',
-        category: 'MEMBERSHIP',
-        title: 'Digital ID Card & Membership Credential Activated',
-        message: `Your accredited membership under ${member.chapter} has been verified and active until ${member.validUpto}. You may view your 3D digital flip card or download the credential PDF.`,
-        timestamp: 'Today, 10:15 AM',
-        isRead: false,
-        priority: 'HIGH',
-        actionPath: '/member/id-card',
-        actionLabel: 'View Digital ID',
-      },
-      {
-        id: 'notif-2',
-        category: 'BULLETIN',
-        title: 'Physical Welcome Kit Dispatched via Speed Post',
-        message: 'Your official welcome kit containing embossed PVC card, badge, and constitution handbook has been processed. Tracking number: SP729104829IN.',
-        timestamp: 'Yesterday, 04:30 PM',
-        isRead: false,
-        priority: 'NORMAL',
-        actionPath: '/member/dashboard',
-        actionLabel: 'Track Kit',
-      },
-      {
-        id: 'notif-3',
-        category: 'EVENT',
-        title: 'Pass Confirmed: 44th Annual Human Rights Convention',
-        message: 'You are registered for the National Convention at Vigyan Bhawan, New Delhi on Nov 25, 2026. Please carry your digital ID card.',
-        timestamp: '2 Nov 2026',
-        isRead: false,
-        priority: 'HIGH',
-        actionPath: '/member/events',
-        actionLabel: 'View Pass',
-      },
-      {
-        id: 'notif-4',
-        category: 'RECEIPT',
-        title: '80G Tax Exemption Receipt #HRSJM-80G-2026-0842 Generated',
-        message: 'Your recent annual contribution of ₹2,500 has been reconciled. Formal tax exemption certificate is available for download in your Passbook.',
-        timestamp: '1 Nov 2026',
-        isRead: true,
-        priority: 'NORMAL',
-        actionPath: '/member/passbook',
-        actionLabel: 'Download 80G',
-      },
-      {
-        id: 'notif-5',
-        category: 'SUPPORT',
-        title: 'Helpdesk Update: Complaint #TKT-8902 in Judicial Review',
-        message: 'The legal cell has reviewed your complaint regarding arbitrary worker detention. The senior panel advocate has drafted formal representation.',
-        timestamp: '30 Oct 2026',
-        isRead: true,
-        priority: 'HIGH',
-        actionPath: '/member/support',
-        actionLabel: 'View Ticket',
-      },
-      {
-        id: 'notif-6',
-        category: 'BULLETIN',
-        title: 'National Directive: Winter Legal Literacy Clinics',
-        message: 'All district members are invited to facilitate the upcoming citizen rights outreach drives starting December 1st across 28 states.',
-        timestamp: '28 Oct 2026',
-        isRead: true,
-        priority: 'NORMAL',
-        actionPath: '/member/news',
-        actionLabel: 'Read Circular',
-      },
-      {
-        id: 'notif-7',
-        category: 'EVENT',
-        title: 'RTI Awareness Webinar Registration Open',
-        message: 'Free interactive session with former Central Information Commissioners on drafting effective Section 6(1) RTI applications.',
-        timestamp: '25 Oct 2026',
-        isRead: true,
-        priority: 'NORMAL',
-        actionPath: '/member/events',
-        actionLabel: 'Browse Events',
-      },
-    ];
-
-    return [...mappedBroadcasts, ...defaultMemberNotices];
-  });
+  const {
+    notices,
+    unreadCount,
+    markAllAsRead,
+    markSingleAsRead,
+    deleteNotice,
+    clearAllNotices,
+    syncWithBackend,
+  } = useMemberNotifications();
 
   const [activeTab, setActiveTab] = useState<'ALL' | 'UNREAD' | 'MEMBERSHIP' | 'EVENTS'>('ALL');
 
   useEffect(() => {
-    let isMounted = true;
-    const fetchLiveNotices = async () => {
-      try {
-        const liveItems = await notificationsService.fetchMyNotifications();
-        if (isMounted && Array.isArray(liveItems) && liveItems.length > 0) {
-          const mappedLive: MemberNotice[] = liveItems.map((item) => ({
-            id: item.recipient_id || item.notification.id,
-            category: (item.notification.category?.toUpperCase() as any) || 'BULLETIN',
-            title: item.notification.title,
-            message: item.notification.body,
-            timestamp: item.created_at
-              ? new Date(item.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
-              : 'Recent',
-            isRead: item.is_read,
-            priority: (item.notification.priority as any) || 'NORMAL',
-            actionPath: item.notification.deepLinkUrl || '/member/dashboard',
-            actionLabel: item.notification.actionLabel || 'View Details',
-          }));
-          setNotices(mappedLive);
-        }
-      } catch {
-        // keep current notices
-      }
-    };
-    fetchLiveNotices();
-    return () => {
-      isMounted = false;
-    };
+    syncWithBackend();
+    window.scrollTo({ top: 0, behavior: 'instant' });
   }, []);
-
-  const unreadCount = notices.filter((n) => !n.isRead).length;
-
-  const markAllAsRead = async () => {
-    setNotices((prev) => prev.map((n) => ({ ...n, isRead: true })));
-    await notificationsService.markAllReadApi();
-  };
-
-  const markSingleAsRead = async (id: string) => {
-    setNotices((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
-    );
-    await notificationsService.markReadApi(id);
-  };
-
-  const deleteNotice = (id: string) => {
-    setNotices((prev) => prev.filter((n) => n.id !== id));
-  };
 
   const filteredNotices = notices.filter((n) => {
     if (activeTab === 'UNREAD') return !n.isRead;
@@ -274,16 +123,31 @@ export const MemberNotificationsPage: React.FC = () => {
           </button>
         </div>
 
-        {unreadCount > 0 && (
-          <button
-            type="button"
-            style={styles.markAllBtn}
-            onClick={markAllAsRead}
-          >
-            <CheckCheck size={16} />
-            <span>Mark All as Read</span>
-          </button>
-        )}
+        <div style={styles.actionsRow}>
+          {unreadCount > 0 && (
+            <button
+              type="button"
+              style={styles.markAllBtn}
+              onClick={markAllAsRead}
+              title="Mark all notifications as read"
+            >
+              <CheckCheck size={16} />
+              <span>Mark All as Read</span>
+            </button>
+          )}
+
+          {notices.length > 0 && (
+            <button
+              type="button"
+              style={styles.clearAllBtn}
+              onClick={clearAllNotices}
+              title="Delete all notifications in 1 click"
+            >
+              <Trash2 size={16} />
+              <span>Clear All</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Notifications List */}
@@ -458,11 +322,17 @@ const styles: Record<string, React.CSSProperties> = {
     backgroundColor: '#06294D',
     color: '#FFFFFF',
   },
+  actionsRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    flexWrap: 'wrap',
+  },
   markAllBtn: {
     display: 'flex',
     alignItems: 'center',
     gap: '6px',
-    background: 'none',
+    background: '#FFFFFF',
     border: '1px solid #CBD5E1',
     borderRadius: '8px',
     padding: '8px 14px',
@@ -470,6 +340,21 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '12.5px',
     fontWeight: 600,
     cursor: 'pointer',
+    transition: 'all 0.15s ease',
+  },
+  clearAllBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    background: '#FEF2F2',
+    border: '1px solid #FECACA',
+    borderRadius: '8px',
+    padding: '8px 14px',
+    color: '#DC2626',
+    fontSize: '12.5px',
+    fontWeight: 600,
+    cursor: 'pointer',
+    transition: 'all 0.15s ease',
   },
 
   /* List */

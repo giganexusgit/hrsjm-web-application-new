@@ -8,8 +8,7 @@ import type {
   NewsStatus,
   CreateNewsFormState,
 } from '../types/news.types';
-import { INITIAL_NEWS_FIXTURES } from '../data/newsFixtures';
-import { newsService } from '../services/newsService';
+import { newsService, isAdminCreatedNews } from '../services/newsService';
 
 const STORAGE_KEY = 'hrsjm_local_news_v1';
 
@@ -39,18 +38,12 @@ class NewsStore {
   private loadPersisted(): NewsListItem[] {
     try {
       if (typeof window !== 'undefined' && window.localStorage) {
-        const raw = window.localStorage.getItem(STORAGE_KEY);
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            return parsed;
-          }
-        }
+        window.localStorage.removeItem(STORAGE_KEY);
       }
     } catch {
-      // Fallback
+      // Ignore storage errors
     }
-    return [...INITIAL_NEWS_FIXTURES];
+    return [];
   }
 
   private persist(): void {
@@ -118,8 +111,8 @@ class NewsStore {
   public async fetchNews(): Promise<void> {
     try {
       const { news } = await newsService.list();
-      if (news && news.length > 0) {
-        this.news = news;
+      if (Array.isArray(news)) {
+        this.news = news.filter(isAdminCreatedNews);
         this.sortInternal();
         this.notify();
       }

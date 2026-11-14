@@ -37,6 +37,19 @@ export const memberService = {
   },
 
   /**
+   * Fetches impact metrics for the authenticated user
+   * GET /api/v1/auth/me/impact
+   */
+  async getOwnImpact() {
+    if (!getAuthToken()) return null;
+    try {
+      return await apiClient.get<any>('/auth/me/impact');
+    } catch {
+      return null;
+    }
+  },
+
+  /**
    * Updates authenticated user profile details
    * PATCH /api/v1/auth/me
    */

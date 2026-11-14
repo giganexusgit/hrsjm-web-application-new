@@ -42,6 +42,10 @@ export const ApplicationDetailsPage: React.FC = () => {
   const [actionError, setActionError] = useState<string | null>(null);
 
   React.useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    if (id) {
+      applicationsStore.markApplicationViewed(id);
+    }
     if (!application && id) {
       applicationsStore.fetchApplications().finally(() => {
         setLoading(false);
@@ -150,7 +154,7 @@ export const ApplicationDetailsPage: React.FC = () => {
   const isRejected = application.status === 'rejected';
 
   return (
-    <div style={{ maxWidth: '1080px', margin: '0 auto', paddingBottom: '60px' }}>
+    <div style={{ maxWidth: '1080px', margin: '0 auto', paddingTop: '8px', paddingBottom: '60px' }}>
       {/* Top back navigation */}
       <div
         style={{
@@ -260,7 +264,12 @@ export const ApplicationDetailsPage: React.FC = () => {
           marginBottom: '20px',
           borderBottom: '1px solid #E2E8F0',
           paddingBottom: '12px',
+          paddingTop: '8px',
           overflowX: 'auto',
+          position: 'sticky',
+          top: '68px',
+          zIndex: 20,
+          backgroundColor: '#FAF7F0',
         }}
       >
         {tabs.map(tab => {

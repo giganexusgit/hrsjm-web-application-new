@@ -18,15 +18,18 @@ import {
   CheckCheck,
   ExternalLink,
   Sparkles,
+  Trash2,
 } from 'lucide-react';
 import { notificationsService } from '../../admin/notifications/services/notificationsService';
 import type { NotificationItem } from '../../admin/notifications/types/notifications.types';
 import { filterBroadcastsForRole } from '@/features/content';
+import { useUserAuth } from '../store/userAuthStore';
 
 type FilterType = 'ALL' | 'UNREAD' | 'ANNOUNCEMENT' | 'EVENT' | 'DONATION' | 'APPLICATION' | 'SUPPORT';
 
 export const UserNotificationsPage: React.FC = () => {
   const navigate = useNavigate();
+  const { setUnreadNotificationsCount } = useUserAuth();
   const [loading, setLoading] = useState(true);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [filter, setFilter] = useState<FilterType>('ALL');
@@ -85,6 +88,11 @@ export const UserNotificationsPage: React.FC = () => {
     };
   }, []);
 
+  useEffect(() => {
+    const unread = notifications.filter((n) => !n.is_read).length;
+    setUnreadNotificationsCount(unread);
+  }, [notifications, setUnreadNotificationsCount]);
+
   const handleMarkAllRead = async () => {
     const updated = notifications.map((n) => ({
       ...n,
@@ -92,6 +100,12 @@ export const UserNotificationsPage: React.FC = () => {
       read_at: new Date().toISOString(),
     }));
     setNotifications(updated);
+    await notificationsService.markAllReadApi();
+  };
+
+  const handleClearAll = async () => {
+    setNotifications([]);
+    setUnreadNotificationsCount(0);
     await notificationsService.markAllReadApi();
   };
 
@@ -309,6 +323,18 @@ export const UserNotificationsPage: React.FC = () => {
                 <CheckCircle2 size={14} className="text-emerald-400" />
                 <span>All caught up!</span>
               </div>
+            )}
+
+            {notifications.length > 0 && (
+              <button
+                type="button"
+                onClick={handleClearAll}
+                className="px-3.5 py-2.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 border border-rose-400/30 text-rose-200 text-xs font-bold transition-all duration-150 shadow-xs flex items-center justify-center gap-1.5 cursor-pointer w-full sm:w-auto"
+                title="Delete all notifications in 1 click"
+              >
+                <Trash2 size={14} />
+                <span>Clear All</span>
+              </button>
             )}
           </div>
         </div>

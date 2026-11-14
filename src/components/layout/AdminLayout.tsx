@@ -13,11 +13,16 @@ export const AdminLayout: React.FC = () => {
 
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== 'undefined' ? window.innerWidth < 1024 : false
+  );
 
-  // Auto-collapse sidebar on smaller screens
+  // Auto-collapse sidebar on smaller screens & track isMobile
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth < 1024) {
+      const mobile = window.innerWidth < 1024;
+      setIsMobile(mobile);
+      if (mobile) {
         setCollapsed(true);
       }
     };
@@ -38,9 +43,11 @@ export const AdminLayout: React.FC = () => {
     return <Navigate to={safeDestination} replace />;
   }
 
+  const sidebarWidth = isMobile ? 0 : collapsed ? 74 : 268;
+
   return (
     <div style={styles.layoutWrapper}>
-      {/* Slide-in / Collapsible Sidebar */}
+      {/* Slide-in / Collapsible Sidebar - Truly Fixed */}
       <AdminSidebar
         collapsed={collapsed}
         onToggleCollapse={() => setCollapsed((c) => !c)}
@@ -48,8 +55,15 @@ export const AdminLayout: React.FC = () => {
         onCloseMobile={() => setMobileOpen(false)}
       />
 
-      {/* Main App Container */}
-      <div style={styles.mainContainer}>
+      {/* Main App Container with fixed sidebar offset */}
+      <div
+        style={{
+          ...styles.mainContainer,
+          marginLeft: `${sidebarWidth}px`,
+          width: isMobile ? '100%' : `calc(100% - ${sidebarWidth}px)`,
+          transition: 'margin-left 0.22s cubic-bezier(0.4, 0, 0.2, 1), width 0.22s cubic-bezier(0.4, 0, 0.2, 1)',
+        }}
+      >
         {/* Top Header */}
         <AdminHeader
           onToggleMobileSidebar={() => setMobileOpen((o) => !o)}
@@ -72,22 +86,25 @@ export const AdminLayout: React.FC = () => {
 
 const styles: Record<string, React.CSSProperties> = {
   layoutWrapper: {
-    display: 'flex',
     minHeight: '100vh',
     backgroundColor: '#FAF7F0',
+    width: '100%',
+    position: 'relative',
   },
   mainContainer: {
-    flex: 1,
     display: 'flex',
     flexDirection: 'column',
     minWidth: 0,
     backgroundColor: '#FAF7F0',
+    minHeight: '100vh',
+    overflowX: 'clip',
   },
   contentArea: {
     flex: 1,
     display: 'flex',
     flexDirection: 'column',
     minHeight: 'calc(100vh - 68px)',
+    minWidth: 0,
   },
   contentInner: {
     flex: 1,
@@ -96,6 +113,8 @@ const styles: Record<string, React.CSSProperties> = {
     margin: '0 auto',
     display: 'flex',
     flexDirection: 'column',
+    minWidth: 0,
+    padding: '1.25rem 1.5rem',
   },
 };
 

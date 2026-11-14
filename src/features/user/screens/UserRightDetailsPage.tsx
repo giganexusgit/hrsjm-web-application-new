@@ -239,21 +239,33 @@ const getCardDetailInfo = (item: RightsCard, rightTitle: string): RightCardDetai
   };
 };
 
-export const UserRightDetailsPage: React.FC = () => {
-  const { rightId } = useParams<{ rightId: string }>();
+interface UserRightDetailsPageProps {
+  isSeeker?: boolean;
+  isMember?: boolean;
+}
+
+export const UserRightDetailsPage: React.FC<UserRightDetailsPageProps> = ({
+  isSeeker = false,
+  isMember = false,
+}) => {
+  const { rightId, id } = useParams<{ rightId?: string; id?: string }>();
   const navigate = useNavigate();
+  const effectiveRightId = rightId || id || 'human-rights';
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const [selectedCard, setSelectedCard] = useState<RightCardDetailData | null>(null);
 
+  const rightsListRoute = isSeeker ? '/seeker/rights' : isMember ? '/member/rights' : '/rights';
+  const supportRoute = isSeeker ? '/seeker/complaint' : isMember ? '/member/support' : '/support';
+
   const content: RightDetailsContent = useMemo(() => {
-    return getRightDetail(rightId || 'human-rights');
-  }, [rightId]);
+    return getRightDetail(effectiveRightId);
+  }, [effectiveRightId]);
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
     if (document.documentElement) document.documentElement.scrollTop = 0;
     if (document.body) document.body.scrollTop = 0;
-  }, [rightId]);
+  }, [effectiveRightId]);
 
   // Format title into first word (white) and rest (gold) for executive typography matching APK
   const titleWords = content.title.split(' ');
@@ -266,7 +278,7 @@ export const UserRightDetailsPage: React.FC = () => {
       <div className="flex items-center justify-between gap-3">
         <button
           type="button"
-          onClick={() => navigate(-1)}
+          onClick={() => navigate(rightsListRoute)}
           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-[#06294D] text-xs font-semibold shadow-2xs transition-all cursor-pointer"
         >
           <ChevronLeft size={16} />
@@ -274,7 +286,7 @@ export const UserRightDetailsPage: React.FC = () => {
         </button>
 
         <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
-          <Link to="/rights" className="hover:text-[#06294D] transition-colors">
+          <Link to={rightsListRoute} className="hover:text-[#06294D] transition-colors">
             Know Your Rights
           </Link>
           <span>/</span>
@@ -467,7 +479,7 @@ export const UserRightDetailsPage: React.FC = () => {
             <div className="flex items-center gap-2.5 shrink-0">
               <button
                 type="button"
-                onClick={() => navigate('/support')}
+                onClick={() => navigate(supportRoute)}
                 className="px-4 py-2.5 rounded-xl bg-[#06294D] hover:bg-[#0c3966] text-white text-xs font-bold shadow-xs transition-all cursor-pointer inline-flex items-center gap-1.5"
               >
                 <span>File a Complaint</span>
@@ -701,7 +713,7 @@ export const UserRightDetailsPage: React.FC = () => {
             <div className="pt-4 flex flex-wrap items-center gap-3">
               <button
                 type="button"
-                onClick={() => navigate('/support')}
+                onClick={() => navigate(supportRoute)}
                 className="px-5 py-2.5 rounded-xl bg-[#06294D] hover:bg-[#0c3966] text-white text-xs font-bold shadow-xs transition-all cursor-pointer inline-flex items-center gap-1.5"
               >
                 <span>Report an Infringement</span>
@@ -779,7 +791,7 @@ export const UserRightDetailsPage: React.FC = () => {
                   type="button"
                   onClick={() => {
                     setSelectedCard(null);
-                    navigate('/support');
+                    navigate(supportRoute);
                   }}
                   className="flex-1 py-2.5 px-4 rounded-xl bg-[#06294D] hover:bg-[#0c3966] text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                 >

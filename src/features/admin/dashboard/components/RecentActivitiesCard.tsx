@@ -1,10 +1,38 @@
 import type React from 'react';
+import { useSyncExternalStore } from 'react';
 import { Activity, UserCheck, FileText, Gift, MessageSquare } from 'lucide-react';
-import type { RecentActivity } from '../data/dashboardDemoData';
-import { DEMO_RECENT_ACTIVITIES } from '../data/dashboardDemoData';
+import { applicationsStore } from '@/features/admin/applications/store/applicationsStore';
+import type { MembershipApplicationItem } from '@/features/admin/applications/types/applications.types';
 
-export const RecentActivitiesCard: React.FC = () => {
-  const getActivityIcon = (type: RecentActivity['type']) => {
+export interface AdminActivityItem {
+  id: string;
+  type: 'member' | 'application' | 'donation' | 'complaint';
+  description: string;
+  timestamp: string;
+  actor: string;
+}
+
+interface RecentActivitiesCardProps {
+  activities?: AdminActivityItem[];
+}
+
+export const RecentActivitiesCard: React.FC<RecentActivitiesCardProps> = ({ activities }) => {
+  useSyncExternalStore(applicationsStore.subscribe, applicationsStore.getSnapshot);
+  const applications = applicationsStore.getAllApplications();
+
+  // If no backend activities provided, derive live from applicationsStore
+  const displayActivities: AdminActivityItem[] =
+    activities && activities.length > 0
+      ? activities
+      : applications.slice(0, 4).map((app: MembershipApplicationItem) => ({
+          id: `app-act-${app.id}`,
+          type: 'application' as const,
+          description: `${app.applicantName} submitted ${app.membershipType || 'Application'} (${app.applicationId}) - Status: ${app.status.toUpperCase()}`,
+          timestamp: app.submittedAt || 'Recently',
+          actor: 'Central Registry',
+        }));
+
+  const getActivityIcon = (type: AdminActivityItem['type']) => {
     switch (type) {
       case 'member':
         return <UserCheck size={14} color="#16A34A" />;
@@ -33,22 +61,28 @@ export const RecentActivitiesCard: React.FC = () => {
         </div>
       </div>
 
-      <div style={styles.timeline}>
-        {DEMO_RECENT_ACTIVITIES.map((act, index) => (
-          <div key={act.id} style={styles.timelineItem}>
-            <div style={styles.iconNode}>{getActivityIcon(act.type)}</div>
-            {index < DEMO_RECENT_ACTIVITIES.length - 1 && <div style={styles.timelineLine} />}
-            <div style={styles.timelineContent}>
-              <p style={styles.activityDesc}>{act.description}</p>
-              <div style={styles.metaRow}>
-                <span style={styles.actorText}>By {act.actor}</span>
-                <span style={styles.dot}>•</span>
-                <span style={styles.timestamp}>{act.timestamp}</span>
+      {displayActivities.length === 0 ? (
+        <div style={styles.emptyContainer}>
+          <p style={styles.emptyText}>No recent administrative activities recorded.</p>
+        </div>
+      ) : (
+        <div style={styles.timeline}>
+          {displayActivities.map((act, index) => (
+            <div key={act.id} style={styles.timelineItem}>
+              <div style={styles.iconNode}>{getActivityIcon(act.type)}</div>
+              {index < displayActivities.length - 1 && <div style={styles.timelineLine} />}
+              <div style={styles.timelineContent}>
+                <p style={styles.activityDesc}>{act.description}</p>
+                <div style={styles.metaRow}>
+                  <span style={styles.actorText}>By {act.actor}</span>
+                  <span style={styles.dot}>•</span>
+                  <span style={styles.timestamp}>{act.timestamp}</span>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
@@ -92,6 +126,20 @@ const styles: Record<string, React.CSSProperties> = {
     color: '#718096',
     margin: '2px 0 0 0',
   },
+  emptyContainer: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '32px 16px',
+    backgroundColor: '#F8FAFC',
+    borderRadius: '8px',
+    border: '1px dashed #CBD5E1',
+  },
+  emptyText: {
+    fontSize: '13px',
+    color: '#64748B',
+    margin: 0,
+  },
   timeline: {
     display: 'flex',
     flexDirection: 'column',
@@ -100,17 +148,16 @@ const styles: Record<string, React.CSSProperties> = {
   },
   timelineItem: {
     display: 'flex',
-    alignItems: 'flex-start',
-    gap: '14px',
     position: 'relative',
-    paddingBottom: '18px',
+    paddingBottom: '20px',
+    gap: '16px',
   },
   iconNode: {
     width: '28px',
     height: '28px',
     borderRadius: '50%',
     backgroundColor: '#FAF7F0',
-    border: '1.5px solid #DCE4EC',
+    border: '1px solid #DCE4EC',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -119,24 +166,21 @@ const styles: Record<string, React.CSSProperties> = {
   },
   timelineLine: {
     position: 'absolute',
-    left: '13px',
+    left: '14px',
     top: '28px',
     bottom: 0,
-    width: '2px',
+    width: '1px',
     backgroundColor: '#E2E8F0',
     zIndex: 1,
   },
   timelineContent: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '3px',
     flex: 1,
+    paddingTop: '2px',
   },
   activityDesc: {
-    margin: 0,
-    fontSize: '13px',
-    color: '#0B2F52',
-    fontWeight: 500,
+    fontSize: '13.5px',
+    color: '#1E293B',
+    margin: '0 0 4px 0',
     lineHeight: 1.4,
   },
   metaRow: {
@@ -144,11 +188,10 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     gap: '6px',
     fontSize: '11.5px',
-    color: '#718096',
+    color: '#64748B',
   },
   actorText: {
-    fontWeight: 600,
-    color: '#174A78',
+    fontWeight: 500,
   },
   dot: {
     color: '#CBD5E1',

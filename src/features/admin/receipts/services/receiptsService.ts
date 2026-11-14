@@ -6,7 +6,6 @@ import type {
   UpdateReceiptPayload,
 } from '../types/receipts.types';
 import {
-  INITIAL_RECEIPT_ENTRIES,
   STANDARD_INCOME_ACCOUNTS,
   STANDARD_RECEIVED_IN_ACCOUNTS,
 } from '../data/receiptsFixtures';
@@ -26,8 +25,7 @@ function getStoredReceipts(): ReceiptEntryItem[] {
   } catch (err) {
     console.warn('Failed to parse cached receipts from localStorage:', err);
   }
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_RECEIPT_ENTRIES));
-  return INITIAL_RECEIPT_ENTRIES;
+  return [];
 }
 
 function saveStoredReceipts(receipts: ReceiptEntryItem[]): void {

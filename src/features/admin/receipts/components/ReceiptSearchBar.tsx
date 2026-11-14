@@ -19,9 +19,9 @@ export const ReceiptSearchBar: React.FC<ReceiptSearchBarProps> = ({
   totalFilteredCount,
 }) => {
   return (
-    <div className="bg-white p-3.5 sm:p-4 border-b border-[#DCE4EC] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+    <div className="bg-white p-3.5 sm:p-4 border-b border-[#DCE4EC] flex flex-col sm:flex-row sm:items-center justify-between gap-3 min-w-0 w-full">
       {/* Search Input Box */}
-      <div className="relative flex-1 min-w-[240px] max-w-lg">
+      <div className="relative flex-1 min-w-[200px] max-w-lg">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#718096] pointer-events-none" />
         <input
           type="text"
@@ -34,7 +34,7 @@ export const ReceiptSearchBar: React.FC<ReceiptSearchBarProps> = ({
           <button
             type="button"
             onClick={() => onSearchChange('')}
-            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-0.5"
+            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-0.5 cursor-pointer"
             title="Clear search"
           >
             <X size={14} />
@@ -43,9 +43,9 @@ export const ReceiptSearchBar: React.FC<ReceiptSearchBarProps> = ({
       </div>
 
       {/* Filter and Reset Actions */}
-      <div className="flex items-center gap-2.5 shrink-0 self-end sm:self-auto">
+      <div className="flex items-center gap-2.5 shrink-0 self-end sm:self-auto min-w-0">
         {typeof totalFilteredCount === 'number' && (
-          <span className="text-xs text-[#718096] font-medium hidden md:inline mr-2">
+          <span className="text-xs text-[#718096] font-medium hidden md:inline mr-1">
             Showing <strong className="text-[#0B2F52]">{totalFilteredCount}</strong> vouchers
           </span>
         )}

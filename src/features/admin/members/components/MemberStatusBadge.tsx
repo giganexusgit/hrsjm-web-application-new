@@ -14,16 +14,11 @@ export const MemberStatusBadge: React.FC<MemberStatusBadgeProps> = ({ status, si
 
   switch (status) {
     case 'ACTIVE':
+    case 'EXPIRING_SOON':
       label = 'Active';
       bg = '#E8F8EE';
       color = '#00A859';
       border = '#B7EB8F';
-      break;
-    case 'EXPIRING_SOON':
-      label = 'Expiring Soon';
-      bg = '#FEF7E6';
-      color = '#D97706';
-      border = '#FDE68A';
       break;
     case 'INACTIVE':
       label = 'Inactive';

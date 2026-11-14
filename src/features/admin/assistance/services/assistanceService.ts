@@ -13,7 +13,36 @@ export const assistanceService = {
    * Submit or register new assistance request / donation seeker via POST /assistance-requests
    */
   async create(payload: CreateAssistanceRequestPayload): Promise<AssistanceRequest> {
-    const { documents, ...body } = payload;
+    const { documents, ...raw } = payload as any;
+
+    const metaParts: string[] = [];
+    const locationParts = [raw.city, raw.state].map((v: any) => (v ? String(v).trim() : '')).filter(Boolean);
+    if (locationParts.length > 0) {
+      metaParts.push(`[Location: ${locationParts.join(', ')}]`);
+    }
+    if (raw.urgency) {
+      metaParts.push(`[Urgency: ${String(raw.urgency).trim()}]`);
+    }
+    if (raw.age !== undefined && raw.age !== null && String(raw.age).trim() !== '') {
+      metaParts.push(`[Age: ${String(raw.age).trim()}]`);
+    }
+
+    const baseDescription = raw.description ? String(raw.description).trim() : '';
+    const combinedDescription = [baseDescription, metaParts.join(' ')].filter(Boolean).join('\n\n');
+
+    const body: Record<string, any> = {
+      full_name: String(raw.full_name || '').trim(),
+      mobile: String(raw.mobile || '').trim(),
+      requested_amount: Number(raw.requested_amount),
+      reason: String(raw.reason || '').trim(),
+    };
+
+    if (raw.email && String(raw.email).trim()) body.email = String(raw.email).trim();
+    if (combinedDescription) body.description = combinedDescription;
+    if (raw.user_id) body.user_id = raw.user_id;
+    if (raw.admin_remark && String(raw.admin_remark).trim()) body.admin_remark = String(raw.admin_remark).trim();
+    if (raw.status) body.status = raw.status;
+
     const res = await apiClient.post<any>('/assistance-requests', body);
     const created: AssistanceRequest = res?.data || res;
 
@@ -122,7 +151,7 @@ export const assistanceService = {
   async listApproved(query: AssistanceQuery = {}): Promise<AssistanceRequest[]> {
     try {
       const res = await apiClient.get<any>('/assistance-requests/approved', {
-        params: query as any,
+        params: { limit: query.limit ?? 100, ...query } as any,
         skipAuth: true,
       });
       const data = res?.data || res;

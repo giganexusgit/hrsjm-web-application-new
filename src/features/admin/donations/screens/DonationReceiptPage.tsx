@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Printer } from 'lucide-react';
+import { ArrowLeft, Printer, Download } from 'lucide-react';
 import { donationsService } from '../services/donationsService';
 import type { DonationReceiptModel } from '../types/donations.types';
 
@@ -38,6 +38,10 @@ export const DonationReceiptPage: React.FC = () => {
     donationsService.printDonationReceipt(receipt);
   };
 
+  const handleDownload = () => {
+    donationsService.downloadDonationReceipt(receipt);
+  };
+
   return (
     <div className="max-w-3xl mx-auto space-y-6 pb-12">
       <div className="flex items-center justify-between">
@@ -49,21 +53,31 @@ export const DonationReceiptPage: React.FC = () => {
           <ArrowLeft className="h-3.5 w-3.5" />
           Back to Donation
         </button>
-        <button
-          type="button"
-          onClick={handlePrint}
-          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#011F39] text-[#FAD465] text-xs font-semibold hover:bg-[#022c50] shadow-sm transition-colors"
-        >
-          <Printer className="h-4 w-4" />
-          <span>Print Receipt</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handlePrint}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-white border border-slate-300 text-slate-800 text-xs font-semibold hover:bg-slate-50 shadow-xs transition-colors"
+          >
+            <Printer className="h-4 w-4" />
+            <span>Print Receipt</span>
+          </button>
+          <button
+            type="button"
+            onClick={handleDownload}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#011F39] text-[#FAD465] text-xs font-semibold hover:bg-[#022c50] shadow-sm transition-colors"
+          >
+            <Download className="h-4 w-4" />
+            <span>Download 80G PDF</span>
+          </button>
+        </div>
       </div>
 
       <div className="bg-white border-2 border-[#011F39]/40 rounded-xl p-8 shadow-sm">
         {/* Trust Header */}
         <div className="text-center border-b-2 border-[#011F39] pb-4 mb-5">
           <h1 className="text-2xl font-bold font-serif text-[#011F39] tracking-wide">
-            HUMAN RIGHTS SANRAKSHAN JAN MANCH
+            Human Rights &  Social Justice Mission
           </h1>
           <p className="text-sm font-semibold text-slate-700 mt-1">
             मानव अधिकार एवं सामाजिक न्याय संरक्षण ट्रस्ट
@@ -167,7 +181,7 @@ export const DonationReceiptPage: React.FC = () => {
         <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-900 leading-relaxed">
           <span className="font-bold">🏛️ Tax Exemption Notice under Section 80G:</span>
           <p className="mt-0.5 text-[11px] text-amber-800">
-            Donations to Human Rights Sanrakshan Jan Manch are eligible for tax deduction under Section 80G of the Income Tax Act, 1961 vide Unique Registration Number (URN) <strong>AAATH1234KF20214</strong> dated 12/04/2021.
+            Donations to Human Rights &  Social Justice Mission are eligible for tax deduction under Section 80G of the Income Tax Act, 1961 vide Unique Registration Number (URN) <strong>AAATH1234KF20214</strong> dated 12/04/2021.
           </p>
         </div>
 

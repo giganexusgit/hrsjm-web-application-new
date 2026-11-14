@@ -33,6 +33,7 @@ export interface EventListItem {
   status: EventUiStatus;
   isDonationEnabled?: boolean;
   donationMessage?: string | null;
+  createdBy?: string | null;
   created_at?: string;
   updated_at?: string;
 }

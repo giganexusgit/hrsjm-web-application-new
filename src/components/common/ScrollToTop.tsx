@@ -23,11 +23,22 @@ export const ScrollToTop: React.FC = () => {
       document.body.scrollTop = 0;
     }
 
-    // 2. Reset any scrollable layout or main containers
+    // 2. Reset any scrollable layout or main containers (excluding sidebars & navigation menus)
     const scrollContainers = document.querySelectorAll<HTMLElement>(
       'main, #root, [style*="overflow"], .overflow-y-auto, .overflow-auto'
     );
     scrollContainers.forEach(container => {
+      // Do not reset scroll on sidebars or navigation panels
+      if (
+        container.closest('aside') ||
+        container.closest('nav') ||
+        container.closest('[data-sidebar]') ||
+        container.getAttribute('data-sidebar') !== null ||
+        container.tagName === 'ASIDE' ||
+        container.tagName === 'NAV'
+      ) {
+        return;
+      }
       container.scrollTop = 0;
     });
 

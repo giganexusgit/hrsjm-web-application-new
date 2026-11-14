@@ -18,7 +18,6 @@ import {
   ChevronLeft,
   ShieldCheck,
 } from 'lucide-react';
-import { HrsjmLogo } from '../../../components/common/HrsjmLogo';
 import { AppErrorBoundary } from '../../../components/common/AppErrorBoundary';
 import { useAuth, executeSignOut, resolveUserDestination } from '../../auth/store/authStore';
 import { authService } from '../../auth/services/authService';
@@ -162,10 +161,11 @@ export const SeekerLayout: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setDesktopCollapsed(false)}
-                className="p-1 rounded-xl hover:bg-white/10 transition cursor-pointer flex items-center justify-center"
+                className="p-1 rounded-xl hover:bg-white/10 transition cursor-pointer flex flex-col items-center justify-center"
                 title="Click to expand sidebar"
               >
-                <HrsjmLogo size="sm" variant="light" showWordmark={false} />
+                <span className="text-sm font-black tracking-wider text-white">HRSJM</span>
+                <span className="text-[7.5px] font-bold text-[#FAD465] uppercase">Seeker</span>
               </button>
             </div>
           ) : (
@@ -178,7 +178,6 @@ export const SeekerLayout: React.FC = () => {
                 className="flex items-center gap-3 overflow-hidden flex-1 min-w-0 group cursor-pointer"
                 title="HRSJM Donation Seeker Portal"
               >
-                <HrsjmLogo size="sm" variant="light" showWordmark={false} />
                 <div className="min-w-0 flex-1">
                   <div className="text-sm font-bold text-white font-['Playfair_Display',Georgia,serif] leading-tight tracking-wide truncate group-hover:text-[#FAD465] transition">
                     HRSJM
@@ -344,9 +343,6 @@ export const SeekerLayout: React.FC = () => {
                 </button>
 
                 <NavLink to="/seeker/home" className="flex items-center gap-2.5">
-                  <div className="lg:hidden">
-                    <HrsjmLogo size="sm" variant="dark" showWordmark={false} />
-                  </div>
                   <div>
                     <div className="text-[10px] font-bold tracking-widest text-[#06294D] uppercase">
                       HUMANITARIAN ASSISTANCE
@@ -497,7 +493,6 @@ export const SeekerLayout: React.FC = () => {
         <footer className="bg-[#011F39] text-white border-t border-[#123F68] py-8 text-xs text-gray-400">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="flex items-center gap-3">
-              <HrsjmLogo size="sm" variant="light" showWordmark={false} />
               <div>
                 <div className="text-white font-bold text-sm">Human Rights & Social Justice Mission</div>
                 <div className="text-[11px] text-gray-400">

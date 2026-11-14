@@ -1,5 +1,5 @@
 import type React from 'react';
-import { Search, Filter, Plus, X } from 'lucide-react';
+import { Search, Filter, Plus, X, RotateCcw } from 'lucide-react';
 import { TICKET_CATEGORIES } from '../types/support.types';
 
 interface SupportSearchBarProps {
@@ -11,7 +11,8 @@ interface SupportSearchBarProps {
   onSourceChange: (source: string) => void;
   activeFilterCount: number;
   onOpenFilterModal: () => void;
-  onOpenCreateModal: () => void;
+  onOpenCreateModal?: () => void;
+  onResetFilters?: () => void;
 }
 
 export const SupportSearchBar: React.FC<SupportSearchBarProps> = ({
@@ -24,39 +25,49 @@ export const SupportSearchBar: React.FC<SupportSearchBarProps> = ({
   activeFilterCount,
   onOpenFilterModal,
   onOpenCreateModal,
+  onResetFilters,
 }) => {
-  return (
-    <div className="bg-white rounded-xl border border-slate-200/90 p-3 sm:p-4 shadow-xs mb-6">
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-        {/* Left Filter Controls */}
-        <div className="flex flex-1 flex-wrap items-center gap-2.5 min-w-0">
-          {/* Search Box */}
-          <div className="relative flex-1 min-w-[240px] max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-            <input
-              type="text"
-              placeholder="Search by Ticket ID, subject, citizen name, email or phone..."
-              value={searchQuery}
-              onChange={(e) => onSearchChange(e.target.value)}
-              className="w-full pl-9 pr-8 py-2 rounded-lg border border-slate-200 text-xs sm:text-sm text-slate-800 placeholder-slate-400 bg-slate-50/50 hover:bg-white focus:bg-white focus:border-[#011F39] focus:outline-none focus:ring-1 focus:ring-[#011F39] transition-colors"
-            />
-            {searchQuery && (
-              <button
-                type="button"
-                onClick={() => onSearchChange('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5"
-                title="Clear search"
-              >
-                <X size={14} />
-              </button>
-            )}
-          </div>
+  const hasActiveFilters =
+    Boolean(searchQuery.trim()) ||
+    selectedCategory !== 'ALL' ||
+    selectedSource !== 'ALL' ||
+    activeFilterCount > 0;
 
-          {/* Category Dropdown Filter */}
+  return (
+    <div style={styles.container}>
+      {/* Search Input Box */}
+      <div style={styles.searchWrapper}>
+        <Search size={17} color="#64748B" style={styles.searchIcon} />
+        <input
+          type="text"
+          placeholder="Search by Ticket ID, subject, citizen name, phone or email..."
+          value={searchQuery}
+          onChange={(e) => onSearchChange(e.target.value)}
+          style={styles.searchInput}
+          className="support-search-input"
+        />
+        {searchQuery && (
+          <button
+            type="button"
+            onClick={() => onSearchChange('')}
+            style={styles.clearBtn}
+            title="Clear search text"
+            aria-label="Clear search text"
+          >
+            <X size={14} color="#64748B" />
+          </button>
+        )}
+      </div>
+
+      {/* Filter Selects & Controls Group */}
+      <div style={styles.controlsGroup}>
+        {/* Category Dropdown */}
+        <div style={styles.selectWrapper}>
           <select
             value={selectedCategory}
             onChange={(e) => onCategoryChange(e.target.value)}
-            className="h-9 px-3 text-xs sm:text-sm font-medium rounded-lg border border-slate-200 bg-white text-slate-700 hover:border-slate-300 focus:outline-none focus:ring-1 focus:ring-[#011F39] cursor-pointer"
+            style={styles.select}
+            aria-label="Filter by grievance category"
           >
             <option value="ALL">All Categories</option>
             {TICKET_CATEGORIES.map((c) => (
@@ -65,51 +76,199 @@ export const SupportSearchBar: React.FC<SupportSearchBarProps> = ({
               </option>
             ))}
           </select>
+        </div>
 
-          {/* Source Channel Dropdown Filter */}
+        {/* Channel / Source Dropdown */}
+        <div style={styles.selectWrapper}>
           <select
             value={selectedSource}
             onChange={(e) => onSourceChange(e.target.value)}
-            className="h-9 px-3 text-xs sm:text-sm font-medium rounded-lg border border-slate-200 bg-white text-slate-700 hover:border-slate-300 focus:outline-none focus:ring-1 focus:ring-[#011F39] cursor-pointer"
+            style={styles.select}
+            aria-label="Filter by ticket intake channel"
           >
             <option value="ALL">All Channels</option>
-            <option value="website">🌐 Website</option>
-            <option value="app">📱 Mobile App</option>
-            <option value="web">💻 Admin / Web</option>
+            <option value="website">🌐 Website Portal</option>
+            <option value="app">📱 Mobile Application</option>
+            <option value="web">💻 Admin / Internal Desk</option>
           </select>
-
-          {/* Advanced Filters Button */}
-          <button
-            type="button"
-            onClick={onOpenFilterModal}
-            className={`h-9 px-3.5 text-xs sm:text-sm font-semibold rounded-lg border flex items-center gap-2 transition-colors cursor-pointer ${
-              activeFilterCount > 0
-                ? 'border-[#011F39] bg-[#EDF2F7] text-[#011F39]'
-                : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:border-slate-300'
-            }`}
-          >
-            <Filter size={15} className="text-[#011F39]" />
-            <span>Filters</span>
-            {activeFilterCount > 0 && (
-              <span className="bg-[#011F39] text-white text-[11px] font-bold rounded-full px-1.5 py-0.2 leading-tight">
-                {activeFilterCount}
-              </span>
-            )}
-          </button>
         </div>
 
-        {/* Right Action: Create New Ticket */}
-        <div className="flex items-center gap-2 shrink-0 pt-2 lg:pt-0 border-t lg:border-t-0 border-slate-100">
+        {/* Advanced Filters Button */}
+        <button
+          type="button"
+          onClick={onOpenFilterModal}
+          style={{
+            ...styles.filterBtn,
+            borderColor: activeFilterCount > 0 ? '#011F39' : '#DCE4EC',
+            backgroundColor: activeFilterCount > 0 ? '#EDF2F7' : '#FFFFFF',
+          }}
+          title="Open advanced filtering options"
+        >
+          <Filter size={15} color="#011F39" />
+          <span style={styles.filterBtnText}>Filters</span>
+          {activeFilterCount > 0 && (
+            <span style={styles.filterCountBadge}>{activeFilterCount}</span>
+          )}
+        </button>
+
+        {/* Clear Filters Reset Button */}
+        {hasActiveFilters && onResetFilters && (
+          <button
+            type="button"
+            onClick={onResetFilters}
+            style={styles.resetBtn}
+            title="Reset all active search and filter constraints"
+          >
+            <RotateCcw size={13} color="#64748B" />
+            <span>Reset</span>
+          </button>
+        )}
+
+        {/* Quick New Ticket button (rendered if onOpenCreateModal is supplied and on desktop) */}
+        {onOpenCreateModal && (
           <button
             type="button"
             onClick={onOpenCreateModal}
-            className="w-full lg:w-auto h-9 px-4 text-xs sm:text-sm font-bold rounded-lg bg-[#FAD465] hover:bg-[#e9bf36] text-[#011F39] flex items-center justify-center gap-2 shadow-xs transition-colors cursor-pointer whitespace-nowrap"
+            style={styles.createBtn}
+            title="Register new support grievance"
+            className="support-create-btn-search"
           >
-            <Plus size={16} strokeWidth={2.5} />
+            <Plus size={16} color="#011F39" />
             <span>New Ticket</span>
           </button>
-        </div>
+        )}
       </div>
     </div>
   );
+};
+
+const styles: Record<string, React.CSSProperties> = {
+  container: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: '12px',
+    flexWrap: 'wrap',
+    marginBottom: '20px',
+  },
+  searchWrapper: {
+    position: 'relative',
+    flex: '1 1 320px',
+    display: 'flex',
+    alignItems: 'center',
+    minWidth: '260px',
+  },
+  searchIcon: {
+    position: 'absolute',
+    left: '14px',
+    pointerEvents: 'none',
+  },
+  searchInput: {
+    width: '100%',
+    height: '42px',
+    padding: '0 38px 0 40px',
+    borderRadius: '10px',
+    border: '1px solid #DCE4EC',
+    backgroundColor: '#FFFFFF',
+    fontSize: '13.5px',
+    color: '#011F39',
+    outline: 'none',
+    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.03)',
+    transition: 'all 0.2s ease',
+  },
+  clearBtn: {
+    position: 'absolute',
+    right: '10px',
+    background: 'none',
+    border: 'none',
+    cursor: 'pointer',
+    padding: '6px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: '50%',
+  },
+  controlsGroup: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+    flexWrap: 'wrap',
+  },
+  selectWrapper: {
+    position: 'relative',
+    display: 'flex',
+    alignItems: 'center',
+  },
+  select: {
+    height: '42px',
+    padding: '0 14px',
+    borderRadius: '10px',
+    border: '1px solid #DCE4EC',
+    backgroundColor: '#FFFFFF',
+    fontSize: '13px',
+    color: '#34516D',
+    fontWeight: 600,
+    outline: 'none',
+    cursor: 'pointer',
+    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.03)',
+    transition: 'border-color 0.2s ease',
+  },
+  filterBtn: {
+    height: '42px',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '7px',
+    padding: '0 16px',
+    borderRadius: '10px',
+    border: '1px solid #DCE4EC',
+    cursor: 'pointer',
+    fontWeight: 600,
+    fontSize: '13px',
+    color: '#011F39',
+    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.03)',
+    transition: 'all 0.15s ease',
+  },
+  filterBtnText: {
+    fontSize: '13px',
+  },
+  filterCountBadge: {
+    backgroundColor: '#011F39',
+    color: '#FFFFFF',
+    fontSize: '11px',
+    fontWeight: 700,
+    borderRadius: '10px',
+    padding: '1px 6px',
+    lineHeight: 1.2,
+  },
+  resetBtn: {
+    height: '42px',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '5px',
+    padding: '0 12px',
+    borderRadius: '10px',
+    border: '1px solid #E2E8F0',
+    backgroundColor: '#F8FAFC',
+    color: '#64748B',
+    fontSize: '12.5px',
+    fontWeight: 600,
+    cursor: 'pointer',
+    transition: 'all 0.15s ease',
+  },
+  createBtn: {
+    height: '42px',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '7px',
+    padding: '0 18px',
+    borderRadius: '10px',
+    border: '1px solid #E9B82E',
+    backgroundColor: '#FAD465',
+    color: '#011F39',
+    fontWeight: 700,
+    fontSize: '13px',
+    cursor: 'pointer',
+    boxShadow: '0 2px 6px rgba(250, 212, 101, 0.35)',
+    transition: 'all 0.15s ease',
+  },
 };

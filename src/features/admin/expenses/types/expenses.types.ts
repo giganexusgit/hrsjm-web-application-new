@@ -13,6 +13,7 @@ export type VoucherStatus = 'POSTED' | 'CANCELLED';
 
 export interface OfficialExpenseType {
   code: string;
+  id?: string;
   name: string;
   description: string;
 }

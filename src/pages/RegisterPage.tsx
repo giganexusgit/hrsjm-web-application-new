@@ -16,19 +16,16 @@ import {
   Info,
   Loader2,
   Users,
-  HeartHandshake,
-  Download,
+  Clock,
+  LayoutDashboard,
 } from 'lucide-react';
 import { authService, resolveUserDestination } from '../features/auth/services/authService';
 import { authStore } from '../features/auth/store/authStore';
 import { userAuthStore } from '../features/user/store/userAuthStore';
-import { cashfreeService } from '../features/payments/services/cashfreeService';
-import type { PaymentReceiptDetails } from '../features/payments/types/payment.types';
 import {
   formatDateToDMY,
   validateAgeEligibility,
 } from '../utils/age';
-import hrsjmLogo from '../assets/hrsjm_logo.png';
 import { CalendarDatePicker } from '../components/common/CalendarDatePicker';
 import { ApiError } from '../services/apiClient';
 import type { RegisterFormData, RegisterValidationErrors } from '../features/auth/types/auth.types';
@@ -72,18 +69,7 @@ export const RegisterPage: React.FC = () => {
   // Ineligible Age calculation
   const [ineligibleAge, setIneligibleAge] = useState<number | null>(null);
 
-  // Voluntary Contribution State (Optional Support with Section 80G Benefit)
-  const [wantsToContribute, setWantsToContribute] = useState(false);
-  const [contributionAmount, setContributionAmount] = useState<number>(500);
-  const [customAmount, setCustomAmount] = useState<string>('');
-  const [panNumber, setPanNumber] = useState<string>('');
-  const [panError, setPanError] = useState<string | null>(null);
-  const [contributionError, setContributionError] = useState<string | null>(null);
-  const [paymentReceipt, setPaymentReceipt] = useState<PaymentReceiptDetails | null>(null);
-  const [registeredSession, setRegisteredSession] = useState<any | null>(null);
-  const [paymentProcessing, setPaymentProcessing] = useState(false);
-  const [paymentWarning, setPaymentWarning] = useState<string | null>(null);
-  const [downloadingReceipt, setDownloadingReceipt] = useState(false);
+
 
   // Check if user is already logged in
   useEffect(() => {
@@ -247,19 +233,6 @@ export const RegisterPage: React.FC = () => {
       errors.terms = 'Please accept Privacy Policy to proceed';
     }
 
-    // 8. Voluntary Contribution validation
-    if (wantsToContribute) {
-      const effectiveAmt = customAmount ? parseFloat(customAmount) : contributionAmount;
-      if (!effectiveAmt || isNaN(effectiveAmt) || effectiveAmt < 10) {
-        setContributionError('Please enter a valid contribution amount of at least ₹10.');
-        errors.terms = 'Please review contribution amount';
-      }
-      if (panNumber.trim() && !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/i.test(panNumber.trim())) {
-        setPanError('Invalid PAN format. Please enter a valid 10-character PAN (e.g. ABCDE1234F).');
-        errors.terms = 'Invalid PAN format';
-      }
-    }
-
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -270,9 +243,6 @@ export const RegisterPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setServerError(null);
-    setContributionError(null);
-    setPanError(null);
-    setPaymentWarning(null);
 
     if (!validateForm()) {
       return;
@@ -283,77 +253,22 @@ export const RegisterPage: React.FC = () => {
     const cleanEmail = formData.email.trim().toLowerCase();
     const cleanDob = formatDateToDMY(formData.dob);
 
-    let session = registeredSession;
-
     try {
-      // 1. Submit Registration Payload to POST /auth/register if not already created
-      if (!session) {
-        session = await authService.register({
-          full_name: formData.fullName.trim(),
-          mobile_number: cleanMobile,
-          email: cleanEmail,
-          dob: cleanDob,
-          date_of_birth: cleanDob,
-          password: formData.password.trim(),
-          confirm_password: formData.confirmPassword.trim(),
-          role_name: 'USER',
-        });
-        setRegisteredSession(session);
-        if (session?.user) {
-          authStore.setUserDirectly(session.user, session.access_token, session.refresh_token);
-          userAuthStore.setUser(session.user as any);
-        }
-      }
-
-      // 2. If user opted out of contribution, finish free registration directly
-      if (!wantsToContribute) {
-        setPhase('complete');
-        return;
-      }
-
-      // 3. Voluntary Contribution selected: Initiate Cashfree Payment
-      setPaymentProcessing(true);
-      const effectiveAmount = customAmount ? parseFloat(customAmount) : contributionAmount;
-
-      const order = await cashfreeService.createDonationOrder({
-        amount: effectiveAmount,
-        donorName: formData.fullName.trim(),
-        donorMobile: cleanMobile,
-        donorEmail: cleanEmail,
-        panNumber: panNumber.trim().toUpperCase() || undefined,
-        userId: session?.user?.id,
-        cause: 'Voluntary Citizen Contribution (Registration)',
+      const session = await authService.register({
+        full_name: formData.fullName.trim(),
+        mobile_number: cleanMobile,
+        email: cleanEmail,
+        dob: cleanDob,
+        date_of_birth: cleanDob,
+        password: formData.password.trim(),
+        confirm_password: formData.confirmPassword.trim(),
+        role_name: 'USER',
       });
-
-      await cashfreeService.launchCashfreeCheckout(
-        order,
-        async (verifyRes) => {
-          setPaymentReceipt({
-            orderId: order.order_id,
-            receiptNumber: verifyRes.receipt_number || `RCP-2026-${Date.now().toString().slice(-6)}`,
-            transactionId: verifyRes.transaction_id || `CF-${Date.now().toString().slice(-8)}`,
-            amount: effectiveAmount,
-            purpose: 'donation',
-            purposeTitle: 'Voluntary Citizen Contribution (Registration)',
-            status: 'SUCCESS',
-            paidAt: new Date().toISOString(),
-            donorName: formData.fullName.trim(),
-            donorMobile: cleanMobile,
-            donorEmail: cleanEmail,
-            panNumber: panNumber.trim().toUpperCase() || undefined,
-            userId: session?.user?.id,
-            paymentMethod: verifyRes.payment_method || 'CASHFREE',
-          });
-          setPaymentProcessing(false);
-          setPhase('complete');
-        },
-        () => {
-          setPaymentProcessing(false);
-          setPaymentWarning(
-            'Payment window closed. Your free account is created! You can retry your contribution below or proceed to your dashboard.'
-          );
-        }
-      );
+      if (session?.user) {
+        authStore.setUserDirectly(session.user, session.access_token, session.refresh_token);
+        userAuthStore.setUser(session.user as any);
+      }
+      setPhase('complete');
     } catch (err: unknown) {
       let message = 'Unable to create account. Please try again.';
       if (err instanceof ApiError) {
@@ -383,14 +298,9 @@ export const RegisterPage: React.FC = () => {
     return (
       <div className="min-h-screen bg-[#FAF7F0] flex flex-col justify-center items-center px-4 py-12 font-sans">
         <div className="w-full max-w-md bg-white rounded-3xl shadow-xl border border-slate-100 p-8 text-center">
-          {/* Logo & Bilingual Title */}
+          {/* Bilingual Title */}
           <div className="flex items-center justify-center gap-3 mb-6">
-            <img
-              src={hrsjmLogo}
-              alt="HRSJM Official Crest"
-              className="w-12 h-12 object-contain shrink-0"
-            />
-            <div className="text-left">
+            <div className="text-center">
               <div className="text-base font-black text-[#011F39] font-serif leading-none tracking-wide">
                 HRSJM
               </div>
@@ -529,89 +439,6 @@ export const RegisterPage: React.FC = () => {
             </p>
           </div>
 
-          {/* Voluntary Contribution & 80G Tax Exemption Receipt Card */}
-          {paymentReceipt && (
-            <div className="bg-gradient-to-br from-[#06294D] to-[#011F39] text-white rounded-3xl shadow-xl p-6 mb-6 border border-[#FAD465]/40 relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-36 h-36 bg-[#FAD465]/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none" />
-
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-10 h-10 rounded-xl bg-[#FAD465]/20 flex items-center justify-center text-[#FAD465] border border-[#FAD465]/30">
-                    <HeartHandshake size={20} />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-bold text-white font-serif">
-                      Section 80G Voluntary Contribution
-                    </h3>
-                    <span className="text-[10px] text-amber-300 font-semibold tracking-wider uppercase">
-                      50% Tax Deduction Applicable
-                    </span>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-xl font-black text-[#FAD465] font-serif">
-                    ₹{paymentReceipt.amount.toLocaleString('en-IN')}
-                  </div>
-                  <span className="text-[9px] text-emerald-400 font-bold bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-500/40">
-                    VERIFIED &amp; PAID
-                  </span>
-                </div>
-              </div>
-
-              <div className="bg-white/10 rounded-2xl p-4 border border-white/10 space-y-2 text-xs">
-                <div className="flex justify-between items-center text-slate-300">
-                  <span>Receipt No:</span>
-                  <span className="font-mono font-bold text-white">{paymentReceipt.receiptNumber}</span>
-                </div>
-                <div className="flex justify-between items-center text-slate-300">
-                  <span>Transaction ID:</span>
-                  <span className="font-mono text-slate-200">{paymentReceipt.transactionId}</span>
-                </div>
-                {paymentReceipt.panNumber && (
-                  <div className="flex justify-between items-center text-slate-300">
-                    <span>Donor PAN (80G):</span>
-                    <span className="font-mono font-bold text-amber-300">{paymentReceipt.panNumber}</span>
-                  </div>
-                )}
-                <div className="flex justify-between items-center text-slate-300">
-                  <span>Date:</span>
-                  <span className="text-white">
-                    {new Date(paymentReceipt.paidAt).toLocaleDateString('en-IN', {
-                      day: '2-digit',
-                      month: 'short',
-                      year: 'numeric',
-                    })}
-                  </span>
-                </div>
-              </div>
-
-              <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between gap-3">
-                <button
-                  type="button"
-                  disabled={downloadingReceipt}
-                  onClick={async () => {
-                    setDownloadingReceipt(true);
-                    try {
-                      await cashfreeService.downloadDonationReceiptPdf(paymentReceipt);
-                    } catch (e) {
-                      console.error('Download receipt error:', e);
-                    } finally {
-                      setDownloadingReceipt(false);
-                    }
-                  }}
-                  className="flex-1 py-2.5 px-3 rounded-xl bg-[#FAD465] hover:bg-[#E9B82E] text-[#011F39] text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer shadow-sm disabled:opacity-60"
-                >
-                  {downloadingReceipt ? (
-                    <Loader2 size={14} className="animate-spin" />
-                  ) : (
-                    <Download size={14} />
-                  )}
-                  <span>Download 80G Receipt (PDF)</span>
-                </button>
-              </div>
-            </div>
-          )}
-
           {/* Account Summary Card */}
           <div className="bg-white rounded-3xl shadow-md border border-slate-100 p-6 sm:p-8 mb-6">
             <div className="border-b border-slate-100 pb-4 mb-4">
@@ -697,15 +524,17 @@ export const RegisterPage: React.FC = () => {
               onClick={() => navigate('/user/dashboard')}
               className="w-full py-3.5 px-4 rounded-xl bg-[#011F39] hover:bg-[#06294D] text-[#FAD465] font-bold text-xs uppercase tracking-wider shadow-md hover:shadow-lg transition flex items-center justify-center gap-2 cursor-pointer"
             >
-              <span>Go to Dashboard</span>
+              <LayoutDashboard size={16} />
+              <span>Go to User Dashboard</span>
               <ArrowRight size={16} />
             </button>
 
             <button
-              onClick={() => navigate('/user/profile')}
-              className="w-full py-3 px-4 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-semibold text-xs transition cursor-pointer"
+              onClick={() => navigate('/user/membership-status')}
+              className="w-full py-3 px-4 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-semibold text-xs transition cursor-pointer flex items-center justify-center gap-2"
             >
-              View My Profile
+              <Clock size={16} />
+              <span>Go to My Application</span>
             </button>
           </div>
         </div>
@@ -730,11 +559,6 @@ export const RegisterPage: React.FC = () => {
           </Link>
 
           <div className="flex items-center gap-2.5">
-            <img
-              src={hrsjmLogo}
-              alt="HRSJM Official Crest"
-              className="w-8 h-8 object-contain shrink-0"
-            />
             <div className="flex flex-col">
               <span className="text-sm font-black tracking-wider text-white font-serif leading-none">
                 HRSJM
@@ -829,18 +653,6 @@ export const RegisterPage: React.FC = () => {
             <p className="text-xs text-slate-500 mt-1">
               Fill in your contact details and a strong password to create your citizen account.
             </p>
-            <div className="mt-3 p-3 rounded-2xl bg-[#FAF7F0] border border-[#E2E8F0] flex flex-wrap items-center justify-between text-xs text-slate-600 gap-1.5">
-              <span>Applying for a designated official role?</span>
-              <div className="flex items-center gap-2 font-bold">
-                <Link to="/membership/apply" className="text-[#06294D] hover:text-amber-600 underline">
-                  Member Registration
-                </Link>
-                <span>•</span>
-                <Link to="/assistance/apply" className="text-amber-800 hover:text-amber-900 underline">
-                  Donation Seeker Aid
-                </Link>
-              </div>
-            </div>
           </div>
 
           {/* Server Error Alert */}
@@ -1181,138 +993,6 @@ export const RegisterPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Voluntary Contribution Option (Optional 80G Support) */}
-            <div className={`p-4 rounded-2xl border transition-all duration-200 ${
-              wantsToContribute
-                ? 'bg-amber-50/50 border-[#FAD465] ring-2 ring-[#FAD465]/30'
-                : 'bg-slate-50/70 border-slate-200 hover:border-slate-300'
-            }`}>
-              <div className="flex items-start gap-3">
-                <input
-                  type="checkbox"
-                  id="wantsToContributeCheckbox"
-                  checked={wantsToContribute}
-                  onChange={e => {
-                    setWantsToContribute(e.target.checked);
-                    setContributionError(null);
-                    setPanError(null);
-                  }}
-                  className="w-4 h-4 mt-0.5 rounded border-slate-300 text-[#011F39] focus:ring-[#011F39] cursor-pointer"
-                />
-                <label htmlFor="wantsToContributeCheckbox" className="flex-1 cursor-pointer select-none">
-                  <div className="flex items-center justify-between flex-wrap gap-1.5 mb-0.5">
-                    <span className="text-xs font-bold text-[#011F39] flex items-center gap-1.5">
-                      <HeartHandshake size={15} className="text-amber-600" />
-                      <span>Make a Voluntary Contribution to Support HRSJM</span>
-                    </span>
-                    <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-200">
-                      80G Benefit
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-slate-500 leading-snug">
-                    Help sponsor legal defense clinics, winter relief drives, and emergency aid across 28 states.
-                  </p>
-                </label>
-              </div>
-
-              {wantsToContribute && (
-                <div className="mt-4 pt-3.5 border-t border-amber-200/60 space-y-3.5 animate-in fade-in duration-200">
-                  {/* Preset Amount Selector */}
-                  <div>
-                    <label className="block text-[11px] font-bold text-[#011F39] uppercase tracking-wider mb-1.5">
-                      Select Contribution Amount:
-                    </label>
-                    <div className="grid grid-cols-4 gap-2">
-                      {[250, 500, 1000, 2500].map((amt) => {
-                        const isSelected = !customAmount && contributionAmount === amt;
-                        return (
-                          <button
-                            key={amt}
-                            type="button"
-                            onClick={() => {
-                              setContributionAmount(amt);
-                              setCustomAmount('');
-                              setContributionError(null);
-                            }}
-                            className={`py-2 px-1 text-center rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                              isSelected
-                                ? 'bg-[#011F39] text-[#FAD465] shadow-xs ring-2 ring-[#011F39]/20'
-                                : 'bg-white border border-slate-200 text-slate-700 hover:border-amber-400 hover:bg-amber-50/30'
-                            }`}
-                          >
-                            ₹{amt}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Custom Amount Input */}
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">
-                      Or Enter Custom Amount (₹)
-                    </label>
-                    <div className="relative">
-                      <span className="absolute left-3.5 top-2.5 text-xs font-bold text-slate-400">₹</span>
-                      <input
-                        type="number"
-                        min="10"
-                        step="10"
-                        placeholder="e.g. 1500"
-                        value={customAmount}
-                        onChange={e => {
-                          setCustomAmount(e.target.value);
-                          setContributionError(null);
-                        }}
-                        className="w-full bg-white border border-slate-200 rounded-xl pl-7 pr-3 py-2 text-xs font-bold text-[#011F39] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#011F39] transition"
-                      />
-                    </div>
-                    {contributionError && (
-                      <p className="text-[11px] text-rose-600 mt-1 font-medium flex items-center gap-1">
-                        <AlertCircle size={12} />
-                        <span>{contributionError}</span>
-                      </p>
-                    )}
-                  </div>
-
-                  {/* PAN Card Input for 80G */}
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider">
-                        Donor PAN for Section 80G Receipt
-                      </label>
-                      <span className="text-[10px] text-slate-400 font-medium">(Optional)</span>
-                    </div>
-                    <input
-                      type="text"
-                      maxLength={10}
-                      placeholder="ABCDE1234F"
-                      value={panNumber}
-                      onChange={e => {
-                        setPanNumber(e.target.value.toUpperCase());
-                        setPanError(null);
-                      }}
-                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold uppercase tracking-wider text-[#011F39] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#011F39] transition"
-                    />
-                    {panError && (
-                      <p className="text-[11px] text-rose-600 mt-1 font-medium flex items-center gap-1">
-                        <AlertCircle size={12} />
-                        <span>{panError}</span>
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Contribution Summary Banner */}
-                  <div className="bg-amber-100/60 border border-amber-200 rounded-xl p-2.5 flex items-center justify-between text-xs">
-                    <span className="text-slate-700 font-medium">Selected Amount:</span>
-                    <span className="text-[#011F39] font-black font-serif text-sm">
-                      ₹{(customAmount ? parseFloat(customAmount) || 0 : contributionAmount).toLocaleString('en-IN')}
-                    </span>
-                  </div>
-                </div>
-              )}
-            </div>
-
             {/* Consents: Terms and Privacy */}
             <div className="pt-2 space-y-2.5">
               <label className="flex items-start gap-2.5 cursor-pointer text-xs text-slate-600 select-none">
@@ -1347,34 +1027,6 @@ export const RegisterPage: React.FC = () => {
               )}
             </div>
 
-            {/* Payment Warning & Safe Retry / Bypass */}
-            {paymentWarning && (
-              <div className="p-3.5 bg-amber-50 border border-amber-300 rounded-2xl text-xs text-amber-900 animate-in fade-in space-y-2">
-                <div className="flex items-start gap-2">
-                  <AlertCircle size={16} className="text-amber-600 shrink-0 mt-0.5" />
-                  <p className="font-medium leading-relaxed">{paymentWarning}</p>
-                </div>
-                {registeredSession && (
-                  <div className="flex items-center gap-2 pt-1">
-                    <button
-                      type="button"
-                      onClick={() => navigate('/user/dashboard')}
-                      className="flex-1 py-1.5 px-3 rounded-lg bg-white border border-amber-300 text-amber-900 font-bold text-[11px] hover:bg-amber-100 transition cursor-pointer text-center"
-                    >
-                      Proceed to Dashboard for Free
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={submitting}
-                      className="flex-1 py-1.5 px-3 rounded-lg bg-[#011F39] text-[#FAD465] font-bold text-[11px] hover:bg-[#06294D] transition cursor-pointer text-center"
-                    >
-                      Retry Contribution
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-
             {/* Submit Action Button */}
             <div className="pt-2">
               <button
@@ -1385,20 +1037,7 @@ export const RegisterPage: React.FC = () => {
                 {submitting ? (
                   <>
                     <Loader2 size={16} className="animate-spin text-[#011F39]" />
-                    <span>
-                      {paymentProcessing
-                        ? 'Initiating Contribution Gateway...'
-                        : 'Creating Account...'}
-                    </span>
-                  </>
-                ) : wantsToContribute ? (
-                  <>
-                    <HeartHandshake size={16} />
-                    <span>
-                      Register &amp; Contribute ₹
-                      {(customAmount ? parseFloat(customAmount) || 0 : contributionAmount).toLocaleString('en-IN')}
-                    </span>
-                    <ArrowRight size={16} />
+                    <span>Creating Account...</span>
                   </>
                 ) : (
                   <>

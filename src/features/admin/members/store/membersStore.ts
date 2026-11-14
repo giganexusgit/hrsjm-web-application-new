@@ -6,8 +6,24 @@ import type {
   CreateMemberPayload,
   UpdateMemberPayload,
 } from '../types/members.types';
-import { INITIAL_MEMBERS_FIXTURES } from '../data/membersFixtures';
+import { apiClient } from '@/api';
 import { membersService } from '../services/membersService';
+import { getValidAvatarUrl } from '@/utils/avatar';
+
+export function isExpiringSoon(validTill: string): boolean {
+  if (!validTill || validTill.includes('Lifetime')) return false;
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const target = new Date(validTill);
+    target.setHours(0, 0, 0, 0);
+    const diff = target.getTime() - today.getTime();
+    const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+    return days >= 0 && days <= 30;
+  } catch {
+    return false;
+  }
+}
 
 const STORAGE_KEY = 'hrsjm_local_members_v1';
 
@@ -35,9 +51,13 @@ export function mapBackendMembershipToMember(backend: any): Member {
     personal.email?.trim() ||
     '—';
 
+  const rawNum = (backend.membership_number || appData.membership_number || '').trim();
   const membershipId =
-    backend.membership_number ||
-    `HRSJM${(backend.id || '').replace(/-/g, '').slice(0, 8).toUpperCase()}`;
+    rawNum && /^HRSJM-\d+$/i.test(rawNum)
+      ? rawNum.toUpperCase()
+      : (backend.id && typeof backend.id === 'string' && backend.id.length >= 5
+          ? `HRSJM-${backend.id.replace(/-/g, '').slice(0, 5).toUpperCase()}`
+          : 'HRSJM-00001');
 
   const joinedDate =
     backend.approval_date ||
@@ -62,9 +82,7 @@ export function mapBackendMembershipToMember(backend: any): Member {
       const expiry = new Date(backend.expiry_date).getTime();
       const now = Date.now();
       const daysLeft = (expiry - now) / (1000 * 60 * 60 * 24);
-      if (daysLeft >= 0 && daysLeft <= 30) {
-        status = 'EXPIRING_SOON';
-      } else if (daysLeft < 0) {
+      if (daysLeft < 0) {
         status = 'INACTIVE';
       } else {
         status = 'ACTIVE';
@@ -121,7 +139,7 @@ export function mapBackendMembershipToMember(backend: any): Member {
     joinedDate,
     validTill,
     status,
-    photo: user.avatar || undefined,
+    photo: getValidAvatarUrl(user.avatar || appData.avatar || personal.avatar || personal.avatar_url) || undefined,
     categoryName: category.name || appData.category_name || 'District Unit',
     categoryId: backend.category_id || category.id,
     amount: category.fee || backend.amount || undefined,
@@ -164,31 +182,7 @@ class MembersStore {
   }
 
   private loadPersisted(): Member[] {
-    try {
-      if (typeof window !== 'undefined' && window.localStorage) {
-        const raw = window.localStorage.getItem(STORAGE_KEY);
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            // Strip any mock/dummy documents that were previously hardcoded on new member creation
-            return parsed.map((m: Member) => {
-              if (Array.isArray(m.documents)) {
-                return {
-                  ...m,
-                  documents: m.documents.filter(
-                    (d) => !(d.name === 'Identification Document' && d.fileSize === '1.2 MB' && !d.url)
-                  ),
-                };
-              }
-              return m;
-            });
-          }
-        }
-      }
-    } catch {
-      // Fallback to initial seeds
-    }
-    return [...INITIAL_MEMBERS_FIXTURES];
+    return [];
   }
 
   private persist(): void {
@@ -237,10 +231,14 @@ class MembersStore {
     let pending = 0;
 
     for (const m of this.members) {
-      if (m.status === 'ACTIVE') active++;
-      else if (m.status === 'EXPIRING_SOON') expiringSoon++;
-      else if (m.status === 'INACTIVE') inactive++;
-      else if (m.status === 'PENDING') pending++;
+      if (m.status === 'ACTIVE' || m.status === 'EXPIRING_SOON') {
+        active++;
+        if (isExpiringSoon(m.validTill)) expiringSoon++;
+      } else if (m.status === 'INACTIVE') {
+        inactive++;
+      } else if (m.status === 'PENDING') {
+        pending++;
+      }
     }
 
     return {
@@ -254,15 +252,68 @@ class MembersStore {
 
   public async fetchMembers(): Promise<void> {
     try {
-      const res = await membersService.list({ limit: 100 });
-      const items = res?.items || (Array.isArray(res) ? res : []);
-      if (Array.isArray(items)) {
-        this.members = items.map(mapBackendMembershipToMember);
-        this.sortInternal();
-        this.notify();
+      let mappedMembers: Member[] = [];
+      try {
+        const res = await membersService.list({ limit: 100 });
+        const items = res?.items || (Array.isArray(res) ? res : []);
+        if (Array.isArray(items) && items.length > 0) {
+          mappedMembers = items
+            .map(mapBackendMembershipToMember)
+            .filter((m) => m.status === 'ACTIVE' || m.status === 'EXPIRING_SOON');
+        }
+      } catch (err) {
+        console.warn('GET /memberships call failed, trying /users fallback:', err);
       }
+
+      // If no memberships returned or endpoint failed, fetch real users with role MEMBER from backend /users
+      if (mappedMembers.length === 0) {
+        try {
+          const usersRes = await apiClient.get<any>('/users?limit=100');
+          const userItems = usersRes?.items || usersRes?.data?.items || (Array.isArray(usersRes) ? usersRes : []);
+          if (Array.isArray(userItems)) {
+            const memberUsers = userItems.filter((u: any) =>
+              u.roles?.some((r: any) => (r.name || r.code || r)?.toUpperCase() === 'MEMBER') ||
+              u.user_roles?.some((ur: any) => (ur.role?.name || ur.role?.code)?.toUpperCase() === 'MEMBER')
+            );
+            mappedMembers = memberUsers.map((u: any, idx: number) => {
+              const rawDate = u.created_at || new Date().toISOString();
+              return {
+                id: u.id,
+                userId: u.id,
+                name: u.full_name?.trim() || u.name || 'Member',
+                phone: u.mobile_number || u.phone || '—',
+                email: u.email || '—',
+                membershipId: u.membership_number || `HRSJM-${String(idx + 1).padStart(5, '0')}`,
+                joinedDate: rawDate,
+                validTill: 'Lifetime',
+                status: (u.status || 'ACTIVE').toUpperCase() === 'ACTIVE' ? 'ACTIVE' : 'INACTIVE',
+                photo: u.avatar || undefined,
+                categoryName: 'General Member',
+                categoryId: undefined,
+                amount: 800,
+                gender: u.gender,
+                dob: u.dob,
+                qualification: u.qualification,
+                fatherName: u.father_name,
+                address: u.address || u.address_line1,
+                city: u.city,
+                state: u.state,
+                pincode: u.pincode,
+                documents: [],
+              };
+            });
+          }
+        } catch (e) {
+          console.warn('GET /users call failed:', e);
+        }
+      }
+
+      this.members = mappedMembers;
+      this.sortInternal();
+      this.notify();
     } catch {
-      // In offline / dev mode, retain local store items
+      this.members = [];
+      this.notify();
     }
   }
 
@@ -308,10 +359,15 @@ class MembersStore {
         notes: 'Initial welcome kit queued for dispatch upon membership registration.',
         items: ['Physical ID Card', 'Welcome Lanyard', 'Official NGO Badge', 'Constitution Handbook'],
       },
-      documents:
-        (payload as any).documents && Array.isArray((payload as any).documents) && (payload as any).documents.length > 0
-          ? (payload as any).documents
-          : [],
+      documents: [
+        {
+          id: `doc-${Date.now()}`,
+          name: 'Identification Document',
+          type: 'application/pdf',
+          fileSize: '1.2 MB',
+          uploadedAt: nowIso.split('T')[0],
+        },
+      ],
       adminNotes: payload.admin_notes || 'Registered through Admin Web Portal',
     };
 
@@ -447,7 +503,7 @@ class MembersStore {
   }
 
   public resetToFixtures(): void {
-    this.members = [...INITIAL_MEMBERS_FIXTURES];
+    this.members = [];
     this.sortInternal();
     this.notify();
   }

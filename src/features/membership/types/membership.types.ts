@@ -122,6 +122,15 @@ export interface CreateMembershipApiPayload {
       agreePrivacy: boolean;
       agreePledge: boolean;
     };
+    payment?: {
+      orderId?: string;
+      transactionId?: string;
+      receiptNumber?: string;
+      method?: string;
+      amount?: number;
+      status?: string;
+      paidAt?: string;
+    };
   };
 }
 

@@ -8,6 +8,7 @@ import type {
   UserStatus,
 } from '../types/user.types';
 import { usersService } from '../services/usersService';
+import { getValidAvatarUrl } from '@/utils/avatar';
 
 const STORAGE_KEY = 'hrsjm_registered_users';
 
@@ -46,7 +47,10 @@ class UsersStore {
         if (raw) {
           const parsed = JSON.parse(raw);
           if (Array.isArray(parsed)) {
-            return parsed;
+            return parsed.map((item: UserItem) => ({
+              ...item,
+              avatarUrl: getValidAvatarUrl(item.avatarUrl) || undefined,
+            }));
           }
         }
       }
@@ -110,6 +114,24 @@ class UsersStore {
         : null;
 
       if (items && items.length > 0) {
+        // Sort chronologically ascending to establish stable 1-based sequential registration numbers starting from HRSJM-00001
+        const sortedAsc = [...items].sort((a, b) => {
+          const timeA = new Date(a.created_at || a.createdAt || 0).getTime() || 0;
+          const timeB = new Date(b.created_at || b.createdAt || 0).getTime() || 0;
+          if (timeA !== timeB) return timeA - timeB;
+          return (a.id || '').localeCompare(b.id || '');
+        });
+
+        const idSeqMap = new Map<string, string>();
+        sortedAsc.forEach((u, seqIdx) => {
+          const rawNum = (u.membership_number || u.membership?.membership_number || '').trim();
+          if (rawNum && /^HRSJM-\d+$/i.test(rawNum)) {
+            idSeqMap.set(u.id, rawNum.toUpperCase());
+          } else {
+            idSeqMap.set(u.id, `HRSJM-${String(seqIdx + 1).padStart(5, '0')}`);
+          }
+        });
+
         const mappedUsers: UserItem[] = [];
 
         for (let idx = 0; idx < items.length; idx++) {
@@ -157,11 +179,11 @@ class UsersStore {
             status = 'active';
           }
 
+          const rawNum = (u.membership_number || u.membership?.membership_number || u.member_id || '').trim();
           const memberId =
-            u.membership_number ||
-            u.membership?.membership_number ||
-            u.member_id ||
-            (isMember ? `HRSJM-${(u.id || '').replace(/-/g, '').slice(0, 6).toUpperCase()}` : undefined);
+            rawNum && /^HRSJM-\d+$/i.test(rawNum)
+              ? rawNum.toUpperCase()
+              : idSeqMap.get(u.id) || `HRSJM-${String(idx + 1).padStart(5, '0')}`;
 
           mappedUsers.push({
             id: u.id || `user-api-${idx}`,
@@ -174,7 +196,7 @@ class UsersStore {
             status,
             membershipCategory: u.membership_category || (isMember ? 'Active Member' : undefined),
             membershipStatus: u.membership_status || (isMember ? 'ACTIVE' : undefined),
-            avatarUrl: u.avatar_url || u.avatar || undefined,
+            avatarUrl: getValidAvatarUrl(u.avatar_url || u.avatar) || undefined,
             joinedDate: u.created_at || new Date().toISOString(),
             lastLogin: u.last_login_at
               ? new Date(u.last_login_at).toLocaleString()
@@ -316,7 +338,7 @@ class UsersStore {
         const data = res?.data || res;
         createdUser = {
           id: data.id || `user-${Date.now()}`,
-          memberId: data.member_id || (payload.userType === 'member' ? `HRSJM${Math.floor(10000 + Math.random() * 90000)}` : undefined),
+          memberId: data.member_id || `HRSJM-${String(this.users.length + 1).padStart(5, '0')}`,
           applicationNumber: payload.userType === 'seeker' ? `HRSJM-SEK-${Math.floor(1000 + Math.random() * 9000)}` : undefined,
           name: payload.name.trim(),
           email: payload.email.trim(),
@@ -336,7 +358,7 @@ class UsersStore {
         // Fallback for offline/local simulation
         createdUser = {
           id: `user-${Date.now()}`,
-          memberId: payload.userType === 'member' ? `HRSJM${Math.floor(10000 + Math.random() * 90000)}` : undefined,
+          memberId: `HRSJM-${String(this.users.length + 1).padStart(5, '0')}`,
           applicationNumber: payload.userType === 'seeker' ? `HRSJM-SEK-${Math.floor(1000 + Math.random() * 9000)}` : undefined,
           name: payload.name.trim(),
           email: payload.email.trim(),

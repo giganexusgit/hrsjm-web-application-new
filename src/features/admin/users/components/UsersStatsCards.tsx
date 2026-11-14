@@ -58,11 +58,11 @@ export const UsersStatsCards: React.FC<UsersStatsCardsProps> = ({
 
   return (
     <div
+      className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6"
       style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
-        gap: '16px',
-        marginBottom: '24px',
+        width: '100%',
+        minWidth: 0,
+        boxSizing: 'border-box',
       }}
     >
       {cards.map(card => {
@@ -86,12 +86,15 @@ export const UsersStatsCards: React.FC<UsersStatsCardsProps> = ({
               display: 'flex',
               alignItems: 'flex-start',
               justifyContent: 'space-between',
+              gap: '12px',
               position: 'relative',
               overflow: 'hidden',
+              minWidth: 0,
+              boxSizing: 'border-box',
             }}
             className="hover:shadow-md transition-all"
           >
-            <div>
+            <div style={{ minWidth: 0 }}>
               <div
                 style={{
                   fontSize: '12px',

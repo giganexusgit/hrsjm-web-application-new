@@ -24,14 +24,21 @@ export const userHomeService = {
   fetchUpcomingEvents: async (): Promise<HomeEvent[]> => {
     try {
       const response = await apiClient.get<any>('/events?status=UPCOMING&limit=10');
-      const eventsList = response?.events || response?.data || response;
+      const eventsList =
+        (Array.isArray(response) ? response : null) ||
+        response?.items ||
+        response?.events ||
+        response?.data?.items ||
+        response?.data ||
+        (Array.isArray(response) ? response : []);
       if (Array.isArray(eventsList) && eventsList.length > 0) {
         return eventsList.map((item: any, idx: number) => {
           let day = '25';
           let month = 'OCT';
-          if (item.startAt || item.date) {
+          const dateField = item.start_at || item.startAt || item.date || item.start_date;
+          if (dateField) {
             try {
-              const d = new Date(item.startAt || item.date);
+              const d = new Date(dateField);
               if (!isNaN(d.getTime())) {
                 day = String(d.getDate()).padStart(2, '0');
                 month = d.toLocaleString('en-US', { month: 'short' }).toUpperCase();
@@ -47,7 +54,7 @@ export const userHomeService = {
             month,
             location: item.location || 'Mumbai, Maharashtra',
             imageAssetName: 'home/events/rights-workshop.png',
-            imageUrl: item.coverImageUrl || item.imageUrl || '/assets/images/event-legal-awareness.jpg',
+            imageUrl: item.cover_image_url || item.coverImageUrl || item.imageUrl || '/assets/images/event-legal-awareness.jpg',
           };
         });
       }

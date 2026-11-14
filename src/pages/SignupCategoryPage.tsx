@@ -8,10 +8,8 @@ import {
   CheckCircle2,
   ArrowRight,
   ArrowLeft,
-  Sparkles,
   ShieldCheck,
 } from 'lucide-react';
-import hrsjmLogo from '../assets/hrsjm_logo.png';
 
 const CURRENT_YEAR = new Date().getFullYear();
 
@@ -35,7 +33,7 @@ interface AccountTypeConfig {
 const ACCOUNT_TYPES: AccountTypeConfig[] = [
   {
     id: 'general',
-    title: 'General Citizen User',
+    title: 'General User',
     badge: 'Instant Access • Free',
     badgeColor: 'bg-blue-50 text-blue-700 border-blue-200',
     description: 'Explore fundamental rights, read official press releases, and submit human rights complaints.',
@@ -44,7 +42,7 @@ const ACCOUNT_TYPES: AccountTypeConfig[] = [
       'Submit human rights grievances',
       'Access legal rights handbooks & resources',
     ],
-    ctaText: 'Continue to Citizen Registration',
+    ctaText: 'Continue to User Registration',
     targetRoute: '/register/user',
     icon: User,
     iconBg: 'bg-blue-50',
@@ -52,7 +50,7 @@ const ACCOUNT_TYPES: AccountTypeConfig[] = [
   },
   {
     id: 'member',
-    title: 'Official Member / Officer',
+    title: 'Member',
     badge: 'Official ID & Credentials',
     badgeColor: 'bg-amber-50 text-amber-900 border-amber-300 font-bold',
     description: 'Join as an appointed cadre member, office bearer, or council representative of HRSJM with voting rights.',
@@ -70,8 +68,8 @@ const ACCOUNT_TYPES: AccountTypeConfig[] = [
   },
   {
     id: 'seeker',
-    title: 'Donation Seeker Aid',
-    badge: 'Humanitarian Relief • Free',
+    title: 'Donation Seeker ',
+    badge: 'Requires Document Upload and Admin Approval',
     badgeColor: 'bg-emerald-50 text-emerald-800 border-emerald-200',
     description: 'Request financial, medical or educational assistance for verified distress and humanitarian causes.',
     deliverables: [
@@ -111,11 +109,6 @@ export const SignupCategoryPage: React.FC = () => {
           </Link>
 
           <Link to="/" className="flex items-center gap-2.5">
-            <img
-              src={hrsjmLogo}
-              alt="HRSJM Official Crest"
-              className="w-8 h-8 object-contain shrink-0"
-            />
             <div className="flex flex-col">
               <span className="text-sm font-black tracking-wider text-white font-serif leading-none">
                 HRSJM
@@ -232,16 +225,14 @@ export const SignupCategoryPage: React.FC = () => {
                 <div
                   key={type.id}
                   onClick={() => setSelectedType(type.id)}
-                  className={`rounded-2xl border-2 p-5 text-left cursor-pointer transition-all duration-200 flex flex-col justify-between relative group ${
-                    isSelected
-                      ? 'border-[#06294D] bg-[#FAF7F0] shadow-md ring-2 ring-[#06294D]/10'
-                      : 'border-slate-200/90 bg-white hover:border-slate-300 hover:shadow-sm'
-                  }`}
+                  className={`rounded-2xl border-2 p-5 text-left cursor-pointer transition-all duration-200 flex flex-col justify-between relative group ${isSelected
+                    ? 'border-[#06294D] bg-[#FAF7F0] shadow-md ring-2 ring-[#06294D]/10'
+                    : 'border-slate-200/90 bg-white hover:border-slate-300 hover:shadow-sm'
+                    }`}
                 >
                   {/* Popular Banner */}
                   {type.isPopular && (
-                    <div className="absolute -top-3 right-4 px-2.5 py-0.5 rounded-full bg-[#06294D] text-[#FAD465] text-[10px] font-black uppercase tracking-wider flex items-center gap-1 shadow-sm">
-                      <Sparkles size={11} />
+                    <div className="absolute -top-3 right-4 px-2.5 py-0.5 rounded-full bg-[#06294D] text-[#FAD465] text-[10px] font-black uppercase tracking-wider flex items-center shadow-sm">
                       <span>Recommended Cadre</span>
                     </div>
                   )}
@@ -256,11 +247,10 @@ export const SignupCategoryPage: React.FC = () => {
                       </div>
 
                       <div
-                        className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${
-                          isSelected
-                            ? 'border-[#06294D] bg-[#06294D]'
-                            : 'border-slate-300 bg-white group-hover:border-slate-400'
-                        }`}
+                        className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${isSelected
+                          ? 'border-[#06294D] bg-[#06294D]'
+                          : 'border-slate-300 bg-white group-hover:border-slate-400'
+                          }`}
                       >
                         {isSelected && <div className="w-2 h-2 rounded-full bg-[#FAD465]" />}
                       </div>
