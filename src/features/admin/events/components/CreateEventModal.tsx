@@ -1,54 +1,107 @@
 import type React from 'react';
-import { useState } from 'react';
-import { X, Calendar, MapPin, Users, Globe, Building } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { X, Calendar, MapPin, Users, Globe, Building, Image as ImageIcon, HeartHandshake, Loader2 } from 'lucide-react';
 import {
   EVENT_CATEGORIES,
   type CreateEventFormState,
   type EventFormat,
+  type EventListItem,
 } from '../types/events.types';
 
-interface CreateEventModalProps {
+export interface CreateEventModalProps {
   isOpen: boolean;
+  initialEvent?: EventListItem | null;
   onClose: () => void;
-  onSubmit: (form: CreateEventFormState) => void;
+  onSubmit: (form: CreateEventFormState, eventId?: string) => void;
+  isLoading?: boolean;
 }
 
 const getTodayString = () => new Date().toISOString().slice(0, 10);
 
-const getInitialFormData = (): CreateEventFormState => ({
-  title: '',
-  description: '',
-  coverImageUri: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=1200&q=80',
-  category: 'Legal Awareness',
-  eventType: 'IN_PERSON',
-  eventDate: getTodayString(),
-  startTime: '10:00',
-  endDate: getTodayString(),
-  endTime: '16:00',
-  allDay: false,
-  location: '',
-  address: '',
-  registrationRequired: true,
-  totalSeats: '200',
-  perPersonLimit: '2',
-  organizedBy: 'Central Legal Aid Committee',
-  targetAudience: 'Open to All',
-  language: 'Hindi & English',
-  shortInformation: '',
-  tags: ['Human Rights', 'Legal Aid'],
-  status: 'PUBLISH',
-});
+const getInitialFormData = (initialEvent?: EventListItem | null): CreateEventFormState => {
+  if (initialEvent) {
+    const start = initialEvent.startAt ? new Date(initialEvent.startAt) : new Date();
+    const end = initialEvent.endAt ? new Date(initialEvent.endAt) : start;
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const toDate = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    const toTime = (d: Date) => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+
+    return {
+      title: initialEvent.title || '',
+      description: initialEvent.description || '',
+      coverImageUri: initialEvent.coverImageUrl || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=1200&q=80',
+      category: initialEvent.category || 'Legal Awareness',
+      eventType: (initialEvent.eventType as EventFormat) || 'IN_PERSON',
+      eventDate: toDate(start),
+      startTime: toTime(start),
+      endDate: toDate(end),
+      endTime: toTime(end),
+      allDay: Boolean(initialEvent.allDay),
+      location: initialEvent.location || '',
+      address: initialEvent.address || '',
+      registrationRequired: true,
+      totalSeats: String(initialEvent.capacity || 200),
+      perPersonLimit: String(initialEvent.perPersonLimit || 2),
+      organizedBy: initialEvent.organizer || 'Central Legal Aid Committee',
+      targetAudience: initialEvent.targetAudience || 'Open to All',
+      language: initialEvent.language || 'Hindi & English',
+      shortInformation: initialEvent.shortInformation || '',
+      tags: initialEvent.tags || ['Human Rights', 'Legal Aid'],
+      status: initialEvent.status === 'DRAFT' ? 'DRAFT' : 'PUBLISH',
+      isDonationEnabled: Boolean(initialEvent.isDonationEnabled),
+      donationMessage: initialEvent.donationMessage || '',
+    };
+  }
+
+  return {
+    title: '',
+    description: '',
+    coverImageUri: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=1200&q=80',
+    category: 'Legal Awareness',
+    eventType: 'IN_PERSON',
+    eventDate: getTodayString(),
+    startTime: '10:00',
+    endDate: getTodayString(),
+    endTime: '16:00',
+    allDay: false,
+    location: '',
+    address: '',
+    registrationRequired: true,
+    totalSeats: '200',
+    perPersonLimit: '2',
+    organizedBy: 'Central Legal Aid Committee',
+    targetAudience: 'Open to All',
+    language: 'Hindi & English',
+    shortInformation: '',
+    tags: ['Human Rights', 'Legal Aid'],
+    status: 'PUBLISH',
+    isDonationEnabled: false,
+    donationMessage: '',
+  };
+};
 
 export const CreateEventModal: React.FC<CreateEventModalProps> = ({
   isOpen,
+  initialEvent,
   onClose,
   onSubmit,
+  isLoading = false,
 }) => {
-  const [formData, setFormData] = useState<CreateEventFormState>(getInitialFormData);
-
+  const [formData, setFormData] = useState<CreateEventFormState>(() => getInitialFormData(initialEvent));
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isHoveredSubmit, setIsHoveredSubmit] = useState(false);
+  const [isActiveSubmit, setIsActiveSubmit] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      setFormData(getInitialFormData(initialEvent));
+      setErrors({});
+    }
+  }, [isOpen, initialEvent]);
 
   if (!isOpen) return null;
+
+  const isEditMode = Boolean(initialEvent && initialEvent.id);
 
   const validate = (): boolean => {
     const errs: Record<string, string> = {};
@@ -61,24 +114,29 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
     if (!formData.description.trim()) {
       errs.description = 'Event description is required.';
     }
+    if (formData.isDonationEnabled && formData.donationMessage.length > 200) {
+      errs.donationMessage = 'Donation message must not exceed 200 characters.';
+    }
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validate()) return;
-    onSubmit(formData);
+    if (!validate() || isLoading) return;
+    onSubmit(formData, initialEvent?.id);
     onClose();
   };
 
   return (
     <div style={styles.overlay} onClick={onClose}>
-      <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
+      <div style={styles.modal} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
         <div style={styles.header}>
           <div style={styles.headerTitleWrap}>
             <Calendar size={18} color="#06294D" />
-            <h3 style={styles.headerTitle}>Create New Event or Conclave</h3>
+            <h3 style={styles.headerTitle}>
+              {isEditMode ? 'Edit Event or Conclave' : 'Create New Event or Conclave'}
+            </h3>
           </div>
           <button type="button" onClick={onClose} style={styles.closeBtn} aria-label="Close">
             <X size={18} color="#64748B" />
@@ -291,19 +349,145 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
               />
               {errors.description && <span style={styles.errorText}>{errors.description}</span>}
             </div>
+
+            {/* Event Image Section */}
+            <div style={styles.formGroup}>
+              <label style={styles.label}>Event Cover Image URL</label>
+              <div style={styles.selectWrap}>
+                <ImageIcon size={15} color="#94A3B8" style={styles.selectIcon} />
+                <input
+                  type="text"
+                  value={formData.coverImageUri || ''}
+                  onChange={(e) => setFormData({ ...formData, coverImageUri: e.target.value })}
+                  placeholder="https://images.unsplash.com/photo-..."
+                  style={styles.selectWithIcon}
+                />
+              </div>
+            </div>
+
+            {/* SECTION: Ask for Donation (immediately after Event Image) */}
+            <div style={styles.donationSection}>
+              <div style={styles.donationHeader}>
+                <div style={{ flex: 1, paddingRight: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
+                    <HeartHandshake size={16} color="#011F39" />
+                    <label style={styles.donationToggleLabel}>Ask for Donation</label>
+                  </div>
+                  <p style={styles.donationSupportingText}>
+                    Allow users to support this event with a voluntary donation.
+                  </p>
+                </div>
+
+                {/* ON/OFF Toggle Switch */}
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={formData.isDonationEnabled}
+                  aria-label="Ask for Donation Toggle"
+                  onClick={() =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      isDonationEnabled: !prev.isDonationEnabled,
+                    }))
+                  }
+                  style={{
+                    ...styles.toggleBtn,
+                    backgroundColor: formData.isDonationEnabled ? '#011F39' : '#CBD5E1',
+                  }}
+                >
+                  <span
+                    style={{
+                      ...styles.toggleThumb,
+                      transform: formData.isDonationEnabled ? 'translateX(20px)' : 'translateX(2px)',
+                    }}
+                  />
+                </button>
+              </div>
+
+              {/* Donation Message (displayed only when toggle is ON) */}
+              {formData.isDonationEnabled && (
+                <div style={styles.donationMessageWrap}>
+                  <div style={styles.donationMessageHeader}>
+                    <label style={styles.label}>Donation Message (Optional)</label>
+                    <span style={styles.charCounter}>
+                      {formData.donationMessage.length} / 200
+                    </span>
+                  </div>
+                  <textarea
+                    rows={3}
+                    maxLength={200}
+                    value={formData.donationMessage}
+                    onChange={(e) =>
+                      setFormData({ ...formData, donationMessage: e.target.value.slice(0, 200) })
+                    }
+                    placeholder="Add a short message about why donations are needed for this event..."
+                    style={{
+                      ...styles.textarea,
+                      borderColor: errors.donationMessage ? '#EF4444' : '#CBD5E1',
+                    }}
+                  />
+                  {errors.donationMessage && (
+                    <span style={styles.errorText}>{errors.donationMessage}</span>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
 
           <div style={styles.footer}>
-            <button type="button" onClick={onClose} style={styles.cancelBtn}>
+            <button type="button" onClick={onClose} style={styles.cancelBtn} disabled={isLoading}>
               Cancel
             </button>
-            <button type="submit" style={styles.submitBtn}>
-              Publish Event
+            <button
+              type="submit"
+              disabled={isLoading}
+              onMouseEnter={() => setIsHoveredSubmit(true)}
+              onMouseLeave={() => {
+                setIsHoveredSubmit(false);
+                setIsActiveSubmit(false);
+              }}
+              onMouseDown={() => setIsActiveSubmit(true)}
+              onMouseUp={() => setIsActiveSubmit(false)}
+              style={{
+                ...styles.submitBtn,
+                backgroundColor: isLoading
+                  ? '#FCE7A6'
+                  : isActiveSubmit
+                  ? '#E2B22B'
+                  : isHoveredSubmit
+                  ? '#E9B82E'
+                  : '#FAD465',
+                cursor: isLoading ? 'not-allowed' : 'pointer',
+                opacity: isLoading ? 0.75 : 1,
+              }}
+            >
+              {isLoading && <Loader2 size={15} className="animate-spin" />}
+              <span>{isEditMode ? 'Update Event' : 'Create Event'}</span>
             </button>
           </div>
         </form>
       </div>
     </div>
+  );
+};
+
+export const EditEventModal: React.FC<{
+  isOpen: boolean;
+  event: EventListItem | null;
+  onClose: () => void;
+  onSubmit: (form: CreateEventFormState, eventId: string) => void;
+  isLoading?: boolean;
+}> = ({ isOpen, event, onClose, onSubmit, isLoading }) => {
+  return (
+    <CreateEventModal
+      isOpen={isOpen}
+      initialEvent={event}
+      onClose={onClose}
+      onSubmit={(form) => {
+        if (event) onSubmit(form, event.id);
+      }}
+      isLoading={isLoading}
+    />
   );
 };
 
@@ -350,12 +534,14 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 700,
     color: '#011F39',
     margin: 0,
+    fontFamily: 'serif',
   },
   closeBtn: {
     background: 'none',
     border: 'none',
     cursor: 'pointer',
     padding: '4px',
+    borderRadius: '6px',
   },
   form: {
     display: 'flex',
@@ -439,6 +625,75 @@ const styles: Record<string, React.CSSProperties> = {
     outline: 'none',
     fontFamily: 'inherit',
     resize: 'vertical',
+    boxSizing: 'border-box',
+    width: '100%',
+  },
+  donationSection: {
+    backgroundColor: '#FAF7F0',
+    border: '1px solid #FDE68A',
+    borderRadius: '12px',
+    padding: '16px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '12px',
+  },
+  donationHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: '12px',
+  },
+  donationToggleLabel: {
+    fontSize: '13px',
+    fontWeight: 700,
+    color: '#011F39',
+    margin: 0,
+    cursor: 'pointer',
+  },
+  donationSupportingText: {
+    fontSize: '11px',
+    color: '#64748B',
+    margin: '3px 0 0 0',
+    lineHeight: 1.4,
+  },
+  toggleBtn: {
+    position: 'relative',
+    width: '44px',
+    height: '24px',
+    borderRadius: '12px',
+    border: 'none',
+    padding: 0,
+    cursor: 'pointer',
+    transition: 'background-color 0.2s ease',
+    outline: 'none',
+    flexShrink: 0,
+  },
+  toggleThumb: {
+    display: 'block',
+    width: '20px',
+    height: '20px',
+    borderRadius: '10px',
+    backgroundColor: '#FFFFFF',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+    transition: 'transform 0.2s ease',
+  },
+  donationMessageWrap: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '6px',
+    paddingTop: '8px',
+    borderTop: '1px solid #F3E8CE',
+  },
+  donationMessageHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  charCounter: {
+    fontSize: '11px',
+    fontWeight: 600,
+    color: '#64748B',
+    fontFamily: 'monospace',
   },
   errorText: {
     fontSize: '11px',
@@ -463,14 +718,19 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: 'pointer',
   },
   submitBtn: {
-    padding: '9px 22px',
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '8px',
+    padding: '9px 24px',
     borderRadius: '8px',
-    backgroundColor: '#06294D',
-    border: 'none',
+    backgroundColor: '#FAD465',
+    border: '1px solid #E9B82E',
     fontSize: '13px',
     fontWeight: 700,
-    color: '#FFFFFF',
+    color: '#011F39',
     cursor: 'pointer',
-    boxShadow: '0 2px 6px rgba(6, 41, 77, 0.25)',
+    boxShadow: '0 2px 6px rgba(250, 212, 101, 0.35)',
+    transition: 'all 0.15s ease',
   },
 };

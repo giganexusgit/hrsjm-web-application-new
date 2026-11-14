@@ -156,6 +156,11 @@ class DonationsStore {
     return created;
   }
 
+  public recordCompletedDonation(donation: Donation): void {
+    this.donations = [donation, ...this.donations.filter(d => d.id !== donation.id)];
+    this.emit();
+  }
+
   public async refundDonation(id: string, reason?: string): Promise<void> {
     await donationsService.refundDonation(id, reason);
     this.donations = this.donations.map(d =>

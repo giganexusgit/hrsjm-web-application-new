@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, FileText, RotateCcw, Smartphone, Globe, Laptop, Heart } from 'lucide-react';
+import { X, FileText, RotateCcw, Smartphone, Globe, Laptop, Heart, Calendar } from 'lucide-react';
 import type { DonationRowModel } from '../types/donations.types';
 
 interface DonationDetailsModalProps {
@@ -87,6 +87,26 @@ export const DonationDetailsModal: React.FC<DonationDetailsModalProps> = ({
               <span className="text-slate-500">Cause / Purpose:</span>
               <span className="font-bold text-slate-800 text-right">{row.donationTitle}</span>
             </div>
+
+            {/* Associated Event (if event donation) */}
+            {(row.eventId || row.eventName) && (
+              <div className="flex justify-between items-center p-3 bg-amber-50/60 border-t border-b border-amber-100">
+                <div className="flex items-center gap-1.5 text-amber-900 font-semibold">
+                  <Calendar className="h-3.5 w-3.5 text-amber-700" />
+                  <span>Associated Event:</span>
+                </div>
+                <div className="text-right">
+                  <div className="font-bold text-[#011F39] text-xs">
+                    {row.eventName || row.donationTitle.replace(/^Event Donation:\s*/, '')}
+                  </div>
+                  {row.eventId && (
+                    <div className="text-[10px] font-mono text-slate-500">
+                      Event ID: {row.eventId}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Remarks */}
             {row.donationDescription && (

@@ -28,6 +28,8 @@ export function mapBackendEventToUi(item: any): EventListItem {
     language: item.language,
     tags: item.tags || [],
     status: item.status || 'UPCOMING',
+    isDonationEnabled: item.is_donation_enabled ?? item.isDonationEnabled ?? false,
+    donationMessage: item.donation_message ?? item.donationMessage ?? '',
     created_at: item.created_at,
     updated_at: item.updated_at,
   };
@@ -91,6 +93,8 @@ export const eventsService = {
       language: form.language?.trim() || undefined,
       tags: form.tags,
       status: form.status === 'PUBLISH' ? 'UPCOMING' : 'DRAFT',
+      is_donation_enabled: Boolean(form.isDonationEnabled),
+      donation_message: form.isDonationEnabled && form.donationMessage ? form.donationMessage.trim() : null,
     };
 
     const data = await apiClient.post<any>(ENDPOINTS.events.create, payload);
@@ -128,6 +132,12 @@ export const eventsService = {
     if ('language' in form && form.language !== undefined) payload.language = form.language.trim();
     if (form.tags !== undefined) payload.tags = form.tags;
     if ('status' in form && form.status !== undefined) payload.status = form.status;
+    if ('isDonationEnabled' in form) {
+      payload.is_donation_enabled = Boolean(form.isDonationEnabled);
+    }
+    if ('donationMessage' in form) {
+      payload.donation_message = form.donationMessage ? form.donationMessage.trim() : null;
+    }
 
     const data = await apiClient.patch<any>(ENDPOINTS.events.update(id), payload);
     return mapBackendEventToUi(data);

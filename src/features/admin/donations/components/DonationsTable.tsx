@@ -1,5 +1,5 @@
 import React from 'react';
-import { Eye, FileText, RotateCcw, Smartphone, Globe, Laptop, Heart } from 'lucide-react';
+import { Eye, FileText, RotateCcw, Smartphone, Globe, Laptop, Heart, Calendar } from 'lucide-react';
 import type { Donation, DonationRowModel } from '../types/donations.types';
 import { toDonationRowModel } from '../data/donationsFixtures';
 
@@ -86,6 +86,14 @@ export const DonationsTable: React.FC<DonationsTableProps> = ({
                     {row.donationDescription && (
                       <div className="text-[11px] text-slate-400 line-clamp-1">
                         {row.donationDescription}
+                      </div>
+                    )}
+                    {(row.eventId || row.eventName) && (
+                      <div className="mt-1">
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-50 text-amber-800 border border-amber-200">
+                          <Calendar className="h-2.5 w-2.5 text-amber-700" />
+                          <span>Event: {row.eventName || row.eventId}</span>
+                        </span>
                       </div>
                     )}
                   </td>

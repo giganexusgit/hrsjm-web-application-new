@@ -79,6 +79,7 @@ import {
   MemberNotificationsPage,
   MemberSettingsPage,
 } from '@/features/member';
+import { MemberEventDetailsPage } from '@/features/member/screens/MemberEventDetailsPage';
 
 // Public Experience Pages (Parity with Mobile APK)
 import { HomePage } from '@/pages/HomePage';
@@ -99,6 +100,7 @@ import { SeekerRequestDetailsPage } from '@/features/seeker/screens/SeekerReques
 import { SeekerRightsPage } from '@/features/seeker/screens/SeekerRightsPage';
 import { SeekerRightDetailsPage } from '@/features/seeker/screens/SeekerRightDetailsPage';
 import { SeekerEventsPage } from '@/features/seeker/screens/SeekerEventsPage';
+import { SeekerEventDetailsPage } from '@/features/seeker/screens/SeekerEventDetailsPage';
 import { SeekerSupportPage } from '@/features/seeker/screens/SeekerSupportPage';
 import { SeekerCreateTicketPage } from '@/features/seeker/screens/SeekerCreateTicketPage';
 import { SeekerProfilePage } from '@/features/seeker/screens/SeekerProfilePage';
@@ -114,6 +116,7 @@ import { UserWhatWeDoDetailPage } from '@/features/user/screens/UserWhatWeDoDeta
 import { UserRightsPage } from '@/features/user/screens/UserRightsPage';
 import { UserRightDetailsPage } from '@/features/user/screens/UserRightDetailsPage';
 import { UserEventsPage } from '@/features/user/screens/UserEventsPage';
+import { UserEventDetailsPage } from '@/features/user/screens/UserEventDetailsPage';
 import { UserNewsPage } from '@/features/user/screens/UserNewsPage';
 import { UserBlogsPage } from '@/features/user/screens/UserBlogsPage';
 import { UserDonationsPage } from '@/features/user/screens/UserDonationsPage';
@@ -171,7 +174,10 @@ export const AppRoutes: React.FC = () => {
           <Route path="/know-your-rights" element={<UserRightsPage />} />
           <Route path="/know-your-rights/:rightId" element={<UserRightDetailsPage />} />
           <Route path="/events" element={<UserEventsPage />} />
+          <Route path="/events/:id" element={<UserEventDetailsPage />} />
           <Route path="/event" element={<UserEventsPage />} />
+          <Route path="/event/:id" element={<UserEventDetailsPage />} />
+          <Route path="/user/events/:id" element={<UserEventDetailsPage />} />
           <Route path="/news" element={<UserNewsPage />} />
           <Route path="/press" element={<UserNewsPage />} />
           <Route path="/blogs" element={<UserBlogsPage />} />
@@ -276,6 +282,7 @@ export const AppRoutes: React.FC = () => {
           <Route path="profile" element={<MemberProfilePage />} />
           <Route path="about" element={<MemberAboutPage />} />
           <Route path="events" element={<MemberEventsPage />} />
+          <Route path="events/:id" element={<MemberEventDetailsPage />} />
           <Route path="rights" element={<MemberRightsPage />} />
           <Route path="news" element={<MemberNewsPage />} />
           <Route path="blogs" element={<MemberBlogsPage />} />
@@ -296,6 +303,7 @@ export const AppRoutes: React.FC = () => {
           <Route path="rights" element={<SeekerRightsPage />} />
           <Route path="rights/:id" element={<SeekerRightDetailsPage />} />
           <Route path="events" element={<SeekerEventsPage />} />
+          <Route path="events/:id" element={<SeekerEventDetailsPage />} />
           <Route path="support" element={<SeekerSupportPage />} />
           <Route path="support/create" element={<SeekerCreateTicketPage />} />
           <Route path="complaint" element={<SeekerCreateTicketPage />} />

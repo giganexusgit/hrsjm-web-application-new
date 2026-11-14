@@ -16,9 +16,13 @@ import {
   AlertCircle,
   FileEdit,
   Check,
+  HeartHandshake,
+  Eye,
 } from 'lucide-react';
 import { eventsStore } from '../store/eventsStore';
-import type { EventUiStatus } from '../types/events.types';
+import type { EventUiStatus, CreateEventFormState } from '../types/events.types';
+import { EditEventModal } from '../components/CreateEventModal';
+import { EventDetailsView } from '../components/EventDetailsView';
 
 export const EventDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -30,6 +34,8 @@ export const EventDetailsPage: React.FC = () => {
   const [statusUpdating, setStatusUpdating] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   if (!event) {
     return (
@@ -75,6 +81,40 @@ export const EventDetailsPage: React.FC = () => {
       setIsDeleting(false);
       setShowDeleteConfirm(false);
     }
+  };
+
+  const handleEditSubmit = async (form: CreateEventFormState, eventId: string) => {
+    const startAt = form.eventDate && form.startTime
+      ? new Date(`${form.eventDate}T${form.startTime}:00`).toISOString()
+      : event.startAt;
+
+    const endDateStr = form.endDate || form.eventDate;
+    const endAt = endDateStr && form.endTime
+      ? new Date(`${endDateStr}T${form.endTime}:00`).toISOString()
+      : undefined;
+
+    await eventsStore.updateEvent(eventId, {
+      title: form.title.trim(),
+      description: form.description.trim(),
+      shortInformation: form.shortInformation?.trim() || null,
+      category: form.category,
+      eventType: form.eventType,
+      coverImageUrl: form.coverImageUri,
+      startAt,
+      endAt,
+      allDay: form.allDay,
+      location: form.location.trim(),
+      address: form.address?.trim() || undefined,
+      organizer: form.organizedBy?.trim() || event.organizer,
+      capacity: form.totalSeats ? parseInt(form.totalSeats, 10) : event.capacity,
+      perPersonLimit: form.perPersonLimit ? parseInt(form.perPersonLimit, 10) : event.perPersonLimit,
+      targetAudience: form.targetAudience,
+      language: form.language,
+      tags: form.tags,
+      status: form.status === 'DRAFT' ? 'DRAFT' : 'UPCOMING',
+      isDonationEnabled: Boolean(form.isDonationEnabled),
+      donationMessage: form.isDonationEnabled && form.donationMessage ? form.donationMessage.trim() : null,
+    });
   };
 
   const formattedDate = event.startAt
@@ -177,6 +217,23 @@ export const EventDetailsPage: React.FC = () => {
               <option value="DRAFT">Status: Draft (Admin Only)</option>
             </select>
           </div>
+
+          <button
+            type="button"
+            onClick={() => setIsPreviewOpen(true)}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-[#011F39] bg-white border border-[#011F39] rounded-lg hover:bg-slate-50 transition shadow-sm cursor-pointer"
+            title="Preview how users see this event"
+          >
+            <Eye size={14} /> Preview User View
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setIsEditModalOpen(true)}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-[#011F39] bg-[#FAD465] hover:bg-[#E9B82E] border border-[#E9B82E] rounded-lg transition shadow-sm cursor-pointer"
+          >
+            <FileEdit size={14} /> Edit Event
+          </button>
 
           <button
             onClick={handleCopyLink}
@@ -372,6 +429,66 @@ export const EventDetailsPage: React.FC = () => {
             </div>
           </div>
 
+          {/* Voluntary Donations Configuration Card */}
+          <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <HeartHandshake size={18} className="text-[#011F39]" />
+                <h3 className="text-base font-bold text-slate-900">Voluntary Donations</h3>
+              </div>
+              <span
+                className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                  event.isDonationEnabled
+                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                    : 'bg-slate-100 text-slate-600 border border-slate-200'
+                }`}
+              >
+                {event.isDonationEnabled ? 'Enabled' : 'Disabled'}
+              </span>
+            </div>
+
+            <p className="text-xs text-slate-500 leading-relaxed">
+              {event.isDonationEnabled
+                ? 'Citizens and members can make voluntary contributions for this event via Cashfree gateway.'
+                : 'Voluntary donations are disabled for this event. No contribution button is displayed.'}
+            </p>
+
+            {event.isDonationEnabled && event.donationMessage && (
+              <div className="p-3 bg-[#FAF7F0] border border-[#FDE68A] rounded-lg text-xs">
+                <span className="font-bold text-[#011F39] block text-[11px] uppercase tracking-wider mb-1">
+                  Appeal Message:
+                </span>
+                <p className="text-slate-700 italic">"{event.donationMessage}"</p>
+              </div>
+            )}
+
+            <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
+              <button
+                type="button"
+                onClick={async () => {
+                  await eventsStore.updateEvent(event.id, {
+                    isDonationEnabled: !event.isDonationEnabled,
+                  });
+                }}
+                className={`text-xs font-bold px-3 py-1.5 rounded-lg border transition cursor-pointer ${
+                  event.isDonationEnabled
+                    ? 'text-rose-700 bg-rose-50 border-rose-200 hover:bg-rose-100'
+                    : 'text-emerald-700 bg-emerald-50 border-emerald-200 hover:bg-emerald-100'
+                }`}
+              >
+                {event.isDonationEnabled ? 'Turn Donations OFF' : 'Turn Donations ON'}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsEditModalOpen(true)}
+                className="text-xs font-semibold text-[#011F39] hover:underline cursor-pointer"
+              >
+                Configure Details →
+              </button>
+            </div>
+          </div>
+
           {/* Organizer Card */}
           <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm space-y-3">
             <h3 className="text-base font-bold text-slate-900">Organizer Information</h3>
@@ -429,6 +546,32 @@ export const EventDetailsPage: React.FC = () => {
                 {isDeleting ? 'Deleting...' : 'Yes, Delete Event'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Event Modal */}
+      <EditEventModal
+        isOpen={isEditModalOpen}
+        event={event}
+        onClose={() => setIsEditModalOpen(false)}
+        onSubmit={handleEditSubmit}
+      />
+
+      {/* User View Preview Modal (matches Images 1, 2, 3) */}
+      {isPreviewOpen && (
+        <div
+          className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-0 sm:p-4 animate-in fade-in"
+          onClick={() => setIsPreviewOpen(false)}
+        >
+          <div
+            className="relative w-full max-w-xl min-h-screen sm:min-h-0 sm:max-h-[92vh] sm:rounded-3xl overflow-y-auto shadow-2xl bg-[#FAF7F0]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <EventDetailsView
+              event={event}
+              onBack={() => setIsPreviewOpen(false)}
+            />
           </div>
         </div>
       )}

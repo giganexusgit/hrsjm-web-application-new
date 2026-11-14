@@ -299,6 +299,17 @@ export const toDonationRowModel = (d: Donation): DonationRowModel => {
       statusTone = 'info';
   }
 
+  // Extract event metadata if associated with an event
+  let eventId = d.event_id || null;
+  let eventName = d.event_name || null;
+  if (!eventName && d.cause?.startsWith('Event Donation:')) {
+    eventName = d.cause.replace(/^Event Donation:\s*/, '').trim();
+  }
+  if (!eventId && d.remark?.includes('Event ID:')) {
+    const match = d.remark.match(/Event ID:\s*([a-zA-Z0-9_-]+)/);
+    if (match) eventId = match[1];
+  }
+
   return {
     id: d.id,
     donorName: d.donor_name,
@@ -316,6 +327,8 @@ export const toDonationRowModel = (d: Donation): DonationRowModel => {
     source: d.source || 'Website',
     rawStatus: d.status,
     rawDonation: d,
+    eventId,
+    eventName,
   };
 };
 

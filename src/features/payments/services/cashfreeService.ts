@@ -86,7 +86,10 @@ export const cashfreeService = {
       customer_phone: phone,
       customer_email: email,
       user_id: validUserId,
-      order_note: params.panNumber
+      event_id: params.eventId,
+      order_note: params.eventId
+        ? `Event Donation: ${params.cause}`
+        : params.panNumber
         ? `Donation for ${params.cause} (80G PAN: ${params.panNumber})`
         : `Donation for ${params.cause}`,
       return_url: returnUrl,

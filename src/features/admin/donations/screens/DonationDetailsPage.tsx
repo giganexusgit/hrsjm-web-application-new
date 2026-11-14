@@ -209,6 +209,21 @@ export const DonationDetailsPage: React.FC = () => {
                 {donation.cause}
               </span>
             </div>
+            {(rowModel.eventId || rowModel.eventName || donation.event_id) && (
+              <div className="p-2.5 bg-amber-50 rounded-lg border border-amber-200">
+                <span className="text-amber-800 font-bold block text-[11px] uppercase tracking-wider">
+                  Associated Event
+                </span>
+                <span className="font-semibold text-[#011F39] text-xs mt-0.5 block">
+                  {rowModel.eventName || donation.cause.replace(/^Event Donation:\s*/, '')}
+                </span>
+                {(rowModel.eventId || donation.event_id) && (
+                  <span className="text-[10px] font-mono text-slate-500 block mt-0.5">
+                    Event ID: {rowModel.eventId || donation.event_id}
+                  </span>
+                )}
+              </div>
+            )}
             <div>
               <span className="text-slate-500 block">Category Type:</span>
               <span className="font-medium text-slate-800 mt-0.5 block">

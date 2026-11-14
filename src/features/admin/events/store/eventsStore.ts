@@ -159,6 +159,8 @@ class EventsStore {
         language: form.language || 'English, Hindi',
         tags: form.tags,
         status: form.status === 'DRAFT' ? 'DRAFT' : 'UPCOMING',
+        isDonationEnabled: Boolean(form.isDonationEnabled),
+        donationMessage: form.isDonationEnabled && form.donationMessage ? form.donationMessage.trim() : null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };

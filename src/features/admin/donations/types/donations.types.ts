@@ -20,6 +20,8 @@ export interface Donation {
   member_code?: string | null;
   payment_method?: string;
   transaction_id?: string | null;
+  event_id?: string | null;
+  event_name?: string | null;
   created_at: string;
   updated_at: string;
   created_by?: string | null;
@@ -81,6 +83,8 @@ export interface DonationRowModel {
   source?: DonationSource | string | null;
   rawStatus?: string;
   rawDonation?: Donation;
+  eventId?: string | null;
+  eventName?: string | null;
 }
 
 export interface DonationStatItem {

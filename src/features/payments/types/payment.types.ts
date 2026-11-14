@@ -90,6 +90,7 @@ export interface CreateDonationOrderParams {
   userId?: string;
   panNumber?: string;
   need80G?: boolean;
+  eventId?: string;
   idempotencyKey?: string;
 }
 

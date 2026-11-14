@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useMemo, useSyncExternalStore } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
   Calendar,
   Clock,
@@ -9,16 +8,15 @@ import {
   CheckCircle2,
   X,
   HeartHandshake,
-  ArrowRight,
-  ShieldCheck,
 } from 'lucide-react';
 import { eventsStore } from '@/features/admin/events/store/eventsStore';
 import type { EventListItem } from '@/features/admin/events/types/events.types';
 import { filterEventsForRole } from '@/features/content';
 import { useCurrentMember } from '../store/memberStore';
+import { EventDonationModal } from '@/features/admin/events/components/EventDonationModal';
+import { EventDetailsView } from '@/features/admin/events/components/EventDetailsView';
 
 export const MemberEventsPage: React.FC = () => {
-  const navigate = useNavigate();
   const { member } = useCurrentMember();
   const snapshot = useSyncExternalStore<{ events: EventListItem[]; version: number }>(eventsStore.subscribe, eventsStore.getSnapshot);
   const events = snapshot.events;
@@ -32,9 +30,6 @@ export const MemberEventsPage: React.FC = () => {
   }, []);
   const [selectedEvent, setSelectedEvent] = useState<EventListItem | null>(null);
   const [contributeEvent, setContributeEvent] = useState<EventListItem | null>(null);
-  const [donationAmount, setDonationAmount] = useState<number>(500);
-  const [customAmount, setCustomAmount] = useState<string>('');
-  const [isDonating, setIsDonating] = useState(false);
   const [registeredIds, setRegisteredIds] = useState<string[]>(['e-01']);
   const [successToast, setSuccessToast] = useState<string | null>(null);
 
@@ -309,14 +304,16 @@ export const MemberEventsPage: React.FC = () => {
                   </div>
 
                   <div style={styles.cardActions}>
-                    <button
-                      type="button"
-                      style={styles.registerBtn}
-                      onClick={() => setContributeEvent(event)}
-                    >
-                      <HeartHandshake size={15} color="#0B2F52" />
-                      <span>Contribute to Event</span>
-                    </button>
+                    {event.isDonationEnabled && (
+                      <button
+                        type="button"
+                        style={styles.registerBtn}
+                        onClick={() => setContributeEvent(event)}
+                      >
+                        <HeartHandshake size={15} color="#0B2F52" />
+                        <span>Donate Now</span>
+                      </button>
+                    )}
                     <button
                       type="button"
                       style={styles.detailsBtn}
@@ -332,265 +329,39 @@ export const MemberEventsPage: React.FC = () => {
         </div>
       )}
 
-      {/* Event Details Modal */}
+      {/* Event Details View Modal (matches images 1, 2, 3) */}
       {selectedEvent && (
-        <div style={styles.modalBackdrop} onClick={() => setSelectedEvent(null)}>
+        <div
+          className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-0 sm:p-4 animate-in fade-in"
+          onClick={() => setSelectedEvent(null)}
+        >
           <div
-            style={styles.modalCard}
+            className="relative w-full max-w-xl min-h-screen sm:min-h-0 sm:max-h-[92vh] sm:rounded-3xl overflow-y-auto shadow-2xl bg-[#FAF7F0]"
             onClick={(e) => e.stopPropagation()}
-            role="dialog"
-            aria-modal="true"
           >
-            <div style={styles.modalHeader}>
-              <div style={styles.modalCategoryBadge}>{selectedEvent.category}</div>
-              <button
-                type="button"
-                style={styles.closeBtn}
-                onClick={() => setSelectedEvent(null)}
-              >
-                <X size={20} color="#64748B" />
-              </button>
-            </div>
-
-            <div style={styles.modalBody}>
-              <h2 style={styles.modalTitle}>{selectedEvent.title}</h2>
-              <div style={styles.modalMetaList}>
-                <div style={styles.modalMetaItem}>
-                  <Calendar size={16} color="#06294D" />
-                  <span>
-                    <strong>Date:</strong> {formatDate(selectedEvent.startAt)}
-                  </span>
-                </div>
-                <div style={styles.modalMetaItem}>
-                  <Clock size={16} color="#06294D" />
-                  <span>
-                    <strong>Time:</strong> {formatTime(selectedEvent.startAt)} to{' '}
-                    {selectedEvent.endAt ? formatTime(selectedEvent.endAt) : '4:00 PM'}
-                  </span>
-                </div>
-                <div style={styles.modalMetaItem}>
-                  <MapPin size={16} color="#06294D" />
-                  <span>
-                    <strong>Venue:</strong> {selectedEvent.address || selectedEvent.location}
-                  </span>
-                </div>
-                <div style={styles.modalMetaItem}>
-                  <Users size={16} color="#06294D" />
-                  <span>
-                    <strong>Organizer:</strong> {selectedEvent.organizer}
-                  </span>
-                </div>
-              </div>
-
-              <div style={styles.modalDescWrap}>
-                <h4 style={styles.modalSubheading}>Program Agenda & Details</h4>
-                <p style={styles.modalDescText}>{selectedEvent.description}</p>
-              </div>
-
-              <div style={styles.targetAudienceBox}>
-                <span>Target Audience: <strong>{selectedEvent.targetAudience}</strong></span>
-                <span>•</span>
-                <span>Languages: <strong>{selectedEvent.language}</strong></span>
-              </div>
-            </div>
-
-            <div style={styles.modalFooter}>
-              <button
-                type="button"
-                style={styles.modalCloseBtn}
-                onClick={() => setSelectedEvent(null)}
-              >
-                Close
-              </button>
-              <button
-                type="button"
-                style={{
-                  ...styles.modalActionBtn,
-                  backgroundColor: '#FAD465',
-                  color: '#06294D',
-                  border: 'none',
-                  fontWeight: 700,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                }}
-                onClick={() => {
-                  const ev = selectedEvent;
-                  setSelectedEvent(null);
-                  setContributeEvent(ev);
-                }}
-              >
-                <HeartHandshake size={14} color="#06294D" />
-                <span>Contribute to Event</span>
-              </button>
-              <button
-                type="button"
-                style={{
-                  ...styles.modalActionBtn,
-                  ...(registeredIds.includes(selectedEvent.id)
-                    ? styles.modalActionRegistered
-                    : {}),
-                }}
-                onClick={() => {
-                  handleRegister(selectedEvent);
-                  setSelectedEvent(null);
-                }}
-              >
-                {registeredIds.includes(selectedEvent.id)
-                  ? 'Cancel My Attendance'
-                  : 'Register Free Attendance'}
-              </button>
-            </div>
+            <EventDetailsView
+              event={selectedEvent}
+              onBack={() => setSelectedEvent(null)}
+              onRegister={(ev) => handleRegister(ev)}
+              isRegistered={registeredIds.includes(selectedEvent.id)}
+              onDonateClick={(ev) => {
+                setSelectedEvent(null);
+                setContributeEvent(ev);
+              }}
+            />
           </div>
         </div>
       )}
 
-      {/* Event Contribution & Donation Modal */}
-      {contributeEvent && (
-        <div style={styles.modalBackdrop} onClick={() => setContributeEvent(null)}>
-          <div
-            style={styles.modalCard}
-            onClick={(e) => e.stopPropagation()}
-            role="dialog"
-            aria-modal="true"
-          >
-            <div style={styles.modalHeader}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <div style={{ width: '32px', height: '32px', borderRadius: '8px', backgroundColor: '#FEF3C7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <HeartHandshake size={18} color="#D97706" />
-                </div>
-                <div>
-                  <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: '#06294D' }}>
-                    Contribute to Event
-                  </h3>
-                  <span style={{ fontSize: '11px', color: '#64748B' }}>50% Section 80G Tax Exemption Applicable</span>
-                </div>
-              </div>
-              <button
-                type="button"
-                style={styles.closeBtn}
-                onClick={() => setContributeEvent(null)}
-                aria-label="Close"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <div style={styles.modalBody}>
-              <div style={{ padding: '12px 14px', borderRadius: '10px', backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', marginBottom: '16px' }}>
-                <span style={{ fontSize: '10.5px', fontWeight: 700, color: '#0D9488', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                  Event Cause & Campaign
-                </span>
-                <h4 style={{ margin: '4px 0 0 0', fontSize: '14px', fontWeight: 700, color: '#0F172A' }}>
-                  {contributeEvent.title}
-                </h4>
-                <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#64748B' }}>
-                  {formatDate(contributeEvent.startAt)} • {contributeEvent.location}
-                </p>
-              </div>
-
-              {/* Amount Selection */}
-              <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#06294D', marginBottom: '8px' }}>
-                Select Contribution Amount
-              </label>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', marginBottom: '12px' }}>
-                {[250, 500, 1000, 2500].map((amt) => {
-                  const isSelected = !customAmount && donationAmount === amt;
-                  return (
-                    <button
-                      key={amt}
-                      type="button"
-                      onClick={() => {
-                        setDonationAmount(amt);
-                        setCustomAmount('');
-                      }}
-                      style={{
-                        padding: '10px 6px',
-                        borderRadius: '8px',
-                        border: isSelected ? '2px solid #06294D' : '1px solid #CBD5E1',
-                        backgroundColor: isSelected ? '#FEF3C7' : '#FFFFFF',
-                        color: isSelected ? '#06294D' : '#334155',
-                        fontWeight: 700,
-                        fontSize: '13px',
-                        cursor: 'pointer',
-                        transition: 'all 0.15s ease',
-                      }}
-                    >
-                      ₹{amt.toLocaleString('en-IN')}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Custom Amount */}
-              <div style={{ marginBottom: '16px' }}>
-                <input
-                  type="number"
-                  placeholder="Or enter custom amount in ₹"
-                  value={customAmount}
-                  onChange={(e) => {
-                    setCustomAmount(e.target.value);
-                    if (e.target.value) {
-                      setDonationAmount(Number(e.target.value));
-                    }
-                  }}
-                  style={{
-                    width: '100%',
-                    padding: '10px 12px',
-                    borderRadius: '8px',
-                    border: '1px solid #CBD5E1',
-                    fontSize: '13px',
-                    fontWeight: 600,
-                    outline: 'none',
-                    boxSizing: 'border-box',
-                  }}
-                />
-              </div>
-
-              {/* 80G Tax Benefit Callout */}
-              <div style={{ padding: '10px 12px', borderRadius: '8px', backgroundColor: '#F0FDF4', border: '1px solid #BBF7D0', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11px', color: '#166534', marginBottom: '16px' }}>
-                <ShieldCheck size={16} color="#16A34A" style={{ flexShrink: 0 }} />
-                <span>
-                  Qualifies for 50% IT deduction under Section 80G(5)(vi). Statutory receipt issued instantly.
-                </span>
-              </div>
-            </div>
-
-            <div style={styles.modalFooter}>
-              <button
-                type="button"
-                style={styles.modalCloseBtn}
-                onClick={() => setContributeEvent(null)}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                style={{
-                  ...styles.modalActionBtn,
-                  backgroundColor: '#FAD465',
-                  color: '#011F39',
-                  border: 'none',
-                  fontWeight: 800,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                }}
-                disabled={isDonating || (customAmount !== '' && Number(customAmount) <= 0)}
-                onClick={() => {
-                  const finalAmount = customAmount ? Number(customAmount) : donationAmount;
-                  if (finalAmount <= 0) return;
-                  setIsDonating(true);
-                  navigate(`/donations?amount=${finalAmount}&event=${encodeURIComponent(contributeEvent.title)}`);
-                }}
-              >
-                <span>Donate ₹{(customAmount ? Number(customAmount) || 0 : donationAmount).toLocaleString('en-IN')}</span>
-                <ArrowRight size={15} />
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Event Voluntary Donation Modal */}
+      <EventDonationModal
+        event={contributeEvent}
+        isOpen={Boolean(contributeEvent)}
+        onClose={() => setContributeEvent(null)}
+        defaultDonorName={member?.fullName || ''}
+        defaultDonorMobile={member?.phone || ''}
+        defaultDonorEmail={member?.email || ''}
+      />
     </div>
   );
 };

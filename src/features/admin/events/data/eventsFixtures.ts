@@ -27,6 +27,8 @@ Topics Covered:
     language: 'English, Hindi',
     tags: ['Human Rights', 'Legal Aid', 'Civil Liberties', 'Mumbai'],
     status: 'UPCOMING',
+    isDonationEnabled: true,
+    donationMessage: 'Support free legal literature and constitutional awareness kits for attending citizens.',
   },
   {
     id: 'e-02',
@@ -49,6 +51,8 @@ Topics Covered:
     language: 'Hindi, Marathi',
     tags: ['Relief', 'Food Security', 'Govandi', 'Volunteer Drive'],
     status: 'UPCOMING',
+    isDonationEnabled: true,
+    donationMessage: 'Your kind voluntary donation helps us provide warm blankets and emergency ration packs to families in need.',
   },
   {
     id: 'e-03',
@@ -77,6 +81,8 @@ Attendees will receive an official HRSJM Certificate of Participation.`,
     language: 'English, Hindi',
     tags: ['RTI', 'Legal Literacy', 'Citizen Rights', 'Youth'],
     status: 'UPCOMING',
+    isDonationEnabled: false,
+    donationMessage: '',
   },
   {
     id: 'e-04',

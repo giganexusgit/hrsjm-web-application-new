@@ -1,20 +1,19 @@
 import React, { useState, useMemo, useEffect, useSyncExternalStore } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
   Calendar,
   MapPin,
-  Users,
   Search,
   X,
   Clock,
   CheckCircle,
   HeartHandshake,
-  ArrowRight,
-  ShieldCheck,
 } from 'lucide-react';
 import { eventsStore } from '../../admin/events/store/eventsStore';
 import type { EventListItem } from '../../admin/events/types/events.types';
 import { filterEventsForRole } from '@/features/content';
+import { EventDonationModal } from '../../admin/events/components/EventDonationModal';
+import { EventDetailsView } from '../../admin/events/components/EventDetailsView';
+import { useUserAuth } from '../store/userAuthStore';
 
 const EVENT_CATEGORIES = [
   'All',
@@ -79,7 +78,7 @@ const matchesEventFilter = (selected: string, event: EventListItem): boolean => 
 };
 
 export const UserEventsPage: React.FC = () => {
-  const navigate = useNavigate();
+  const { user } = useUserAuth();
   const snapshot = useSyncExternalStore(eventsStore.subscribe, eventsStore.getSnapshot);
   const events = useMemo(() => {
     return filterEventsForRole(snapshot.events, 'USER');
@@ -90,9 +89,6 @@ export const UserEventsPage: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedEvent, setSelectedEvent] = useState<EventListItem | null>(null);
   const [contributeEvent, setContributeEvent] = useState<EventListItem | null>(null);
-  const [donationAmount, setDonationAmount] = useState<number>(500);
-  const [customAmount, setCustomAmount] = useState<string>('');
-  const [isDonating, setIsDonating] = useState(false);
   const [registeredEvents, setRegisteredEvents] = useState<Set<string>>(new Set());
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
@@ -289,14 +285,16 @@ export const UserEventsPage: React.FC = () => {
                   >
                     View Details
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => setContributeEvent(event)}
-                    className="py-2 px-4 rounded-xl text-xs font-bold transition-all cursor-pointer bg-[#FAD465] hover:bg-[#E9B82E] text-[#011F39] shadow-xs flex items-center gap-1.5"
-                  >
-                    <HeartHandshake size={14} className="text-[#011F39]" />
-                    <span>Contribute</span>
-                  </button>
+                  {event.isDonationEnabled && (
+                    <button
+                      type="button"
+                      onClick={() => setContributeEvent(event)}
+                      className="py-2 px-4 rounded-xl text-xs font-bold transition-all cursor-pointer bg-[#FAD465] hover:bg-[#E9B82E] text-[#011F39] shadow-xs flex items-center gap-1.5"
+                    >
+                      <HeartHandshake size={14} className="text-[#011F39]" />
+                      <span>Donate Now</span>
+                    </button>
+                  )}
                 </div>
               </div>
             );
@@ -304,208 +302,39 @@ export const UserEventsPage: React.FC = () => {
         </div>
       )}
 
-      {/* Event Details Modal */}
+      {/* Event Details View Modal (matches images 1, 2, 3) */}
       {selectedEvent && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/60 backdrop-blur-xs animate-in fade-in">
-          <div className="bg-white w-full max-w-2xl rounded-3xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
-            <div className="relative h-48 bg-slate-900">
-              <img
-                src={selectedEvent.coverImageUrl || '/assets/images/event-legal-awareness.jpg'}
-                alt={selectedEvent.title}
-                className="w-full h-full object-cover"
-              />
-              <button
-                type="button"
-                onClick={() => setSelectedEvent(null)}
-                className="absolute top-3 right-3 p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors cursor-pointer"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <div className="p-6 overflow-y-auto space-y-4">
-              <div className="flex items-center gap-2">
-                <span className="px-2.5 py-0.5 rounded text-[10px] font-bold uppercase bg-amber-100 text-amber-800">
-                  {selectedEvent.category || 'Workshop'}
-                </span>
-                <span className="text-xs text-slate-400">
-                  Organized by {selectedEvent.organizer || 'HRSJM National Cell'}
-                </span>
-              </div>
-
-              <h2 className="text-xl font-black text-[#06294D]">{selectedEvent.title}</h2>
-              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">{selectedEvent.description}</p>
-
-              <div className="grid grid-cols-2 gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100 text-xs">
-                <div>
-                  <span className="text-slate-400 block text-[11px]">Location</span>
-                  <span className="font-bold text-slate-800">{selectedEvent.location}</span>
-                </div>
-                <div>
-                  <span className="text-slate-400 block text-[11px]">Seat Capacity</span>
-                  <span className="font-bold text-slate-800 flex items-center gap-1">
-                    <Users size={12} />
-                    <span>{selectedEvent.capacity || 200} participants</span>
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div className="p-4 border-t border-slate-100 bg-slate-50 flex items-center justify-between flex-wrap gap-2">
-              <span className="text-xs text-slate-500">Free open entry for citizens & students</span>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    const ev = selectedEvent;
-                    setSelectedEvent(null);
-                    setContributeEvent(ev);
-                  }}
-                  className="px-4 py-2.5 rounded-xl text-xs font-bold text-[#011F39] bg-[#FAD465] hover:bg-[#E9B82E] cursor-pointer flex items-center gap-1.5"
-                >
-                  <HeartHandshake size={14} />
-                  <span>Contribute to Event</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    handleRegister(selectedEvent.id);
-                    setSelectedEvent(null);
-                  }}
-                  disabled={registeredEvents.has(selectedEvent.id)}
-                  className="px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-[#06294D] hover:bg-[#083563] cursor-pointer"
-                >
-                  {registeredEvents.has(selectedEvent.id) ? 'Already Registered' : 'Confirm Free Seat'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Event Contribution & Donation Modal */}
-      {contributeEvent && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/60 backdrop-blur-xs animate-in fade-in" onClick={() => setContributeEvent(null)}>
+        <div
+          className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-0 sm:p-4 animate-in fade-in"
+          onClick={() => setSelectedEvent(null)}
+        >
           <div
-            className="bg-white w-full max-w-lg rounded-3xl flex flex-col shadow-2xl overflow-hidden relative"
+            className="relative w-full max-w-xl min-h-screen sm:min-h-0 sm:max-h-[92vh] sm:rounded-3xl overflow-y-auto shadow-2xl bg-[#FAF7F0]"
             onClick={(e) => e.stopPropagation()}
-            role="dialog"
-            aria-modal="true"
           >
-            {/* Modal Header */}
-            <div className="p-5 border-b border-slate-100 flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center">
-                  <HeartHandshake size={18} />
-                </div>
-                <div>
-                  <h3 className="text-base font-extrabold text-[#06294D]">Contribute to Event</h3>
-                  <span className="text-[11px] text-slate-500">50% Section 80G Tax Exemption Applicable</span>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setContributeEvent(null)}
-                className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full cursor-pointer transition"
-                aria-label="Close"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            {/* Modal Body */}
-            <div className="p-5 space-y-4">
-              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100">
-                <span className="text-[10.5px] font-bold text-[#0D9488] uppercase tracking-wider block">
-                  Event Campaign
-                </span>
-                <h4 className="text-sm font-bold text-slate-900 mt-0.5">
-                  {contributeEvent.title}
-                </h4>
-                <p className="text-xs text-slate-500 mt-1">
-                  {contributeEvent.location || 'Maharashtra, India'}
-                </p>
-              </div>
-
-              {/* Amount Selection */}
-              <div>
-                <label className="block text-xs font-bold text-[#06294D] uppercase tracking-wider mb-2">
-                  Select Contribution Amount
-                </label>
-                <div className="grid grid-cols-4 gap-2 mb-2.5">
-                  {[250, 500, 1000, 2500].map((amt) => {
-                    const isSelected = !customAmount && donationAmount === amt;
-                    return (
-                      <button
-                        key={amt}
-                        type="button"
-                        onClick={() => {
-                          setDonationAmount(amt);
-                          setCustomAmount('');
-                        }}
-                        className={`py-2.5 px-1.5 rounded-xl font-bold text-xs transition cursor-pointer border ${
-                          isSelected
-                            ? 'bg-[#FEF3C7] border-[#06294D] text-[#06294D] ring-1 ring-[#06294D]'
-                            : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300'
-                        }`}
-                      >
-                        ₹{amt.toLocaleString('en-IN')}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* Custom Amount */}
-                <input
-                  type="number"
-                  placeholder="Or enter custom amount in ₹"
-                  value={customAmount}
-                  onChange={(e) => {
-                    setCustomAmount(e.target.value);
-                    if (e.target.value) {
-                      setDonationAmount(Number(e.target.value));
-                    }
-                  }}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 focus:outline-none focus:border-[#06294D] focus:ring-1 focus:ring-[#06294D]"
-                />
-              </div>
-
-              {/* 80G Statutory Callout */}
-              <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center gap-2.5 text-[11px] text-emerald-800">
-                <ShieldCheck size={16} className="text-emerald-600 shrink-0" />
-                <span>
-                  Qualifies for 50% IT deduction under Section 80G(5)(vi). Statutory receipt issued instantly.
-                </span>
-              </div>
-            </div>
-
-            {/* Modal Footer */}
-            <div className="p-4 border-t border-slate-100 bg-slate-50 flex items-center justify-between">
-              <button
-                type="button"
-                onClick={() => setContributeEvent(null)}
-                className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-200/60 cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                disabled={isDonating || (customAmount !== '' && Number(customAmount) <= 0)}
-                onClick={() => {
-                  const finalAmount = customAmount ? Number(customAmount) : donationAmount;
-                  if (finalAmount <= 0) return;
-                  setIsDonating(true);
-                  navigate(`/donations?amount=${finalAmount}&event=${encodeURIComponent(contributeEvent.title)}`);
-                }}
-                className="px-5 py-2.5 rounded-xl text-xs font-black text-[#011F39] bg-[#FAD465] hover:bg-[#E9B82E] shadow-xs cursor-pointer flex items-center gap-1.5"
-              >
-                <span>Donate ₹{(customAmount ? Number(customAmount) || 0 : donationAmount).toLocaleString('en-IN')}</span>
-                <ArrowRight size={14} />
-              </button>
-            </div>
+            <EventDetailsView
+              event={selectedEvent}
+              onBack={() => setSelectedEvent(null)}
+              onRegister={(ev) => handleRegister(ev.id)}
+              isRegistered={registeredEvents.has(selectedEvent.id)}
+              onDonateClick={(ev) => {
+                setSelectedEvent(null);
+                setContributeEvent(ev);
+              }}
+            />
           </div>
         </div>
       )}
+
+      {/* Event Voluntary Donation Modal */}
+      <EventDonationModal
+        event={contributeEvent}
+        isOpen={Boolean(contributeEvent)}
+        onClose={() => setContributeEvent(null)}
+        defaultDonorName={user?.full_name || ''}
+        defaultDonorMobile={user?.mobile_number || ''}
+        defaultDonorEmail={user?.email || ''}
+      />
     </div>
   );
 };

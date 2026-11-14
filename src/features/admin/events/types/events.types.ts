@@ -31,6 +31,8 @@ export interface EventListItem {
   language?: string;
   tags?: string[];
   status: EventUiStatus;
+  isDonationEnabled?: boolean;
+  donationMessage?: string | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -65,6 +67,8 @@ export interface CreateEventFormState {
   shortInformation: string;
   tags: string[];
   status: 'DRAFT' | 'PUBLISH';
+  isDonationEnabled: boolean;
+  donationMessage: string;
 }
 
 export type CreateEventFieldErrors = Partial<Record<keyof CreateEventFormState, string>>;

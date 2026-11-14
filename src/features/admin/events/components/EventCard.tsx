@@ -1,5 +1,5 @@
 import type React from 'react';
-import { Clock, MapPin, Users, Globe, ExternalLink, Trash2, Calendar } from 'lucide-react';
+import { Clock, MapPin, Users, Globe, ExternalLink, Trash2, Calendar, HeartHandshake } from 'lucide-react';
 import type { EventListItem } from '../types/events.types';
 
 interface EventCardProps {
@@ -127,6 +127,13 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onPress, onDelete }
             <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-[#011F39]/90 text-white shadow-2xs">
               {event.category}
             </span>
+
+            {event.isDonationEnabled && (
+              <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-[#FFF9E6] text-[#B45309] border border-[#FDE68A] shadow-2xs">
+                <HeartHandshake size={11} className="text-[#D97706]" />
+                <span>Donation</span>
+              </span>
+            )}
           </div>
         </div>
       </div>
