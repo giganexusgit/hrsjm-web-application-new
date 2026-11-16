@@ -90,8 +90,13 @@ function roleMatchesTarget(target: ContentTargetRole, role: PortalRole): boolean
 // ==========================================
 
 export function isEventVisibleToRole(event: EventListItem, role: PortalRole): boolean {
-  // Admin sees all events (including drafts and cancelled)
+  // Admin sees all events (including drafts, cancelled, and disabled events)
   if (role === 'ADMIN') return true;
+
+  // Non-admin roles (General User, Member, Donation Seeker) NEVER see DISABLED events
+  if (event.isEnabled === false || (event as any).is_enabled === false) {
+    return false;
+  }
 
   // Non-admins NEVER see DRAFT or CANCELLED events
   if (event.status === 'DRAFT' || event.status === 'CANCELLED') {

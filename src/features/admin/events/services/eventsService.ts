@@ -28,6 +28,7 @@ export function mapBackendEventToUi(item: any): EventListItem {
     language: item.language,
     tags: item.tags || [],
     status: item.status || 'UPCOMING',
+    isEnabled: item.is_enabled ?? item.isEnabled ?? true,
     isDonationEnabled: item.is_donation_enabled ?? item.isDonationEnabled ?? false,
     donationMessage: item.donation_message ?? item.donationMessage ?? '',
     createdBy: item.created_by ?? item.createdBy ?? null,
@@ -103,6 +104,7 @@ export const eventsService = {
       language: form.language?.trim() || undefined,
       tags: form.tags,
       status: form.status === 'PUBLISH' ? 'UPCOMING' : 'DRAFT',
+      is_enabled: form.isEnabled !== undefined ? Boolean(form.isEnabled) : true,
       is_donation_enabled: Boolean(form.isDonationEnabled),
       donation_message: form.isDonationEnabled && form.donationMessage ? form.donationMessage.trim() : null,
     };
@@ -142,6 +144,12 @@ export const eventsService = {
     if ('language' in form && form.language !== undefined) payload.language = form.language.trim();
     if (form.tags !== undefined) payload.tags = form.tags;
     if ('status' in form && form.status !== undefined) payload.status = form.status;
+    if ('isEnabled' in form && form.isEnabled !== undefined) {
+      payload.is_enabled = Boolean(form.isEnabled);
+    }
+    if ('is_enabled' in form && (form as any).is_enabled !== undefined) {
+      payload.is_enabled = Boolean((form as any).is_enabled);
+    }
     if ('isDonationEnabled' in form) {
       payload.is_donation_enabled = Boolean(form.isDonationEnabled);
     }

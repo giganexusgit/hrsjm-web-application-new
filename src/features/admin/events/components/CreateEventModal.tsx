@@ -15,6 +15,9 @@ import {
   Plus,
   Check,
   CheckCircle,
+  CheckCircle2,
+  XCircle,
+  Power,
 } from 'lucide-react';
 import {
   EVENT_CATEGORIES,
@@ -68,6 +71,7 @@ const getInitialFormData = (initialEvent?: EventListItem | null): CreateEventFor
       shortInformation: initialEvent.shortInformation || '',
       tags: initialEvent.tags && initialEvent.tags.length > 0 ? initialEvent.tags : [],
       status: initialEvent.status === 'DRAFT' ? 'DRAFT' : 'PUBLISH',
+      isEnabled: initialEvent.isEnabled !== undefined ? Boolean(initialEvent.isEnabled) : true,
       isDonationEnabled: Boolean(initialEvent.isDonationEnabled),
       donationMessage: initialEvent.donationMessage || '',
     };
@@ -97,6 +101,7 @@ const getInitialFormData = (initialEvent?: EventListItem | null): CreateEventFor
     shortInformation: '',
     tags: ['Community Engagement', 'Legal Awareness'],
     status: 'PUBLISH',
+    isEnabled: true,
     isDonationEnabled: false,
     donationMessage: '',
   };
@@ -463,16 +468,101 @@ const CreateEventModalContent: React.FC<{
                 </div>
               </div>
 
-              <div style={styles.formGroup}>
-                <label style={styles.label}>Publication Status</label>
-                <select
-                  value={formData.status}
-                  onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
-                  style={styles.select}
-                >
-                  <option value="PUBLISH">Publish Immediately (Upcoming)</option>
-                  <option value="DRAFT">Save as Draft (Admin Only)</option>
-                </select>
+              <div style={styles.row}>
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Publication Status</label>
+                  <select
+                    value={formData.status}
+                    onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
+                    style={styles.select}
+                  >
+                    <option value="PUBLISH">Publish Immediately (Upcoming)</option>
+                    <option value="DRAFT">Save as Draft (Admin Only)</option>
+                  </select>
+                </div>
+
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Event Active Status (Enable / Disable)</label>
+                  <div style={styles.enableDisableBtnGroup}>
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, isEnabled: true })}
+                      style={{
+                        ...styles.statusToggleBtn,
+                        backgroundColor: formData.isEnabled ? '#ECFDF5' : '#FFFFFF',
+                        borderColor: formData.isEnabled ? '#10B981' : '#CBD5E1',
+                        color: formData.isEnabled ? '#047857' : '#64748B',
+                        fontWeight: formData.isEnabled ? 700 : 500,
+                      }}
+                    >
+                      <CheckCircle2 size={13} color={formData.isEnabled ? '#10B981' : '#94A3B8'} />
+                      <span>Enable Event</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, isEnabled: false })}
+                      style={{
+                        ...styles.statusToggleBtn,
+                        backgroundColor: !formData.isEnabled ? '#FEF2F2' : '#FFFFFF',
+                        borderColor: !formData.isEnabled ? '#EF4444' : '#CBD5E1',
+                        color: !formData.isEnabled ? '#B91C1C' : '#64748B',
+                        fontWeight: !formData.isEnabled ? 700 : 500,
+                      }}
+                    >
+                      <XCircle size={13} color={!formData.isEnabled ? '#EF4444' : '#94A3B8'} />
+                      <span>Disable Event</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Status Explanation Banner */}
+              <div
+                style={{
+                  ...styles.statusBanner,
+                  backgroundColor: formData.isEnabled
+                    ? formData.status === 'PUBLISH'
+                      ? '#F0FDF4'
+                      : '#FFFBEB'
+                    : '#FEF2F2',
+                  borderColor: formData.isEnabled
+                    ? formData.status === 'PUBLISH'
+                      ? '#BBF7D0'
+                      : '#FDE68A'
+                    : '#FECACA',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Power
+                    size={13}
+                    color={
+                      formData.isEnabled
+                        ? formData.status === 'PUBLISH'
+                          ? '#16A34A'
+                          : '#D97706'
+                        : '#DC2626'
+                    }
+                  />
+                  <span
+                    style={{
+                      fontSize: '11px',
+                      fontWeight: 600,
+                      color: formData.isEnabled
+                        ? formData.status === 'PUBLISH'
+                          ? '#166534'
+                          : '#92400E'
+                        : '#991B1B',
+                    }}
+                  >
+                    {formData.isEnabled
+                      ? formData.status === 'PUBLISH'
+                        ? 'Active & Published: Visible across all authorized user sections.'
+                        : 'Enabled Draft: Saved as Draft in Admin Panel (Not visible to users until published).'
+                      : formData.status === 'PUBLISH'
+                      ? 'Disabled (Deactivated): Published but strictly hidden from General Users, Members, and Seekers.'
+                      : 'Disabled Draft: Stored in Admin Panel only.'}
+                  </span>
+                </div>
               </div>
             </div>
 
@@ -1193,6 +1283,29 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  enableDisableBtnGroup: {
+    display: 'flex',
+    gap: '8px',
+  },
+  statusToggleBtn: {
+    flex: 1,
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '6px',
+    padding: '8px 10px',
+    borderRadius: '8px',
+    border: '1px solid #CBD5E1',
+    fontSize: '12px',
+    cursor: 'pointer',
+    transition: 'all 0.15s ease',
+  },
+  statusBanner: {
+    padding: '8px 12px',
+    borderRadius: '8px',
+    border: '1px solid',
+    marginTop: '2px',
   },
   errorText: {
     fontSize: '11px',

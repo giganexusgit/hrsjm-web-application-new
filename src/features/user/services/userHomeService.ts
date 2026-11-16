@@ -32,7 +32,10 @@ export const userHomeService = {
         response?.data ||
         (Array.isArray(response) ? response : []);
       if (Array.isArray(eventsList) && eventsList.length > 0) {
-        return eventsList.map((item: any, idx: number) => {
+        const activeEvents = eventsList.filter(
+          (item: any) => item.is_enabled !== false && item.isEnabled !== false,
+        );
+        return activeEvents.map((item: any, idx: number) => {
           let day = '25';
           let month = 'OCT';
           const dateField = item.start_at || item.startAt || item.date || item.start_date;

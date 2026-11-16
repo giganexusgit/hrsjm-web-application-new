@@ -103,12 +103,20 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onPress, onDelete }
         {/* Top Badges Overlay */}
         <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between gap-1.5 pointer-events-none">
           {/* Status Badge */}
-          <span
-            className={`inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full border shadow-2xs backdrop-blur-xs ${statusCfg.bg} ${statusCfg.text} ${statusCfg.border}`}
-          >
-            <span className={`w-1.5 h-1.5 rounded-full ${statusCfg.dot}`} />
-            {statusCfg.label}
-          </span>
+          <div className="flex items-center gap-1.5">
+            <span
+              className={`inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full border shadow-2xs backdrop-blur-xs ${statusCfg.bg} ${statusCfg.text} ${statusCfg.border}`}
+            >
+              <span className={`w-1.5 h-1.5 rounded-full ${statusCfg.dot}`} />
+              {statusCfg.label}
+            </span>
+
+            {event.isEnabled === false && (
+              <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 border border-rose-300 shadow-2xs">
+                <span>Disabled</span>
+              </span>
+            )}
+          </div>
 
           {/* Right Tags */}
           <div className="flex items-center gap-1.5">

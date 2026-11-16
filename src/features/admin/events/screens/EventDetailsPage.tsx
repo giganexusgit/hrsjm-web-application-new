@@ -18,6 +18,7 @@ import {
   Check,
   HeartHandshake,
   Eye,
+  Power,
 } from 'lucide-react';
 import { eventsStore } from '../store/eventsStore';
 import type { EventUiStatus, CreateEventFormState } from '../types/events.types';
@@ -112,6 +113,7 @@ export const EventDetailsPage: React.FC = () => {
       language: form.language,
       tags: form.tags,
       status: form.status === 'DRAFT' ? 'DRAFT' : 'UPCOMING',
+      isEnabled: form.isEnabled !== undefined ? Boolean(form.isEnabled) : true,
       isDonationEnabled: Boolean(form.isDonationEnabled),
       donationMessage: form.isDonationEnabled && form.donationMessage ? form.donationMessage.trim() : null,
     });
@@ -217,6 +219,24 @@ export const EventDetailsPage: React.FC = () => {
               <option value="DRAFT">Status: Draft (Admin Only)</option>
             </select>
           </div>
+
+          <button
+            type="button"
+            disabled={statusUpdating}
+            onClick={async () => {
+              const nextVal = event.isEnabled === false ? true : false;
+              await eventsStore.updateEvent(event.id, { isEnabled: nextVal } as any);
+            }}
+            className={`inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-lg border transition shadow-sm cursor-pointer ${
+              event.isEnabled !== false
+                ? 'bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100'
+                : 'bg-rose-50 text-rose-800 border-rose-300 hover:bg-rose-100'
+            }`}
+            title={event.isEnabled !== false ? 'Click to Disable event' : 'Click to Enable event'}
+          >
+            <Power size={13} className={event.isEnabled !== false ? 'text-emerald-600' : 'text-rose-600'} />
+            <span>{event.isEnabled !== false ? 'Event: Enabled' : 'Event: Disabled'}</span>
+          </button>
 
           <button
             type="button"
