@@ -14,11 +14,13 @@ import { isAdminCreatedEvent } from '@/features/admin/events/services/eventsServ
 import type { EventListItem } from '@/features/admin/events/types/events.types';
 import { filterEventsForRole } from '@/features/content';
 import { useCurrentMember } from '../store/memberStore';
+import { useAuth } from '@/features/auth/store/authStore';
 import { EventDonationModal } from '@/features/admin/events/components/EventDonationModal';
 import { EventDetailsView } from '@/features/admin/events/components/EventDetailsView';
 
 export const MemberEventsPage: React.FC = () => {
   const { member } = useCurrentMember();
+  const { user } = useAuth();
   const snapshot = useSyncExternalStore<{ events: EventListItem[]; version: number }>(eventsStore.subscribe, eventsStore.getSnapshot);
   const events = snapshot.events;
 
@@ -390,9 +392,9 @@ export const MemberEventsPage: React.FC = () => {
         event={contributeEvent}
         isOpen={Boolean(contributeEvent)}
         onClose={() => setContributeEvent(null)}
-        defaultDonorName={member?.fullName || ''}
-        defaultDonorMobile={member?.phone || ''}
-        defaultDonorEmail={member?.email || ''}
+        defaultDonorName={member?.fullName || user?.full_name || ''}
+        defaultDonorMobile={member?.phone || user?.mobile_number || ''}
+        defaultDonorEmail={member?.email || user?.email || ''}
       />
     </div>
   );

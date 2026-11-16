@@ -12,6 +12,7 @@ import { eventsStore } from '@/features/admin/events/store/eventsStore';
 import { isAdminCreatedEvent } from '@/features/admin/events/services/eventsService';
 import type { EventListItem } from '@/features/admin/events/types/events.types';
 import { filterEventsForRole } from '@/features/content';
+import { useAuth } from '@/features/auth/store/authStore';
 import { EventDonationModal } from '@/features/admin/events/components/EventDonationModal';
 import { EventDetailsView } from '@/features/admin/events/components/EventDetailsView';
 
@@ -88,6 +89,7 @@ const matchesEventFilter = (selected: string, event: EventListItem): boolean => 
 };
 
 export const SeekerEventsPage: React.FC = () => {
+  const { user } = useAuth();
   const snapshot = useSyncExternalStore(eventsStore.subscribe, eventsStore.getSnapshot);
 
   const events = useMemo(() => {
@@ -345,9 +347,9 @@ export const SeekerEventsPage: React.FC = () => {
         event={contributeEvent}
         isOpen={Boolean(contributeEvent)}
         onClose={() => setContributeEvent(null)}
-        defaultDonorName=""
-        defaultDonorMobile=""
-        defaultDonorEmail=""
+        defaultDonorName={user?.full_name || ''}
+        defaultDonorMobile={user?.mobile_number || ''}
+        defaultDonorEmail={user?.email || ''}
       />
     </div>
   );

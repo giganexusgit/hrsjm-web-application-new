@@ -3,12 +3,13 @@ import {
   HeartHandshake,
   X,
   ShieldCheck,
-  ArrowRight,
   CheckCircle,
   Calendar,
   MapPin,
   Printer,
   Loader2,
+  Lock,
+  Download,
 } from 'lucide-react';
 import type { EventListItem } from '../types/events.types';
 import { cashfreeService } from '@/features/payments';
@@ -24,15 +25,17 @@ interface EventDonationModalProps {
   defaultDonorEmail?: string;
 }
 
-export const EventDonationModal: React.FC<EventDonationModalProps> = ({
+const PRESET_AMOUNTS = [250, 500, 1000, 2500, 5000];
+
+const EventDonationModalInner: React.FC<Omit<EventDonationModalProps, 'isOpen'> & { event: EventListItem }> = ({
   event,
-  isOpen,
   onClose,
   onSuccess,
   defaultDonorName = '',
   defaultDonorMobile = '',
   defaultDonorEmail = '',
 }) => {
+  const [selectedPreset, setSelectedPreset] = useState<number | 'custom'>(500);
   const [customAmount, setCustomAmount] = useState<string>('');
   const [donorName, setDonorName] = useState<string>(defaultDonorName);
   const [donorMobile, setDonorMobile] = useState<string>(defaultDonorMobile);
@@ -41,8 +44,6 @@ export const EventDonationModal: React.FC<EventDonationModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [receiptData, setReceiptData] = useState<any | null>(null);
-
-  if (!isOpen || !event) return null;
 
   // If donations are disabled for this event, do not render donation initiation
   if (!event.isDonationEnabled) {
@@ -68,15 +69,19 @@ export const EventDonationModal: React.FC<EventDonationModalProps> = ({
     );
   }
 
-  const parsedAmount = parseFloat(customAmount);
-  const isValidAmount = Number.isFinite(parsedAmount) && parsedAmount >= 10;
+  const effectiveAmount =
+    selectedPreset === 'custom'
+      ? parseFloat(customAmount) || 0
+      : selectedPreset;
+
+  const isValidAmount = Number.isFinite(effectiveAmount) && effectiveAmount >= 10;
 
   const handleProceedDonation = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
 
     if (!isValidAmount) {
-      setErrorMsg('Please enter a valid donation amount (minimum ₹10).');
+      setErrorMsg('Please select or enter a valid donation amount (minimum ₹10).');
       return;
     }
 
@@ -84,7 +89,7 @@ export const EventDonationModal: React.FC<EventDonationModalProps> = ({
       setIsSubmitting(true);
 
       const session = await cashfreeService.createDonationOrder({
-        amount: parsedAmount,
+        amount: effectiveAmount,
         cause: event.title,
         donorName: donorName.trim() || 'Voluntary Contributor',
         donorMobile: donorMobile.trim() || undefined,
@@ -99,7 +104,7 @@ export const EventDonationModal: React.FC<EventDonationModalProps> = ({
         (verifyRes) => {
           const completedDonation: any = {
             id: session.order_id,
-            amount: parsedAmount,
+            amount: effectiveAmount,
             cause: `Event Donation: ${event.title}`,
             donor_name: donorName.trim() || 'Voluntary Contributor',
             donor_mobile: donorMobile.trim(),
@@ -125,12 +130,15 @@ export const EventDonationModal: React.FC<EventDonationModalProps> = ({
 
           setReceiptData({
             orderId: session.order_id,
-            amount: parsedAmount,
+            amount: effectiveAmount,
             receiptNumber: completedDonation.receipt_number,
             transactionId: completedDonation.transaction_id,
             eventId: event.id,
             eventTitle: event.title,
             donorName: completedDonation.donor_name,
+            donorMobile: completedDonation.donor_mobile,
+            donorEmail: completedDonation.donor_email,
+            panNumber: panNumber.trim().toUpperCase() || undefined,
             paidAt: new Date().toLocaleString('en-IN'),
           });
 
@@ -151,6 +159,29 @@ export const EventDonationModal: React.FC<EventDonationModalProps> = ({
     window.print();
   };
 
+  const handleDownloadPdf = () => {
+    if (!receiptData) return;
+    try {
+      cashfreeService.downloadDonationReceiptPdf({
+        receiptNumber: receiptData.receiptNumber,
+        orderId: receiptData.orderId,
+        transactionId: receiptData.transactionId,
+        amount: receiptData.amount,
+        purpose: 'donation',
+        purposeTitle: `Event: ${receiptData.eventTitle}`,
+        donorName: receiptData.donorName,
+        donorMobile: receiptData.donorMobile,
+        donorEmail: receiptData.donorEmail,
+        panNumber: receiptData.panNumber,
+        paidAt: receiptData.paidAt,
+        status: 'PAID',
+        paymentMethod: 'Cashfree Payment Gateway (Online)',
+      });
+    } catch {
+      window.print();
+    }
+  };
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/65 backdrop-blur-xs animate-in fade-in"
@@ -169,11 +200,15 @@ export const EventDonationModal: React.FC<EventDonationModalProps> = ({
               <div className="w-14 h-14 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto shadow-xs">
                 <CheckCircle size={32} />
               </div>
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-extrabold uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200">
+                <Lock size={12} className="text-emerald-600" />
+                <span>Cashfree Payment Verified &amp; Confirmed</span>
+              </div>
               <h3 className="text-xl font-bold font-serif text-[#011F39]">
                 Donation Received with Gratitude!
               </h3>
               <p className="text-xs text-slate-500">
-                Your voluntary donation for <span className="font-semibold text-slate-800">"{receiptData.eventTitle}"</span> has been verified.
+                Your voluntary donation for <span className="font-semibold text-slate-800">"{receiptData.eventTitle}"</span> has been verified and registered.
               </p>
             </div>
 
@@ -194,6 +229,11 @@ export const EventDonationModal: React.FC<EventDonationModalProps> = ({
               </div>
 
               <div className="flex justify-between">
+                <span className="text-slate-500">Cashfree Order ID:</span>
+                <span className="font-mono font-medium text-slate-700">{receiptData.orderId}</span>
+              </div>
+
+              <div className="flex justify-between">
                 <span className="text-slate-500">Transaction ID:</span>
                 <span className="font-mono font-medium text-slate-700">{receiptData.transactionId}</span>
               </div>
@@ -201,11 +241,6 @@ export const EventDonationModal: React.FC<EventDonationModalProps> = ({
               <div className="flex justify-between">
                 <span className="text-slate-500">Event Name:</span>
                 <span className="font-semibold text-slate-800 text-right max-w-xs">{receiptData.eventTitle}</span>
-              </div>
-
-              <div className="flex justify-between">
-                <span className="text-slate-500">Event ID:</span>
-                <span className="font-mono text-[11px] text-slate-600">{receiptData.eventId}</span>
               </div>
 
               <div className="flex justify-between">
@@ -228,23 +263,32 @@ export const EventDonationModal: React.FC<EventDonationModalProps> = ({
             </div>
 
             {/* Actions */}
-            <div className="flex items-center gap-3 pt-2">
+            <div className="grid grid-cols-2 gap-3 pt-2">
+              <button
+                type="button"
+                onClick={handleDownloadPdf}
+                className="py-2.5 px-4 rounded-xl text-xs font-bold border border-[#011F39] text-[#011F39] hover:bg-slate-50 transition cursor-pointer flex items-center justify-center gap-2 shadow-xs"
+              >
+                <Download size={14} />
+                <span>Download PDF Slip</span>
+              </button>
               <button
                 type="button"
                 onClick={handlePrintReceipt}
-                className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold border border-slate-300 text-slate-700 hover:bg-slate-50 transition cursor-pointer flex items-center justify-center gap-2"
+                className="py-2.5 px-4 rounded-xl text-xs font-bold border border-slate-300 text-slate-700 hover:bg-slate-50 transition cursor-pointer flex items-center justify-center gap-2"
               >
-                <Printer size={15} />
+                <Printer size={14} />
                 <span>Print Receipt</span>
               </button>
-              <button
-                type="button"
-                onClick={onClose}
-                className="flex-1 py-2.5 px-4 rounded-xl text-xs font-black bg-[#FAD465] text-[#011F39] hover:bg-[#E9B82E] transition cursor-pointer shadow-sm text-center"
-              >
-                Done
-              </button>
             </div>
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="w-full py-2.5 px-4 rounded-xl text-xs font-black bg-[#FAD465] text-[#011F39] hover:bg-[#E9B82E] transition cursor-pointer shadow-sm text-center"
+            >
+              Done / Close
+            </button>
           </div>
         ) : (
           /* Donation Form View */
@@ -252,16 +296,19 @@ export const EventDonationModal: React.FC<EventDonationModalProps> = ({
             {/* Header */}
             <div className="p-5 border-b border-slate-100 flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <div className="w-10 h-10 rounded-xl bg-amber-100 text-[#011F39] flex items-center justify-center">
+                <div className="w-10 h-10 rounded-xl bg-amber-100 text-[#011F39] flex items-center justify-center shadow-xs">
                   <HeartHandshake size={20} className="text-[#011F39]" />
                 </div>
                 <div>
                   <h3 className="text-base font-extrabold font-serif text-[#011F39]">
                     Support This Event
                   </h3>
-                  <span className="text-[11px] text-slate-500">
-                    50% Section 80G Tax Exemption Applicable
-                  </span>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <span className="inline-flex items-center gap-1 text-[10.5px] font-semibold text-[#06294D] bg-sky-50 border border-sky-200 px-2 py-0.5 rounded-md">
+                      <Lock size={10} className="text-[#06294D]" />
+                      Secured by Cashfree Payments
+                    </span>
+                  </div>
                 </div>
               </div>
               <button
@@ -310,30 +357,71 @@ export const EventDonationModal: React.FC<EventDonationModalProps> = ({
                 </div>
               )}
 
-              {/* Voluntary Donation Amount (Strictly User-Defined, NO Preset Buttons) */}
+              {/* Donation Amount Selection */}
               <div>
-                <label className="block text-xs font-bold text-[#011F39] uppercase tracking-wider mb-1.5">
-                  Enter Your Voluntary Donation Amount (₹) *
+                <label className="block text-xs font-bold text-[#011F39] uppercase tracking-wider mb-2">
+                  Select Donation Amount (₹) *
                 </label>
-                <div className="relative">
-                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 font-bold text-slate-500 text-base pointer-events-none">
-                    ₹
-                  </span>
-                  <input
-                    type="number"
-                    min="10"
-                    step="1"
-                    placeholder="Enter amount (e.g. 500)"
-                    value={customAmount}
-                    onChange={(e) => {
-                      setCustomAmount(e.target.value);
+
+                {/* Preset Chips */}
+                <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mb-2.5">
+                  {PRESET_AMOUNTS.map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => {
+                        setSelectedPreset(preset);
+                        setCustomAmount('');
+                        if (errorMsg) setErrorMsg(null);
+                      }}
+                      className={`py-2 px-1 text-center rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                        selectedPreset === preset
+                          ? 'bg-[#011F39] text-[#FAD465] shadow-xs ring-2 ring-[#011F39]'
+                          : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200'
+                      }`}
+                    >
+                      ₹{preset.toLocaleString('en-IN')}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedPreset('custom');
                       if (errorMsg) setErrorMsg(null);
                     }}
-                    autoFocus
-                    className="w-full pl-8 pr-4 py-2.5 rounded-xl border border-slate-300 text-sm font-bold text-slate-900 focus:outline-none focus:border-[#011F39] focus:ring-1 focus:ring-[#011F39]"
-                  />
+                    className={`py-2 px-1 text-center rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                      selectedPreset === 'custom'
+                        ? 'bg-[#011F39] text-[#FAD465] shadow-xs ring-2 ring-[#011F39]'
+                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200'
+                    }`}
+                  >
+                    Custom
+                  </button>
                 </div>
-                <p className="text-[11px] text-slate-500 mt-1 leading-snug">
+
+                {/* Custom Amount Field (Visible when Custom is chosen) */}
+                {selectedPreset === 'custom' && (
+                  <div className="relative mt-2">
+                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 font-bold text-slate-500 text-base pointer-events-none">
+                      ₹
+                    </span>
+                    <input
+                      type="number"
+                      min="10"
+                      step="1"
+                      placeholder="Enter custom amount (e.g. 500)"
+                      value={customAmount}
+                      onChange={(e) => {
+                        setCustomAmount(e.target.value);
+                        if (errorMsg) setErrorMsg(null);
+                      }}
+                      autoFocus
+                      className="w-full pl-8 pr-4 py-2.5 rounded-xl border border-slate-300 text-sm font-bold text-slate-900 focus:outline-none focus:border-[#011F39] focus:ring-1 focus:ring-[#011F39]"
+                    />
+                  </div>
+                )}
+
+                <p className="text-[11px] text-slate-500 mt-1.5 leading-snug">
                   Every contribution is voluntary. Donors choose whatever amount they wish to give.
                 </p>
               </div>
@@ -401,12 +489,15 @@ export const EventDonationModal: React.FC<EventDonationModalProps> = ({
                 </div>
               )}
 
-              {/* 80G Statutory Callout */}
-              <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center gap-2.5 text-[11px] text-emerald-800">
-                <ShieldCheck size={16} className="text-emerald-600 shrink-0" />
-                <span>
-                  Qualifies for 50% IT deduction under Section 80G(5)(vi). Statutory receipt issued instantly upon verification.
-                </span>
+              {/* 80G Statutory & Cashfree Payment Modes Callout */}
+              <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 space-y-1 text-[11px] text-emerald-800">
+                <div className="flex items-center gap-2 font-semibold">
+                  <ShieldCheck size={16} className="text-emerald-600 shrink-0" />
+                  <span>Section 80G(5)(vi) Income Tax deduction applicable.</span>
+                </div>
+                <p className="text-[10.5px] text-emerald-700 pl-6">
+                  Cashfree supports UPI (Google Pay, PhonePe, Paytm), NetBanking, Credit &amp; Debit cards.
+                </p>
               </div>
             </div>
 
@@ -423,23 +514,23 @@ export const EventDonationModal: React.FC<EventDonationModalProps> = ({
               <button
                 type="submit"
                 disabled={isSubmitting || !isValidAmount}
-                className={`px-5 py-2.5 rounded-xl text-xs font-black text-[#011F39] bg-[#FAD465] hover:bg-[#E9B82E] shadow-sm flex items-center gap-1.5 transition ${
+                className={`px-5 py-2.5 rounded-xl text-xs font-black text-[#011F39] bg-[#FAD465] hover:bg-[#E9B82E] shadow-sm flex items-center gap-2 transition ${
                   isSubmitting || !isValidAmount
                     ? 'opacity-60 cursor-not-allowed'
-                    : 'cursor-pointer hover:shadow-md'
+                    : 'cursor-pointer hover:shadow-md active:scale-[0.99]'
                 }`}
               >
                 {isSubmitting ? (
                   <>
                     <Loader2 size={14} className="animate-spin text-[#011F39]" />
-                    <span>Initiating Payment...</span>
+                    <span>Connecting Cashfree Gateway...</span>
                   </>
                 ) : (
                   <>
+                    <Lock size={13} className="text-[#011F39]" />
                     <span>
-                      Donate {isValidAmount ? `₹${parsedAmount.toLocaleString('en-IN')}` : 'Now'}
+                      Pay {isValidAmount ? `₹${effectiveAmount.toLocaleString('en-IN')}` : ''} with Cashfree
                     </span>
-                    <ArrowRight size={14} />
                   </>
                 )}
               </button>
@@ -449,4 +540,9 @@ export const EventDonationModal: React.FC<EventDonationModalProps> = ({
       </div>
     </div>
   );
+};
+
+export const EventDonationModal: React.FC<EventDonationModalProps> = (props) => {
+  if (!props.isOpen || !props.event) return null;
+  return <EventDonationModalInner key={`${props.event.id}-${props.defaultDonorMobile || ''}`} {...props} event={props.event} />;
 };
