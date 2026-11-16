@@ -195,10 +195,10 @@ export const SeekerApkIdCard: React.FC<SeekerApkIdCardProps> = ({
                 <svg
                   width="100%"
                   height="100%"
-                  viewBox="0 0 25 25"
+                  viewBox={`0 0 ${qrMatrix.length} ${qrMatrix.length}`}
                   className="block"
                 >
-                  <rect width="25" height="25" fill="#FFFFFF" />
+                  <rect width={qrMatrix.length} height={qrMatrix.length} fill="#FFFFFF" />
                   {qrMatrix.map((row: boolean[], r: number) =>
                     row.map((filled: boolean, c: number) =>
                       filled ? (
@@ -208,7 +208,7 @@ export const SeekerApkIdCard: React.FC<SeekerApkIdCardProps> = ({
                           y={r}
                           width="1"
                           height="1"
-                          fill="#06294D"
+                          fill="#000000"
                         />
                       ) : null
                     )

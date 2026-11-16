@@ -1,5 +1,8 @@
 import { jsPDF } from 'jspdf';
 import type { MemberProfile, MemberPassbookEntry } from '../types/member.types';
+import { generateQrMatrix } from '@/features/admin/profile/utils/qrGenerator';
+import { generateCode128BModules } from '@/components/common/BarcodeSvg';
+import { getPublicVerificationUrl } from '@/utils/verificationUrl';
 
 /**
  * Generates an official HRSJM Certificate of Membership (A4 Landscape PDF).
@@ -272,25 +275,66 @@ export const generateMemberCardPdf = (member: MemberProfile): jsPDF => {
   doc.setDrawColor(200, 210, 220);
   doc.rect(qrX, qrY, qrBoxSize, qrBoxSize, 'FD');
 
-  doc.setFontSize(5);
-  doc.setTextColor(100, 116, 139);
-  doc.text('SCAN QR TO', qrX + 11, qrY + 10, { align: 'center' });
-  doc.text('VERIFY STATUS', qrX + 11, qrY + 14, { align: 'center' });
+  // Vector scannable QR Code
+  try {
+    const vUrl = getPublicVerificationUrl(member.membershipNumber);
+    const qrMatrix = generateQrMatrix(vUrl, 25);
+    if (qrMatrix && qrMatrix.length > 0) {
+      const cellSize = (qrBoxSize - 2) / qrMatrix.length;
+      doc.setFillColor(0, 0, 0);
+      for (let r = 0; r < qrMatrix.length; r++) {
+        for (let c = 0; c < qrMatrix.length; c++) {
+          if (qrMatrix[r][c]) {
+            doc.rect(qrX + 1 + c * cellSize, qrY + 1 + r * cellSize, cellSize, cellSize, 'F');
+          }
+        }
+      }
+    }
+  } catch {
+    doc.setFontSize(5);
+    doc.setTextColor(100, 116, 139);
+    doc.text('SCAN QR TO', qrX + 11, qrY + 10, { align: 'center' });
+    doc.text('VERIFY STATUS', qrX + 11, qrY + 14, { align: 'center' });
+  }
 
   // Terms and Contact
   const backTextX = 32;
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(5);
   doc.setTextColor(51, 65, 85);
-  doc.text(`Chapter: ${member.chapter}`, backTextX, 15);
-  doc.text(`Contact: ${member.phone}`, backTextX, 19);
-  doc.text(`Emergency Helpline: +91 11 2345 6789`, backTextX, 23);
-  doc.text('If found, return to: Central Secretariat,', backTextX, 27);
-  doc.text('Human Rights & Social Justice Mission, New Delhi.', backTextX, 31);
+  doc.text(`Chapter: ${member.chapter}`, backTextX, 14);
+  doc.text(`Contact: ${member.phone}`, backTextX, 17.5);
+  doc.text(`Emergency Helpline: +91 11 2345 6789`, backTextX, 21);
+  doc.text('If found, return to: Central Secretariat,', backTextX, 24.5);
+  doc.text('Human Rights & Social Justice Mission, New Delhi.', backTextX, 28);
+
+  // Scannable Code 128 Barcode on PDF back face
+  try {
+    const barcodeModules = generateCode128BModules(member.membershipNumber || 'HRSJM');
+    const barBoxW = 44;
+    const barBoxH = 6;
+    const barBoxX = backTextX;
+    const barBoxY = 32;
+    const barW = barBoxW / barcodeModules.length;
+    doc.setFillColor(0, 0, 0);
+    barcodeModules.forEach((isBar, idx) => {
+      if (isBar) {
+        doc.rect(barBoxX + idx * barW, barBoxY, barW, barBoxH, 'F');
+      }
+    });
+    doc.setFont('courier', 'bold');
+    doc.setFontSize(4.5);
+    doc.setTextColor(6, 41, 77);
+    doc.text(member.membershipNumber, barBoxX + barBoxW / 2, barBoxY + barBoxH + 2, { align: 'center' });
+  } catch {}
 
   // Signatures on back
-  doc.line(backTextX, 42, backTextX + 22, 42);
-  doc.text('Authorized Signatory', backTextX + 11, 45, { align: 'center' });
+  doc.setDrawColor(200, 210, 220);
+  doc.line(backTextX, 44, backTextX + 22, 44);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(4.5);
+  doc.setTextColor(51, 65, 85);
+  doc.text('Authorized Signatory', backTextX + 11, 46.5, { align: 'center' });
 
   return doc;
 };
@@ -314,6 +358,21 @@ export const printMemberCardHtml = (member: MemberProfile): void => {
     return;
   }
 
+  const effectiveId = member.membershipNumber || 'HRSJM-47611';
+  const vUrl = getPublicVerificationUrl(effectiveId);
+  const qrMatrix = generateQrMatrix(vUrl, 25);
+  const qrSvgHtml = `<svg viewBox="0 0 ${qrMatrix.length} ${qrMatrix.length}" width="64" height="64" style="display:block;">
+    <rect width="${qrMatrix.length}" height="${qrMatrix.length}" fill="#FFFFFF" />
+    ${qrMatrix.map((row, r) => row.map((filled, c) => (filled ? `<rect x="${c}" y="${r}" width="1" height="1" fill="#000000" />` : '')).join('')).join('')}
+  </svg>`;
+
+  const barcodeModules = generateCode128BModules(effectiveId);
+  const barSvgHtml = `<svg viewBox="0 0 ${barcodeModules.length * 1.5} 36" width="180" height="36" style="display:block;margin:0 auto;">
+    <rect width="${barcodeModules.length * 1.5}" height="36" fill="#FFFFFF" />
+    ${barcodeModules.map((isBar, idx) => (isBar ? `<rect x="${idx * 1.5}" y="0" width="1.5" height="24" fill="#000000" />` : '')).join('')}
+    <text x="${(barcodeModules.length * 1.5) / 2}" y="33" font-size="9" font-family="monospace" font-weight="bold" text-anchor="middle" fill="#000000">${effectiveId}</text>
+  </svg>`;
+
   const html = `
     <!DOCTYPE html>
     <html>
@@ -325,17 +384,18 @@ export const printMemberCardHtml = (member: MemberProfile): void => {
           .title { font-size: 18px; font-weight: 800; color: #06294D; margin-bottom: 6px; text-transform: uppercase; }
           .sub { font-size: 13px; color: #64748B; margin-bottom: 24px; }
           .cards-row { display: flex; gap: 24px; justify-content: center; flex-wrap: wrap; margin-bottom: 30px; }
-          .card { width: 320px; height: 480px; border-radius: 14px; border: 1px solid #CBD5E1; overflow: hidden; background: #06294D; color: #FFFFFF; display: flex; flex-direction: column; text-align: left; }
+          .card { width: 320px; height: 490px; border-radius: 14px; border: 1px solid #CBD5E1; overflow: hidden; background: #06294D; color: #FFFFFF; display: flex; flex-direction: column; text-align: left; }
           .card-back { background: #FAF7F0; color: #06294D; border: 2px solid #D4AF37; }
           .c-header { background: #011F39; padding: 14px; text-align: center; border-bottom: 2px solid #FAD465; }
           .c-title { font-size: 12px; font-weight: 800; color: #FFFFFF; letter-spacing: 0.5px; }
           .c-sub { font-size: 10px; color: #FAD465; margin-top: 3px; }
-          .c-body { padding: 18px; display: flex; flex-direction: column; align-items: center; flex: 1; }
-          .photo { width: 100px; height: 100px; border-radius: 50%; border: 3px solid #FAD465; object-fit: cover; margin-bottom: 12px; }
-          .name { font-size: 16px; font-weight: 800; color: #FFFFFF; margin-bottom: 4px; }
-          .id-badge { background: #FAD465; color: #06294D; font-size: 11px; font-weight: 700; padding: 2px 8px; borderRadius: 4px; margin-bottom: 16px; }
-          .fields { width: 100%; font-size: 12px; color: #DCE4EC; line-height: 1.7; }
+          .c-body { padding: 16px; display: flex; flex-direction: column; align-items: center; flex: 1; }
+          .photo { width: 92px; height: 92px; border-radius: 50%; border: 3px solid #FAD465; object-fit: cover; margin-bottom: 10px; }
+          .name { font-size: 16px; font-weight: 800; color: #FFFFFF; margin-bottom: 3px; }
+          .id-badge { background: #FAD465; color: #06294D; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 4px; margin-bottom: 12px; }
+          .fields { width: 100%; font-size: 11.5px; color: #DCE4EC; line-height: 1.6; margin-bottom: 10px; }
           .fields strong { color: #FFFFFF; }
+          .qr-box { background: #FFFFFF; padding: 4px; border-radius: 8px; margin-top: auto; }
           .c-footer { background: #011F39; padding: 8px; font-size: 10px; color: #FAD465; text-align: center; font-weight: 700; }
         </style>
       </head>
@@ -359,6 +419,9 @@ export const printMemberCardHtml = (member: MemberProfile): void => {
                 <div>Chapter: <strong>${member.chapter}</strong></div>
                 <div>Valid Upto: <strong>${member.validUpto}</strong></div>
               </div>
+              <div class="qr-box">
+                ${qrSvgHtml}
+              </div>
             </div>
             <div class="c-footer">OFFICIAL MEMBER IDENTITY CARD</div>
           </div>
@@ -369,12 +432,18 @@ export const printMemberCardHtml = (member: MemberProfile): void => {
               <div class="c-sub" style="color:#FFFFFF;">CENTRAL SECRETARIAT, NEW DELHI</div>
             </div>
             <div class="c-body" style="justify-content: space-between;">
-              <div style="font-size: 12px; line-height: 1.6; color: #334155; margin-top: 10px;">
+              <div style="font-size: 11.5px; line-height: 1.5; color: #334155; margin-top: 6px;">
                 <p>1. This card certifies active membership in the Human Rights & Social Justice Mission.</p>
                 <p>2. Non-transferable and remains the property of the Mission.</p>
                 <p>3. In case of emergency or verification, visit <strong>hrsjm.org/verify</strong></p>
                 <p>Helpline: +91 11 2345 6789</p>
               </div>
+
+              <!-- Scannable Code 128 Barcode on Back -->
+              <div style="background: #FFFFFF; padding: 6px; border-radius: 8px; border: 1px solid #CBD5E1; margin: 8px 0; width: 90%;">
+                ${barSvgHtml}
+              </div>
+
               <div style="border-top: 1px solid #CBD5E1; padding-top: 10px; width: 100%; text-align: center; font-size: 11px; font-weight: 700; color: #06294D;">
                 General Secretary • National President
               </div>

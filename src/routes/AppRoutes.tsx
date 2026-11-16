@@ -80,6 +80,7 @@ import {
   MemberMembershipDetailsPage,
 } from '@/features/member';
 import { MemberEventDetailsPage } from '@/features/member/screens/MemberEventDetailsPage';
+import { MemberVerificationPublicPage } from '@/features/member/screens/MemberVerificationPublicPage';
 
 // Public Experience Pages (Parity with Mobile APK)
 import { LoginPage } from '@/pages/LoginPage';
@@ -155,6 +156,13 @@ export const AppRoutes: React.FC = () => {
         {/* Account Password Recovery & Reset (Parity with Mobile ResetPasswordScreen) */}
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
+
+        {/* Public Real-Time Member Verification Portal (QR & Barcode Destination) */}
+        <Route path="/verify" element={<MemberVerificationPublicPage />} />
+        <Route path="/verify/:token" element={<MemberVerificationPublicPage />} />
+        <Route path="/verify/member/:token" element={<MemberVerificationPublicPage />} />
+        <Route path="/verify/card/:token" element={<MemberVerificationPublicPage />} />
+        <Route path="/member/verify/:token" element={<MemberVerificationPublicPage />} />
 
         {/* Public routes redirect to primary entrypoint */}
         <Route path="/home" element={<Navigate to="/login" replace />} />

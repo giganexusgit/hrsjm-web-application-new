@@ -3,6 +3,8 @@ import { RefreshCw, Printer, Phone, MapPin } from 'lucide-react';
 import type { AdminProfile } from '../types/profile.types';
 import { generateQrMatrix } from '../utils/qrGenerator';
 import { profileService } from '../services/profileService';
+import { BarcodeSvg } from '@/components/common/BarcodeSvg';
+import { getPublicVerificationUrl } from '@/utils/verificationUrl';
 import idCardBg from '@/assets/id_card_bg.png';
 import hrsjmLogo from '@/assets/hrsjm_logo.png';
 
@@ -17,7 +19,8 @@ export const IdCardSvgPreview: React.FC<IdCardSvgPreviewProps> = ({
 }) => {
   const [isFlipped, setIsFlipped] = useState(false);
   const effectiveId = profile.memberId || 'HRSJM-00013';
-  const qrMatrix = React.useMemo(() => generateQrMatrix(effectiveId, 25), [effectiveId]);
+  const vUrl = getPublicVerificationUrl(effectiveId);
+  const qrMatrix = React.useMemo(() => generateQrMatrix(vUrl, 25), [vUrl]);
 
   const rawStatus = profile.accountStatus || 'Active';
   const statusLabel = rawStatus.charAt(0).toUpperCase() + rawStatus.slice(1).toLowerCase();
@@ -202,10 +205,10 @@ export const IdCardSvgPreview: React.FC<IdCardSvgPreviewProps> = ({
                   <svg
                     width="100%"
                     height="100%"
-                    viewBox={`0 0 ${qrMatrix.length} ${qrMatrix.length}`}
+                    viewBox={`0 0 ${qrMatrix.length || 21} ${qrMatrix.length || 21}`}
                     className="block"
                   >
-                    <rect width={qrMatrix.length} height={qrMatrix.length} fill="#FFFFFF" />
+                    <rect width={qrMatrix.length || 21} height={qrMatrix.length || 21} fill="#FFFFFF" />
                     {qrMatrix.map((row: boolean[], r: number) =>
                       row.map((filled: boolean, c: number) =>
                         filled ? (
@@ -215,7 +218,7 @@ export const IdCardSvgPreview: React.FC<IdCardSvgPreviewProps> = ({
                             y={r}
                             width="1"
                             height="1"
-                            fill="#06294D"
+                            fill="#000000"
                           />
                         ) : null
                       )
@@ -308,6 +311,21 @@ export const IdCardSvgPreview: React.FC<IdCardSvgPreviewProps> = ({
                 </div>
                 <span className="text-[7px] text-slate-300 mt-1">Official Scan</span>
               </div>
+            </div>
+
+            {/* Back Code 128 Barcode Strip */}
+            <div className="bg-white/95 rounded-md px-2 py-0.5 flex flex-col items-center justify-center my-0.5 border border-[#CAA048]/30">
+              <BarcodeSvg
+                value={effectiveId}
+                format="CODE128"
+                width={1.15}
+                height={16}
+                fontSize={7}
+                displayValue={true}
+                lineColor="#000000"
+                textColor="#000000"
+                className="max-h-[24px]"
+              />
             </div>
 
             {/* Signatory Footer */}

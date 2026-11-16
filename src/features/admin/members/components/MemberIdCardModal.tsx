@@ -1,9 +1,12 @@
 import type React from 'react';
 import { useState } from 'react';
-import { X, Printer, RefreshCw, ShieldCheck, QrCode } from 'lucide-react';
+import { X, Printer, RefreshCw, ShieldCheck, ExternalLink } from 'lucide-react';
 import type { Member } from '../types/members.types';
 import { HrsjmLogo } from '@/components/common/HrsjmLogo';
 import { useLockBodyScroll } from '@/hooks/useLockBodyScroll';
+import { generateQrMatrix } from '@/features/admin/profile/utils/qrGenerator';
+import { BarcodeSvg } from '@/components/common/BarcodeSvg';
+import { getPublicVerificationUrl } from '@/utils/verificationUrl';
 
 interface MemberIdCardModalProps {
   visible: boolean;
@@ -309,13 +312,45 @@ export const MemberIdCardModal: React.FC<MemberIdCardModalProps> = ({
                   >
                     <div
                       style={{
-                        padding: '4px',
+                        padding: '3px',
                         backgroundColor: '#FFFFFF',
                         borderRadius: '6px',
                         border: '1px solid #D1D5DB',
+                        width: '52px',
+                        height: '52px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
                       }}
                     >
-                      <QrCode size={46} color="#011F39" />
+                      {(() => {
+                        const vUrl = getPublicVerificationUrl(member.membershipId);
+                        const matrix = generateQrMatrix(vUrl, 25);
+                        return (
+                          <svg
+                            viewBox={`0 0 ${matrix.length} ${matrix.length}`}
+                            width="100%"
+                            height="100%"
+                            style={{ display: 'block' }}
+                          >
+                            <rect width={matrix.length} height={matrix.length} fill="#FFFFFF" />
+                            {matrix.map((row: boolean[], r: number) =>
+                              row.map((filled: boolean, c: number) =>
+                                filled ? (
+                                  <rect
+                                    key={`${r}-${c}`}
+                                    x={c}
+                                    y={r}
+                                    width="1"
+                                    height="1"
+                                    fill="#000000"
+                                  />
+                                ) : null
+                              )
+                            )}
+                          </svg>
+                        );
+                      })()}
                     </div>
                     <span style={{ fontSize: '7.5px', color: '#6B7280', marginTop: '3px' }}>
                       Scan to Verify
@@ -348,7 +383,7 @@ export const MemberIdCardModal: React.FC<MemberIdCardModalProps> = ({
                   height: '100%',
                   display: 'flex',
                   flexDirection: 'column',
-                  padding: '12px 16px',
+                  padding: '10px 14px',
                   backgroundColor: '#FFFFFF',
                 }}
               >
@@ -358,16 +393,16 @@ export const MemberIdCardModal: React.FC<MemberIdCardModalProps> = ({
                     fontWeight: 800,
                     color: '#011F39',
                     borderBottom: '1px solid #011F39',
-                    paddingBottom: '3px',
-                    marginBottom: '8px',
+                    paddingBottom: '2px',
+                    marginBottom: '6px',
                     textTransform: 'uppercase',
                     letterSpacing: '0.04em',
                   }}
                 >
-                  Member Profile & Address
+                  Member Profile &amp; Address
                 </div>
 
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '9.5px', color: '#374151' }}>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '3px', fontSize: '9px', color: '#374151' }}>
                   <div>
                     <span style={{ fontWeight: 700 }}>Father's Name:</span> {member.fatherName || '—'}
                   </div>
@@ -386,17 +421,31 @@ export const MemberIdCardModal: React.FC<MemberIdCardModalProps> = ({
                   </div>
                 </div>
 
+                {/* Machine-Scannable Code 128 Barcode */}
+                <div style={{ textAlign: 'center', padding: '3px 0', borderTop: '1px dashed #E5E7EB' }}>
+                  <BarcodeSvg
+                    value={member.membershipId}
+                    format="CODE128"
+                    width={1.2}
+                    height={20}
+                    fontSize={8}
+                    displayValue={true}
+                    lineColor="#011F39"
+                    textColor="#011F39"
+                  />
+                </div>
+
                 <div
                   style={{
-                    marginTop: '8px',
-                    paddingTop: '6px',
+                    marginTop: '4px',
+                    paddingTop: '4px',
                     borderTop: '1px dashed #D1D5DB',
-                    fontSize: '7.5px',
+                    fontSize: '7px',
                     color: '#6B7280',
-                    lineHeight: 1.3,
+                    lineHeight: 1.2,
                   }}
                 >
-                  <b>NOTICE:</b> This card remains the property of Human Rights & Social Justice Mission. If found, please return to: Central Secretariat, New Delhi. Contact Toll-Free: 1800-HRSJM-NGO.
+                  <b>NOTICE:</b> This card remains the property of Human Rights &amp; Social Justice Mission. Central Registry: hrsjm.org/verify
                 </div>
               </div>
             )}
@@ -418,6 +467,28 @@ export const MemberIdCardModal: React.FC<MemberIdCardModalProps> = ({
             Official printable resolution (300 DPI vector)
           </div>
           <div style={{ display: 'flex', gap: '8px' }}>
+            <a
+              href={`/verify/member/${encodeURIComponent(member.membershipId)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '8px 14px',
+                fontSize: '13px',
+                fontWeight: 600,
+                color: '#855B14',
+                border: '1px solid #CAA048',
+                borderRadius: '8px',
+                backgroundColor: '#FAF5EA',
+                textDecoration: 'none',
+                cursor: 'pointer',
+              }}
+            >
+              <ExternalLink size={14} />
+              <span>Verify Online</span>
+            </a>
             <button
               type="button"
               onClick={handlePrint}

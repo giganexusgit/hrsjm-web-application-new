@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import type { MemberProfile } from '../types/member.types';
 import { generateQrMatrix } from '@/features/admin/profile/utils/qrGenerator';
+import { BarcodeSvg } from '@/components/common/BarcodeSvg';
+import { getPublicVerificationUrl } from '@/utils/verificationUrl';
 import idCardBg from '@/assets/id_card_bg.png';
 import hrsjmLogo from '@/assets/hrsjm_logo.png';
-import { QrCode, Phone } from 'lucide-react';
+import { Phone, X, ExternalLink, ShieldCheck } from 'lucide-react';
 
 export interface ApkMemberIdCardProps {
   member: Partial<MemberProfile>;
@@ -13,6 +15,7 @@ export interface ApkMemberIdCardProps {
   allowFlip?: boolean;
   isFlipped?: boolean;
   onFlip?: () => void;
+  onQrClick?: () => void;
 }
 
 function formatCardDate(dateStr?: string, fallback = '07 Nov 2027'): string {
@@ -34,12 +37,19 @@ export const ApkMemberIdCard: React.FC<ApkMemberIdCardProps> = ({
   allowFlip = false,
   isFlipped: controlledFlipped,
   onFlip,
+  onQrClick,
 }) => {
   const [internalFlipped, setInternalFlipped] = useState(false);
+  const [showQrModal, setShowQrModal] = useState(false);
   const isFlipped = controlledFlipped !== undefined ? controlledFlipped : internalFlipped;
 
   const effectiveId = member.membershipNumber || 'HRSJM-47611';
-  const qrMatrix = React.useMemo(() => generateQrMatrix(effectiveId, 25), [effectiveId]);
+  const verificationUrl = getPublicVerificationUrl(effectiveId);
+  const rawQr = member.qrVerificationUrl?.trim();
+  const qrPayload = (rawQr && !rawQr.includes('localhost') && !rawQr.includes('127.0.0.1'))
+    ? rawQr
+    : verificationUrl;
+  const qrMatrix = React.useMemo(() => generateQrMatrix(qrPayload, 25), [qrPayload]);
 
   const validTill = formatCardDate(member.validUpto, '07 Nov 2027');
   const joinedOn = formatCardDate(member.validFrom || member.joiningDate, '11 Sept 2026');
@@ -56,6 +66,15 @@ export const ApkMemberIdCard: React.FC<ApkMemberIdCardProps> = ({
       setInternalFlipped((prev) => !prev);
     } else if (onClick) {
       onClick();
+    }
+  };
+
+  const handleQrClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onQrClick) {
+      onQrClick();
+    } else {
+      setShowQrModal(true);
     }
   };
 
@@ -203,15 +222,19 @@ export const ApkMemberIdCard: React.FC<ApkMemberIdCardProps> = ({
             </div>
 
             {/* Right: Scannable QR Code Matrix + Tap to View */}
-            <div className="flex flex-col items-center shrink-0">
-              <div className="bg-white p-1 rounded-lg shadow-md w-[60px] h-[60px] sm:w-[68px] sm:h-[68px] flex items-center justify-center">
+            <div
+              onClick={handleQrClick}
+              className="flex flex-col items-center shrink-0 cursor-pointer group"
+              title="Click or tap to view/enlarge QR Code"
+            >
+              <div className="bg-white p-1 rounded-lg shadow-md w-[60px] h-[60px] sm:w-[68px] sm:h-[68px] flex items-center justify-center group-hover:scale-105 transition-transform">
                 <svg
                   width="100%"
                   height="100%"
-                  viewBox="0 0 25 25"
+                  viewBox={`0 0 ${qrMatrix.length || 21} ${qrMatrix.length || 21}`}
                   className="block"
                 >
-                  <rect width="25" height="25" fill="#FFFFFF" />
+                  <rect width={qrMatrix.length || 21} height={qrMatrix.length || 21} fill="#FFFFFF" />
                   {qrMatrix.map((row: boolean[], r: number) =>
                     row.map((filled: boolean, c: number) =>
                       filled ? (
@@ -221,14 +244,14 @@ export const ApkMemberIdCard: React.FC<ApkMemberIdCardProps> = ({
                           y={r}
                           width="1"
                           height="1"
-                          fill="#06294D"
+                          fill="#000000"
                         />
                       ) : null
                     )
                   )}
                 </svg>
               </div>
-              <span className="text-white text-[7.5px] sm:text-[8.5px] font-medium tracking-tight mt-1 text-center opacity-90">
+              <span className="text-white text-[7.5px] sm:text-[8.5px] font-medium tracking-tight mt-1 text-center opacity-90 group-hover:opacity-100 group-hover:text-[#FAD465] transition">
                 Tap to View
               </span>
             </div>
@@ -272,16 +295,56 @@ export const ApkMemberIdCard: React.FC<ApkMemberIdCardProps> = ({
             </div>
 
             {/* Verification QR */}
-            <div className="flex flex-col items-center justify-center">
-              <div className="bg-white p-1 rounded-md shadow-sm w-12 h-12 flex items-center justify-center">
-                <QrCode size={36} className="text-[#06294D]" />
+            <div
+              onClick={handleQrClick}
+              className="flex flex-col items-center justify-center cursor-pointer group"
+              title="Click or tap to view/enlarge QR Code"
+            >
+              <div className="bg-white p-1 rounded-md shadow-sm w-12 h-12 flex items-center justify-center group-hover:scale-105 transition-transform">
+                <svg
+                  width="100%"
+                  height="100%"
+                  viewBox={`0 0 ${qrMatrix.length || 21} ${qrMatrix.length || 21}`}
+                  className="block"
+                >
+                  <rect width={qrMatrix.length || 21} height={qrMatrix.length || 21} fill="#FFFFFF" />
+                  {qrMatrix.map((row: boolean[], r: number) =>
+                    row.map((filled: boolean, c: number) =>
+                      filled ? (
+                        <rect
+                          key={`b-${r}-${c}`}
+                          x={c}
+                          y={r}
+                          width="1"
+                          height="1"
+                          fill="#000000"
+                        />
+                      ) : null
+                    )
+                  )}
+                </svg>
               </div>
-              <span className="text-[7px] text-slate-300 mt-1">Official Scan</span>
+              <span className="text-[7px] text-slate-300 mt-1 group-hover:text-[#FAD465] transition">Official Scan</span>
             </div>
           </div>
 
+          {/* Machine-Scannable Code 128 Barcode Strip */}
+          <div className="bg-white/95 rounded-md px-2 py-0.5 flex flex-col items-center justify-center my-0.5 border border-[#CAA048]/35 shadow-2xs">
+            <BarcodeSvg
+              value={effectiveId}
+              format="CODE128"
+              width={1.15}
+              height={18}
+              fontSize={7}
+              displayValue={true}
+              lineColor="#000000"
+              textColor="#000000"
+              className="max-h-[26px]"
+            />
+          </div>
+
           {/* Signatory Footer */}
-          <div className="border-t border-[#CAA048]/30 pt-1.5 flex items-center justify-between text-[8px]">
+          <div className="border-t border-[#CAA048]/30 pt-1 flex items-center justify-between text-[8px]">
             <div>
               <div className="w-20 border-b border-[#CAA048]/50 mb-0.5" />
               <div className="font-bold text-white">National President</div>
@@ -294,6 +357,113 @@ export const ApkMemberIdCard: React.FC<ApkMemberIdCardProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Enlarged QR Code & Barcode Modal for Instant Phone Camera / Scanner Device Scanning */}
+      {showQrModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in"
+          onClick={(e) => {
+            e.stopPropagation();
+            setShowQrModal(false);
+          }}
+        >
+          <div
+            className="w-full max-w-sm bg-white rounded-3xl p-5 sm:p-6 shadow-2xl border border-slate-200 text-center space-y-3.5 max-h-[92vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between pb-2.5 border-b border-slate-100">
+              <div className="text-left">
+                <h3 className="text-base font-bold text-[#0C2340]">
+                  Official Member Verification Pass
+                </h3>
+                <p className="text-xs text-slate-500">Scan QR or Barcode to verify</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowQrModal(false)}
+                className="p-1 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* QR Code */}
+            <div className="bg-[#FAF7F0] p-3 rounded-2xl border border-slate-200/80 flex items-center justify-center">
+              <div className="bg-white p-2.5 rounded-2xl shadow-md w-48 h-48 flex items-center justify-center">
+                <svg
+                  width="100%"
+                  height="100%"
+                  viewBox={`0 0 ${qrMatrix.length || 21} ${qrMatrix.length || 21}`}
+                  className="block"
+                >
+                  <rect width={qrMatrix.length || 21} height={qrMatrix.length || 21} fill="#FFFFFF" />
+                  {qrMatrix.map((row: boolean[], r: number) =>
+                    row.map((filled: boolean, c: number) =>
+                      filled ? (
+                        <rect
+                          key={`m-${r}-${c}`}
+                          x={c}
+                          y={r}
+                          width="1"
+                          height="1"
+                          fill="#000000"
+                        />
+                      ) : null
+                    )
+                  )}
+                </svg>
+              </div>
+            </div>
+
+            {/* Code 128 Barcode */}
+            <div className="bg-white p-2.5 rounded-xl border border-slate-200 shadow-2xs">
+              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                Code 128 Barcode
+              </div>
+              <div className="flex justify-center overflow-x-auto py-1">
+                <BarcodeSvg
+                  value={effectiveId}
+                  format="CODE128"
+                  width={1.4}
+                  height={32}
+                  fontSize={10}
+                  displayValue={true}
+                  lineColor="#0C2340"
+                  textColor="#0C2340"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FAF5EA] border border-[#CAA048]/40 text-[#855B14] font-mono font-bold text-xs">
+                <ShieldCheck size={13} className="text-[#855B14]" />
+                <span>{effectiveId}</span>
+              </div>
+              <div className="font-bold text-sm text-[#0C2340]">{fullName}</div>
+              <div className="text-xs text-slate-500">{membershipType}</div>
+            </div>
+
+            <div className="flex gap-2 pt-1">
+              <a
+                href={`/verify/member/${encodeURIComponent(effectiveId)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 py-2.5 rounded-xl bg-[#FAF5EA] hover:bg-[#F3E8CD] border border-[#CAA048] text-[#855B14] text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer"
+              >
+                <span>Verify Online</span>
+                <ExternalLink size={13} />
+              </a>
+              <button
+                type="button"
+                onClick={() => setShowQrModal(false)}
+                className="flex-1 py-2.5 rounded-xl bg-[#06294D] text-white text-xs font-bold hover:bg-[#083563] transition shadow-xs cursor-pointer"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

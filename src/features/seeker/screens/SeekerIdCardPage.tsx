@@ -352,10 +352,10 @@ export const SeekerIdCardPage: React.FC = () => {
               <svg
                 width="180"
                 height="180"
-                viewBox="0 0 29 29"
+                viewBox={`0 0 ${modalQrMatrix.length} ${modalQrMatrix.length}`}
                 className="block mx-auto"
               >
-                <rect width="29" height="29" fill="#FFFFFF" />
+                <rect width={modalQrMatrix.length} height={modalQrMatrix.length} fill="#FFFFFF" />
                 {modalQrMatrix.map((row: boolean[], r: number) =>
                   row.map((filled: boolean, c: number) =>
                     filled ? (
@@ -365,7 +365,7 @@ export const SeekerIdCardPage: React.FC = () => {
                         y={r}
                         width="1"
                         height="1"
-                        fill="#06294D"
+                        fill="#000000"
                       />
                     ) : null
                   )

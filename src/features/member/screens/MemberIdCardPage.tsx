@@ -13,6 +13,7 @@ import {
   Download,
   X,
   CheckCircle2,
+  ShieldCheck,
 } from 'lucide-react';
 import { useCurrentMember } from '../store/memberStore';
 import { useAuth } from '@/features/auth/store/authStore';
@@ -258,7 +259,16 @@ export const MemberIdCardPage: React.FC = () => {
             <span>Member ID Card</span>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-2 shrink-0 flex-wrap">
+            <a
+              href={`/verify/member/${encodeURIComponent(member.membershipNumber || 'HRSJM-47611')}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-xs font-bold text-emerald-800 cursor-pointer shadow-2xs transition-colors"
+            >
+              <ShieldCheck size={13} className="text-emerald-600" />
+              <span>Verify Status</span>
+            </a>
             <button
               type="button"
               onClick={() => printMemberCardHtml(member)}
