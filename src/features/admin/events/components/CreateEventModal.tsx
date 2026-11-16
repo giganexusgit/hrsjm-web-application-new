@@ -713,19 +713,19 @@ const CreateEventModalContent: React.FC<{
                 <div style={{ flex: 1, paddingRight: '12px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
                     <HeartHandshake size={16} color="#011F39" />
-                    <h4 style={styles.toggleTitle}>Allow Event Donations</h4>
+                    <h4 style={styles.toggleTitle}>Enable Donation Button</h4>
                   </div>
                   <p style={styles.toggleSubtitle}>
                     {formData.isDonationEnabled
-                      ? 'Attendees and supporters can make a contribution to this event'
-                      : 'Donations disabled — Event is strictly non-contribution'}
+                      ? 'Enabled: This event is eligible to display the Donate for this Event button'
+                      : 'Disabled: This event must not display the Donate for this Event button'}
                   </p>
                 </div>
                 <button
                   type="button"
                   role="switch"
                   aria-checked={formData.isDonationEnabled}
-                  aria-label="Allow Event Donations Toggle"
+                  aria-label="Enable Donation Button Toggle"
                   onClick={() =>
                     setFormData((prev) => ({
                       ...prev,
