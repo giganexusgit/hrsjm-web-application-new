@@ -234,7 +234,7 @@ export const LoginPage: React.FC = () => {
 
             {/* Back to Public Home Button */}
             <Link
-              to="https://hrsjm-ngo-website-8tr9.vercel.app/"
+              to="https://hrsjm.org/"
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-slate-200 hover:text-white text-xs font-semibold border border-white/15 transition backdrop-blur-sm"
             >
               <ArrowLeft size={14} />
