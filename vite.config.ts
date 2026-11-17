@@ -26,11 +26,11 @@ function isLocalPortOpen(host: string, port: number, timeoutMs = 150): Promise<b
 // https://vite.dev/config/
 export default defineConfig(async ({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
-  const hasLocalBackend = await isLocalPortOpen('127.0.0.1', 3000);
+  const hasLocalBackend = await isLocalPortOpen('127.0.0.1', 5000);
   const proxyTarget =
     env.VITE_BACKEND_PROXY_TARGET ||
     env.BACKEND_PROXY_TARGET ||
-    (hasLocalBackend ? 'http://127.0.0.1:3000' : 'http://194.164.151.17:3000');
+    (hasLocalBackend ? 'http://127.0.0.1:5000' : 'https://hrsjm.org');
 
   return {
     plugins: [react(), tailwindcss()],

@@ -36,7 +36,7 @@
 ### A.1 Overview & Core Verdict
 An exhaustive, multi-disciplinary engineering and visual audit was conducted on the latest codebase of the **HRSJM Smart Web Application** (`hrsjm-web-application-new/hrsjm-web-application-new`). The application is a digital governance, civil rights advocacy, and social aid platform for the Human Rights Sanrakshan Jan Manch (HRSJM), encompassing four core portals: **Admin**, **Member**, **Seeker**, and **Citizen/User**.
 
-**Verdict:** The application demonstrates strong fundamental compiler and build health (clean TypeScript compilation, successful Vite production bundling, zero fatal syntax errors, and active reverse proxying to a live NestJS backend at `194.164.151.17:3000`). However, it is **NOT production ready** due to critical vulnerabilities in financial payment verification, exposed personal identity data, a citizen navigation dead-loop to login, severe typography divergence from established standards, and silent API response-dropping bugs.
+**Verdict:** The application demonstrates strong fundamental compiler and build health (clean TypeScript compilation, successful Vite production bundling, zero fatal syntax errors, and active reverse proxying to a live NestJS backend at `http://187.126.121.157/:3000`). However, it is **NOT production ready** due to critical vulnerabilities in financial payment verification, exposed personal identity data, a citizen navigation dead-loop to login, severe typography divergence from established standards, and silent API response-dropping bugs.
 
 ### A.2 High-Level Scorecard
 
@@ -66,7 +66,7 @@ The repository is a single Vite-based React 19 Single Page Application (SPA):
 ```
 hrsjm-web-application-new/hrsjm-web-application-new/
 ├── index.html                 # Entry HTML (loads Inter, Playfair Display, Caveat, Cashfree SDK)
-├── vite.config.ts             # Vite 8 config with Tailwind v4 plugin, proxy target 194.164.151.17:3000
+├── vite.config.ts             # Vite 8 config with Tailwind v4 plugin, proxy target http://187.126.121.157/:3000
 ├── package.json               # React 19.3.1, TypeScript 7.0.2, Tailwind v4.3.4, React Router DOM 7.18.5
 ├── dev-server.mjs             # Node.js dev server wrapper
 ├── run-dev.bat                # Windows launcher (contains legacy path bug)
@@ -103,7 +103,7 @@ The application **does not use Redux or Zustand**. Instead, state management rel
 - Central client: [`src/api/client.ts`](file:///c:/hrsjm-web-application-new/hrsjm-web-application-new/src/api/client.ts) (168 lines).
 - Implements universal `request<T>()` with Bearer token injection from `localStorage.getItem('hrsjm_auth_token')`.
 - Automatic response unwrapping: Line 140 unwraps NestJS `TransformInterceptor` payload (`resJson.data`), returning the inner data directly to callers.
-- Reverse Proxy: Configured in `vite.config.ts` to route `/api/v1` and `/uploads` to `http://194.164.151.17:3000`.
+- Reverse Proxy: Configured in `vite.config.ts` to route `/api/v1` and `/uploads` to `http://187.126.121.157/:3000`.
 
 ---
 
@@ -275,7 +275,7 @@ Routes under `/user/*`, `/about`, `/rights`, `/events`, `/news`, `/donations` ar
 ## F. API & DATA INTEGRATION AUDIT
 
 ### F.1 Backend Connectivity & Live API Matrix
-- **Backend Host:** `http://194.164.151.17:3000`
+- **Backend Host:** `http://187.126.121.157/:3000`
 - **TCP Connection Status:** Verified live and reachable (`TcpTestSucceeded: True`).
 - **Proxy Status:** Configured via Vite reverse proxy for `/api/v1` and `/uploads`.
 
