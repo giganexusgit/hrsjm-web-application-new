@@ -1,0 +1,74 @@
+name: Deploy Webapp to VPS (CI/CD)
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  ci:
+    name: Build & Validate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci || npm install
+
+      - name: Build Vite Application
+        run: npm run build
+
+  deploy:
+    name: Deploy to Production VPS
+    needs: ci
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          password: ${{ secrets.VPS_PASSWORD }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          script_stop: true
+          script: |
+            echo "🚀 Starting automated deployment for hrsjm-webapp..."
+            
+            # Navigate to project directory
+            cd /root/hrsjm-webapp || cd ~/hrsjm-webapp
+            
+            # Pull latest changes from main branch
+            echo "📥 Pulling latest changes from git..."
+            git fetch origin main
+            git reset --hard origin/main
+            
+            # Install production dependencies
+            echo "📦 Installing dependencies..."
+            npm install
+            
+            # Build production SPA bundle
+            echo "🔨 Building Vite application..."
+            npm run build
+            
+            # Restart PM2 process
+            echo "🔄 Reloading PM2 process (hrsjm-webapp)..."
+            pm2 restart hrsjm-webapp --update-env || pm2 start npx --name "hrsjm-webapp" -- serve -s dist -l 4000
+            pm2 save
+            
+            # Health check validation
+            echo "🩺 Verifying webapp response..."
+            sleep 2
+            curl -f http://127.0.0.1:4000 || true
+            
+            echo "✅ Webapp deployment successful and verified!"
