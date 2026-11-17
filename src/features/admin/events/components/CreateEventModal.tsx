@@ -1,5 +1,5 @@
 import type React from 'react';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import {
   X,
   Calendar,
@@ -8,7 +8,6 @@ import {
   Users,
   Globe,
   Building,
-  Image as ImageIcon,
   HeartHandshake,
   Loader2,
   Tag,
@@ -18,6 +17,7 @@ import {
   CheckCircle2,
   XCircle,
   Power,
+  Upload,
 } from 'lucide-react';
 import {
   EVENT_CATEGORIES,
@@ -120,6 +120,34 @@ const CreateEventModalContent: React.FC<{
   const [topicInput, setTopicInput] = useState('');
   const [isHoveredSubmit, setIsHoveredSubmit] = useState(false);
   const [isActiveSubmit, setIsActiveSubmit] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [selectedFileName, setSelectedFileName] = useState<string>('');
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      setErrors((err) => ({ ...err, coverImage: 'Please select a valid image file (PNG, JPG, WEBP).' }));
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setErrors((err) => ({ ...err, coverImage: 'Image size must be 5 MB or less.' }));
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        setFormData((prev) => ({ ...prev, coverImageUri: reader.result as string }));
+        setSelectedFileName(file.name);
+        setErrors((err) => {
+          const updated = { ...err };
+          delete updated.coverImage;
+          return updated;
+        });
+      }
+    };
+    reader.readAsDataURL(file);
+  };
 
   const isEditMode = Boolean(initialEvent && initialEvent.id);
 
@@ -779,28 +807,105 @@ const CreateEventModalContent: React.FC<{
               <div style={styles.cardHeader}>
                 <h4 style={styles.cardTitle}>Event Cover Image</h4>
                 <p style={styles.cardSubtitle}>
-                  Provide an image URL or pick one from approved presets.
+                  Select a cover image from your device or pick one from approved presets.
                 </p>
               </div>
 
               <div style={styles.formGroup}>
-                <label style={styles.label}>Cover Image URL</label>
-                <div style={styles.selectWrap}>
-                  <ImageIcon size={15} color="#94A3B8" style={styles.selectIcon} />
-                  <input
-                    type="text"
-                    value={formData.coverImageUri || ''}
-                    onChange={(e) => setFormData({ ...formData, coverImageUri: e.target.value })}
-                    placeholder="https://images.unsplash.com/photo-..."
-                    style={styles.selectWithIcon}
-                  />
+                <label style={styles.label}>Cover Image</label>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageSelect}
+                  style={{ display: 'none' }}
+                />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '9px 16px',
+                      borderRadius: '10px',
+                      backgroundColor: '#011F39',
+                      color: '#FFFFFF',
+                      fontSize: '13px',
+                      fontWeight: 600,
+                      border: '1px solid #011F39',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    <Upload size={15} />
+                    <span>{formData.coverImageUri ? 'Change Image' : 'Select Image'}</span>
+                  </button>
+                  <span style={{ fontSize: '12px', color: '#64748B' }}>
+                    {selectedFileName || (formData.coverImageUri ? 'Image selected' : 'PNG, JPG, or WEBP (max 5 MB)')}
+                  </span>
                 </div>
+
+                {formData.coverImageUri && (
+                  <div
+                    style={{
+                      marginTop: '12px',
+                      position: 'relative',
+                      display: 'inline-block',
+                      borderRadius: '12px',
+                      overflow: 'hidden',
+                      border: '1px solid #E2E8F0',
+                      maxWidth: '100%',
+                    }}
+                  >
+                    <img
+                      src={formData.coverImageUri}
+                      alt="Cover preview"
+                      style={{
+                        display: 'block',
+                        maxHeight: '160px',
+                        width: 'auto',
+                        maxWidth: '100%',
+                        objectFit: 'cover',
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFormData((prev) => ({ ...prev, coverImageUri: null }));
+                        setSelectedFileName('');
+                        if (fileInputRef.current) fileInputRef.current.value = '';
+                      }}
+                      style={{
+                        position: 'absolute',
+                        top: '6px',
+                        right: '6px',
+                        width: '24px',
+                        height: '24px',
+                        borderRadius: '50%',
+                        backgroundColor: 'rgba(15, 23, 42, 0.75)',
+                        border: 'none',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                      }}
+                      title="Remove image"
+                    >
+                      <X size={14} color="#FFFFFF" />
+                    </button>
+                  </div>
+                )}
+                {errors.coverImage && (
+                  <span style={styles.errorText}>{errors.coverImage}</span>
+                )}
               </div>
 
               {/* Preset cover images */}
-              <div style={{ marginTop: '4px' }}>
+              <div style={{ marginTop: '8px' }}>
                 <span style={{ fontSize: '11px', color: '#64748B', fontWeight: 500 }}>
-                  Preset Cover Options:
+                  Or Choose from Preset Covers:
                 </span>
                 <div style={styles.presetImagesRow}>
                   {SAMPLE_COVER_IMAGES.map((imgUrl, idx) => {
@@ -809,7 +914,11 @@ const CreateEventModalContent: React.FC<{
                       <button
                         key={idx}
                         type="button"
-                        onClick={() => setFormData({ ...formData, coverImageUri: imgUrl })}
+                        onClick={() => {
+                          setFormData({ ...formData, coverImageUri: imgUrl });
+                          setSelectedFileName('');
+                          if (fileInputRef.current) fileInputRef.current.value = '';
+                        }}
                         style={{
                           ...styles.presetImgThumbWrap,
                           borderColor: isSelected ? '#06294D' : '#E2E8F0',
