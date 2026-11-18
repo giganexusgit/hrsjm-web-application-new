@@ -23,7 +23,7 @@ interface LiveDashboardData {
   applications?: { total: number; memberships: number; assistance: number; thisMonth: number; prevMonth: number };
   tickets?: { total: number; open: number; thisMonth: number; prevMonth: number };
   events?: { total: number; upcoming: number; thisMonth: number; prevMonth: number };
-  donations?: { total: number; receivedAmount: number; thisMonth: number; prevMonth: number };
+  donations?: { total: number; successful?: number; receivedAmount: number; thisMonth: number; prevMonth: number };
   revenue?: { membershipIncome: number; donationIncome: number; total: number };
   applicationsByStatus?: Record<string, number>;
   ticketsByStatus?: Record<string, number>;
@@ -180,8 +180,15 @@ export const AdminDashboardPage: React.FC = () => {
           <div style={styles.threeColumnGrid}>
             <UpcomingEventsCard />
             <FinancialSummaryCard
-              totalCollections={dashboardData?.revenue?.total}
-              receiptsCount={dashboardData?.donations?.total}
+              totalCollections={dashboardData?.revenue?.donationIncome ?? dashboardData?.revenue?.total ?? 0}
+              receiptsCount={dashboardData?.donations?.successful ?? dashboardData?.donations?.total ?? 0}
+              averageDonation={
+                (dashboardData?.donations?.successful ?? 0) > 0
+                  ? Math.round((dashboardData?.revenue?.donationIncome || 0) / (dashboardData?.donations?.successful || 1))
+                  : ((dashboardData?.donations?.total ?? 0) > 0 && (dashboardData?.revenue?.donationIncome ?? 0) > 0
+                      ? Math.round((dashboardData?.revenue?.donationIncome || 0) / (dashboardData?.donations?.total || 1))
+                      : 0)
+              }
             />
             <StatusDonutChart
               title="Complaints Resolution"

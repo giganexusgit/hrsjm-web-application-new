@@ -15,15 +15,19 @@ export const FinancialSummaryCard: React.FC<FinancialSummaryCardProps> = ({
 }) => {
   const displayTotal = totalCollections !== undefined
     ? `₹${totalCollections.toLocaleString('en-IN')}`
-    : '₹48,24,500';
+    : '₹0';
 
   const displayReceipts = receiptsCount !== undefined
     ? receiptsCount.toLocaleString('en-IN')
-    : '1,418';
+    : '0';
 
-  const displayAverage = averageDonation !== undefined
-    ? `₹${averageDonation.toLocaleString('en-IN')}`
-    : '₹3,402';
+  const calculatedAverage = averageDonation !== undefined
+    ? averageDonation
+    : (receiptsCount && receiptsCount > 0 && totalCollections
+        ? Math.round(totalCollections / receiptsCount)
+        : 0);
+
+  const displayAverage = `₹${calculatedAverage.toLocaleString('en-IN')}`;
   return (
     <div style={styles.card}>
       <div style={styles.header}>
