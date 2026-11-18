@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useTransition } from 'react';
+import React, { useEffect, useMemo, useState, useTransition } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Gift, Plus, Download, RotateCw, BookOpen } from 'lucide-react';
 import { useDonationsStore, donationsStore } from '../store/donationsStore';
@@ -39,6 +39,10 @@ export const DonationsListPage: React.FC = () => {
   // Pagination
   const [page, setPage] = useState(1);
   const pageSize = 10;
+
+  useEffect(() => {
+    donationsStore.fetchDonations();
+  }, []);
 
   // Filtered donations list based on active tab, search, status, source, date range
   const filteredDonations = useMemo(() => {

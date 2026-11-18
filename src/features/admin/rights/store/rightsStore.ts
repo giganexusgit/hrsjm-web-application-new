@@ -20,7 +20,6 @@ class RightsStore {
       articles: this.articles,
       version: this.version,
     };
-    this.syncFromBackend();
   }
 
   private loadPersisted(): RightsArticle[] {

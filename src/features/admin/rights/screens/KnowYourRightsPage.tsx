@@ -1,5 +1,5 @@
 import type React from 'react';
-import { useState, useMemo, useSyncExternalStore } from 'react';
+import { useState, useMemo, useSyncExternalStore, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, AlertCircle, BookOpen, ChevronRight } from 'lucide-react';
 import { rightsStore } from '../store/rightsStore';
@@ -53,6 +53,10 @@ export const KnowYourRightsPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedDateRange, setSelectedDateRange] = useState<RightsDateFilter>('ANY');
+
+  useEffect(() => {
+    rightsStore.syncFromBackend();
+  }, []);
 
   // Modals state
   const [filterModalOpen, setFilterModalOpen] = useState(false);

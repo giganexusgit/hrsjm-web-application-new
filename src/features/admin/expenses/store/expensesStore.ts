@@ -20,7 +20,6 @@ class ExpensesStore {
       vouchers: this.vouchers,
       version: this.version,
     };
-    this.syncFromBackend();
   }
 
   private sortInternal(): void {
@@ -87,6 +86,10 @@ class ExpensesStore {
   }
 
   public async syncFromBackend(): Promise<void> {
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('hrsjm_auth_token') || localStorage.getItem('auth_token');
+      if (!token) return;
+    }
     try {
       const { items } = await expensesService.list({ limit: 100 });
       if (Array.isArray(items)) {

@@ -45,7 +45,6 @@ class DonationsStore {
 
   constructor() {
     this.cachedSnapshot = this.buildSnapshot();
-    this.fetchDonations().catch(() => {});
   }
 
   private buildSnapshot(): DonationsStoreState {
@@ -120,6 +119,10 @@ class DonationsStore {
   }
 
   public async fetchDonations(): Promise<void> {
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('hrsjm_auth_token') || localStorage.getItem('auth_token');
+      if (!token) return;
+    }
     this.isLoading = true;
     this.emit();
     try {
