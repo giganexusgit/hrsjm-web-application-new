@@ -1,22 +1,28 @@
-import React, { useState } from 'react';
-import { Building2, Mail, Phone, Globe, MapPin, Award, Check } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Building2, Mail, Phone, Globe, MapPin, Award, Check, Loader2 } from 'lucide-react';
 import type { OrganizationSettings } from '../types/settings.types';
 
 interface GeneralSettingsTabProps {
   organization: OrganizationSettings;
-  onSave: (data: Partial<OrganizationSettings>) => void;
+  onSave: (data: Partial<OrganizationSettings>) => Promise<void> | void;
+  isSaving?: boolean;
 }
 
 export const GeneralSettingsTab: React.FC<GeneralSettingsTabProps> = ({
   organization,
   onSave,
+  isSaving = false,
 }) => {
   const [formData, setFormData] = useState<OrganizationSettings>({ ...organization });
   const [savedSuccess, setSavedSuccess] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    setFormData({ ...organization });
+  }, [organization]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(formData);
+    await onSave(formData);
     setSavedSuccess(true);
     setTimeout(() => setSavedSuccess(false), 3000);
   };
@@ -230,8 +236,23 @@ export const GeneralSettingsTab: React.FC<GeneralSettingsTabProps> = ({
             <span>Organization profile saved successfully.</span>
           </div>
         )}
-        <button type="submit" style={styles.saveBtn}>
-          <span>Save Organization Profile</span>
+        <button
+          type="submit"
+          disabled={isSaving}
+          style={{
+            ...styles.saveBtn,
+            opacity: isSaving ? 0.75 : 1,
+            cursor: isSaving ? 'not-allowed' : 'pointer',
+          }}
+        >
+          {isSaving ? (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+              <Loader2 size={14} className="animate-spin" />
+              <span>Saving to Database...</span>
+            </span>
+          ) : (
+            <span>Save Organization Profile</span>
+          )}
         </button>
       </div>
     </form>

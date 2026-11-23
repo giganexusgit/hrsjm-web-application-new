@@ -11,6 +11,8 @@ import { settingsService } from '../services/settingsService';
 interface SettingsStoreState {
   settings: AdminSettingsState;
   savedMessage: string | null;
+  isLoading: boolean;
+  isSaving: boolean;
 }
 
 class SettingsStore {
@@ -21,6 +23,8 @@ class SettingsStore {
     this.state = {
       settings: settingsService.getSettings(),
       savedMessage: null,
+      isLoading: false,
+      isSaving: false,
     };
   }
 
@@ -37,52 +41,127 @@ class SettingsStore {
     this.listeners.forEach((listener) => listener());
   }
 
-  public updateOrganization = (org: Partial<OrganizationSettings>): void => {
-    const updated = settingsService.updateOrganization(org);
+  public loadSettings = async (): Promise<void> => {
+    this.state = { ...this.state, isLoading: true };
+    this.notify();
+    try {
+      const fetched = await settingsService.fetchSettings();
+      this.state = {
+        ...this.state,
+        settings: fetched,
+        isLoading: false,
+      };
+    } catch {
+      this.state = { ...this.state, isLoading: false };
+    }
+    this.notify();
+  };
+
+  public updateOrganization = async (org: Partial<OrganizationSettings>): Promise<void> => {
+    const current = this.state.settings;
+    const optimistic: AdminSettingsState = {
+      ...current,
+      organization: { ...current.organization, ...org },
+    };
+    this.state = {
+      ...this.state,
+      settings: optimistic,
+      isSaving: true,
+      savedMessage: null,
+    };
+    this.notify();
+
+    const updated = await settingsService.updateOrganization(org);
     this.state = {
       ...this.state,
       settings: updated,
-      savedMessage: 'Organization profile updated successfully.',
+      isSaving: false,
+      savedMessage: 'Organization profile updated and saved to database.',
     };
     this.notify();
   };
 
-  public updateNotifications = (notifs: Partial<NotificationPreferences>): void => {
-    const updated = settingsService.updateNotifications(notifs);
+  public updateNotifications = async (notifs: Partial<NotificationPreferences>): Promise<void> => {
+    const current = this.state.settings;
+    const optimistic: AdminSettingsState = {
+      ...current,
+      notifications: { ...current.notifications, ...notifs },
+    };
+    this.state = {
+      ...this.state,
+      settings: optimistic,
+      isSaving: true,
+      savedMessage: null,
+    };
+    this.notify();
+
+    const updated = await settingsService.updateNotifications(notifs);
     this.state = {
       ...this.state,
       settings: updated,
-      savedMessage: 'Notification preferences saved.',
+      isSaving: false,
+      savedMessage: 'Notification preferences saved to database.',
     };
     this.notify();
   };
 
-  public updateSecurity = (sec: Partial<SecuritySettings>): void => {
-    const updated = settingsService.updateSecurity(sec);
+  public updateSecurity = async (sec: Partial<SecuritySettings>): Promise<void> => {
+    const current = this.state.settings;
+    const optimistic: AdminSettingsState = {
+      ...current,
+      security: { ...current.security, ...sec },
+    };
+    this.state = {
+      ...this.state,
+      settings: optimistic,
+      isSaving: true,
+      savedMessage: null,
+    };
+    this.notify();
+
+    const updated = await settingsService.updateSecurity(sec);
     this.state = {
       ...this.state,
       settings: updated,
-      savedMessage: 'Security and session policy updated.',
+      isSaving: false,
+      savedMessage: 'Security and session policy updated and saved to database.',
     };
     this.notify();
   };
 
-  public updateSystem = (sys: Partial<SystemSettings>): void => {
-    const updated = settingsService.updateSystem(sys);
+  public updateSystem = async (sys: Partial<SystemSettings>): Promise<void> => {
+    const current = this.state.settings;
+    const optimistic: AdminSettingsState = {
+      ...current,
+      system: { ...current.system, ...sys },
+    };
+    this.state = {
+      ...this.state,
+      settings: optimistic,
+      isSaving: true,
+      savedMessage: null,
+    };
+    this.notify();
+
+    const updated = await settingsService.updateSystem(sys);
     this.state = {
       ...this.state,
       settings: updated,
-      savedMessage: 'System configuration updated.',
+      isSaving: false,
+      savedMessage: 'System configuration updated and saved to database.',
     };
     this.notify();
   };
 
-  public resetToDefaults = (): void => {
-    const updated = settingsService.resetToDefaults();
+  public resetToDefaults = async (): Promise<void> => {
+    this.state = { ...this.state, isSaving: true, savedMessage: null };
+    this.notify();
+    const updated = await settingsService.resetToDefaults();
     this.state = {
       ...this.state,
       settings: updated,
-      savedMessage: 'Settings reset to factory defaults.',
+      isSaving: false,
+      savedMessage: 'Settings reset to factory defaults in database.',
     };
     this.notify();
   };
@@ -101,11 +180,12 @@ class SettingsStore {
 export const settingsStore = new SettingsStore();
 
 export function useSettingsStore(): SettingsStoreState & {
-  updateOrganization: (org: Partial<OrganizationSettings>) => void;
-  updateNotifications: (notifs: Partial<NotificationPreferences>) => void;
-  updateSecurity: (sec: Partial<SecuritySettings>) => void;
-  updateSystem: (sys: Partial<SystemSettings>) => void;
-  resetToDefaults: () => void;
+  loadSettings: () => Promise<void>;
+  updateOrganization: (org: Partial<OrganizationSettings>) => Promise<void>;
+  updateNotifications: (notifs: Partial<NotificationPreferences>) => Promise<void>;
+  updateSecurity: (sec: Partial<SecuritySettings>) => Promise<void>;
+  updateSystem: (sys: Partial<SystemSettings>) => Promise<void>;
+  resetToDefaults: () => Promise<void>;
   dismissSavedMessage: () => void;
 } {
   const state = useSyncExternalStore(
@@ -117,6 +197,9 @@ export function useSettingsStore(): SettingsStoreState & {
   return {
     settings: state.settings,
     savedMessage: state.savedMessage,
+    isLoading: state.isLoading,
+    isSaving: state.isSaving,
+    loadSettings: settingsStore.loadSettings,
     updateOrganization: settingsStore.updateOrganization,
     updateNotifications: settingsStore.updateNotifications,
     updateSecurity: settingsStore.updateSecurity,

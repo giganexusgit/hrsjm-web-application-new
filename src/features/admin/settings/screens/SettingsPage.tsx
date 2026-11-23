@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Building2,
@@ -9,6 +9,7 @@ import {
   RotateCcw,
   ChevronRight,
   CheckCircle2,
+  Loader2,
 } from 'lucide-react';
 import { useSettingsStore } from '../store/settingsStore';
 import type { SettingsTabId } from '../types/settings.types';
@@ -25,6 +26,9 @@ export const SettingsPage: React.FC = () => {
   const {
     settings,
     savedMessage,
+    isLoading,
+    isSaving,
+    loadSettings,
     updateOrganization,
     updateNotifications,
     updateSecurity,
@@ -36,6 +40,10 @@ export const SettingsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<SettingsTabId>('GENERAL');
   const [maintenanceModalOpen, setMaintenanceModalOpen] = useState(false);
   const [clearCacheModalOpen, setClearCacheModalOpen] = useState(false);
+
+  useEffect(() => {
+    loadSettings();
+  }, []);
 
   const handleToggleMaintenance = () => {
     updateSystem({ maintenanceMode: !settings.system.maintenanceMode });
@@ -80,6 +88,12 @@ export const SettingsPage: React.FC = () => {
           </div>
 
           <div style={styles.headerActions}>
+            {isLoading && (
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#64748B' }}>
+                <Loader2 size={14} className="animate-spin" />
+                <span>Syncing DB...</span>
+              </div>
+            )}
             <button
               type="button"
               onClick={() => settingsService.exportBackup()}
@@ -168,6 +182,7 @@ export const SettingsPage: React.FC = () => {
           <GeneralSettingsTab
             organization={settings.organization}
             onSave={updateOrganization}
+            isSaving={isSaving}
           />
         )}
 

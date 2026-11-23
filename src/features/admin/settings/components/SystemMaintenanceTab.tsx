@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Wrench,
   Database,
@@ -25,6 +25,10 @@ export const SystemMaintenanceTab: React.FC<SystemMaintenanceTabProps> = ({
   onOpenClearCacheModal,
 }) => {
   const [maintenanceMsg, setMaintenanceMsg] = useState(system.maintenanceMessage);
+
+  useEffect(() => {
+    setMaintenanceMsg(system.maintenanceMessage);
+  }, [system.maintenanceMessage]);
 
   const handleSaveMessage = () => {
     onUpdate({ maintenanceMessage: maintenanceMsg });

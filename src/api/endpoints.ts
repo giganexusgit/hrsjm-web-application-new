@@ -179,5 +179,12 @@ export const ENDPOINTS = {
     recipients: (id: string) => `/notifications/${id}/recipients`,
     markRecipientRead: (recipientId: string) => `/notifications/recipients/${recipientId}/read`,
   },
+
+  // System & Platform Settings
+  settings: {
+    all: '/admin/settings',
+    getByKey: (key: string) => `/admin/settings/${encodeURIComponent(key)}`,
+    updateByKey: (key: string) => `/admin/settings/${encodeURIComponent(key)}`,
+  },
 } as const;
 
