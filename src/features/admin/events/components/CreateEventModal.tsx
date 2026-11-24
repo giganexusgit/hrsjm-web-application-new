@@ -8,7 +8,6 @@ import {
   Users,
   Globe,
   Building,
-  HeartHandshake,
   Loader2,
   Tag,
   Plus,
@@ -49,10 +48,7 @@ const getInitialFormData = (initialEvent?: EventListItem | null): CreateEventFor
     return {
       title: initialEvent.title || '',
       description: initialEvent.description || '',
-      coverImageUri:
-        initialEvent.coverImageUrl ||
-        SAMPLE_COVER_IMAGES[0] ||
-        'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=1200&q=80',
+      coverImageUri: initialEvent.coverImageUrl || '',
       category: initialEvent.category || 'Seminar',
       eventType: (initialEvent.eventType as EventFormat) || 'IN_PERSON',
       eventDate: toDate(start),
@@ -80,9 +76,7 @@ const getInitialFormData = (initialEvent?: EventListItem | null): CreateEventFor
   return {
     title: '',
     description: '',
-    coverImageUri:
-      SAMPLE_COVER_IMAGES[0] ||
-      'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=1200&q=80',
+    coverImageUri: '',
     category: 'Seminar',
     eventType: 'IN_PERSON',
     eventDate: getTodayString(),
@@ -735,74 +729,7 @@ const CreateEventModalContent: React.FC<{
               )}
             </div>
 
-            {/* CARD 7: Event Donation & Support (Allow Event Donations Toggle Section) */}
-            <div style={styles.donationCard}>
-              <div style={styles.toggleRow}>
-                <div style={{ flex: 1, paddingRight: '12px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
-                    <HeartHandshake size={16} color="#011F39" />
-                    <h4 style={styles.toggleTitle}>Enable Donation Button</h4>
-                  </div>
-                  <p style={styles.toggleSubtitle}>
-                    {formData.isDonationEnabled
-                      ? 'Enabled: This event is eligible to display the Donate for this Event button'
-                      : 'Disabled: This event must not display the Donate for this Event button'}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  role="switch"
-                  aria-checked={formData.isDonationEnabled}
-                  aria-label="Enable Donation Button Toggle"
-                  onClick={() =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      isDonationEnabled: !prev.isDonationEnabled,
-                    }))
-                  }
-                  style={{
-                    ...styles.toggleBtn,
-                    backgroundColor: formData.isDonationEnabled ? '#06294D' : '#CBD5E1',
-                  }}
-                >
-                  <span
-                    style={{
-                      ...styles.toggleThumb,
-                      transform: formData.isDonationEnabled ? 'translateX(20px)' : 'translateX(2px)',
-                    }}
-                  />
-                </button>
-              </div>
-
-              {formData.isDonationEnabled && (
-                <div style={styles.donationMessageWrap}>
-                  <div style={styles.donationMessageHeader}>
-                    <label style={styles.label}>Donation Appeal Message (Optional)</label>
-                    <span style={styles.charCounter}>
-                      {formData.donationMessage.length} / 200
-                    </span>
-                  </div>
-                  <textarea
-                    rows={3}
-                    maxLength={200}
-                    value={formData.donationMessage}
-                    onChange={(e) =>
-                      setFormData({ ...formData, donationMessage: e.target.value.slice(0, 200) })
-                    }
-                    placeholder="Add a short message about why donations are needed for this event..."
-                    style={{
-                      ...styles.textarea,
-                      borderColor: errors.donationMessage ? '#EF4444' : '#CBD5E1',
-                    }}
-                  />
-                  {errors.donationMessage && (
-                    <span style={styles.errorText}>{errors.donationMessage}</span>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* CARD 8: Event Image */}
+              {/* CARD 8: Event Image */}
             <div style={styles.card}>
               <div style={styles.cardHeader}>
                 <h4 style={styles.cardTitle}>Event Cover Image</h4>

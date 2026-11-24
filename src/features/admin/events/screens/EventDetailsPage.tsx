@@ -449,65 +449,55 @@ export const EventDetailsPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Voluntary Donations Configuration Card */}
-          <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <HeartHandshake size={18} className="text-[#011F39]" />
-                <h3 className="text-base font-bold text-slate-900">Voluntary Donations</h3>
-              </div>
-              <span
-                className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                  event.isDonationEnabled
-                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                    : 'bg-slate-100 text-slate-600 border border-slate-200'
-                }`}
-              >
-                {event.isDonationEnabled ? 'Enabled' : 'Disabled'}
-              </span>
-            </div>
-
-            <p className="text-xs text-slate-500 leading-relaxed">
-              {event.isDonationEnabled
-                ? 'Citizens and members can make voluntary contributions for this event via Cashfree gateway.'
-                : 'Voluntary donations are disabled for this event. No contribution button is displayed.'}
-            </p>
-
-            {event.isDonationEnabled && event.donationMessage && (
-              <div className="p-3 bg-[#FAF7F0] border border-[#FDE68A] rounded-lg text-xs">
-                <span className="font-bold text-[#011F39] block text-[11px] uppercase tracking-wider mb-1">
-                  Appeal Message:
+          {/* Voluntary Donations Configuration Card - only shown if event has donations enabled */}
+          {event.isDonationEnabled && (
+            <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <HeartHandshake size={18} className="text-[#011F39]" />
+                  <h3 className="text-base font-bold text-slate-900">Voluntary Donations</h3>
+                </div>
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  Enabled
                 </span>
-                <p className="text-slate-700 italic">"{event.donationMessage}"</p>
               </div>
-            )}
 
-            <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
-              <button
-                type="button"
-                onClick={async () => {
-                  await eventsStore.updateEvent(event.id, {
-                    isDonationEnabled: !event.isDonationEnabled,
-                  });
-                }}
-                className={`text-xs font-bold px-3 py-1.5 rounded-lg border transition cursor-pointer ${
-                  event.isDonationEnabled
-                    ? 'text-rose-700 bg-rose-50 border-rose-200 hover:bg-rose-100'
-                    : 'text-emerald-700 bg-emerald-50 border-emerald-200 hover:bg-emerald-100'
-                }`}
-              >
-                {event.isDonationEnabled ? 'Turn Donations OFF' : 'Turn Donations ON'}
-              </button>
+              <p className="text-xs text-slate-500 leading-relaxed">
+                Citizens and members can make voluntary contributions for this event via Cashfree gateway.
+              </p>
 
-              <button
-                type="button"
-                onClick={() => setIsEditModalOpen(true)}
-                className="text-xs font-semibold text-[#011F39] hover:underline cursor-pointer"
-              >
-                Configure Details →
-              </button>
+              {event.donationMessage && (
+                <div className="p-3 bg-[#FAF7F0] border border-[#FDE68A] rounded-lg text-xs">
+                  <span className="font-bold text-[#011F39] block text-[11px] uppercase tracking-wider mb-1">
+                    Appeal Message:
+                  </span>
+                  <p className="text-slate-700 italic">&ldquo;{event.donationMessage}&rdquo;</p>
+                </div>
+              )}
+
+              <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await eventsStore.updateEvent(event.id, {
+                      isDonationEnabled: false,
+                    });
+                  }}
+                  className="text-xs font-bold px-3 py-1.5 rounded-lg border transition cursor-pointer text-rose-700 bg-rose-50 border-rose-200 hover:bg-rose-100"
+                >
+                  Turn Donations OFF
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setIsEditModalOpen(true)}
+                  className="text-xs font-semibold text-[#011F39] hover:underline cursor-pointer"
+                >
+                  Configure Details &rarr;
+                </button>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Organizer Card */}
           <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm space-y-3">
