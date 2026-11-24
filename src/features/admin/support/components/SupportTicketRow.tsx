@@ -1,6 +1,5 @@
 import type React from 'react';
 import {
-  MessageSquare,
   CheckCircle2,
   Clock,
   ArrowRight,
@@ -26,9 +25,9 @@ import {
 
 interface SupportTicketRowProps {
   ticket: SupportTicket;
-  messageCount: number;
+  messageCount?: number;
   onView: (ticket: SupportTicket) => void;
-  onOpenChat: (ticket: SupportTicket) => void;
+  onOpenChat?: (ticket: SupportTicket) => void;
   onUpdateStatus: (ticket: SupportTicket, targetStatus: TicketStatus) => void;
 }
 
@@ -48,9 +47,7 @@ const STATUS_DOT_COLOR: Record<TicketStatus, string> = {
 
 export const SupportTicketRow: React.FC<SupportTicketRowProps> = ({
   ticket,
-  messageCount,
   onView,
-  onOpenChat,
   onUpdateStatus,
 }) => {
   const shortId = shortTicketId(ticket.id);
@@ -237,20 +234,6 @@ export const SupportTicketRow: React.FC<SupportTicketRowProps> = ({
 
         {/* Navigation Action Buttons */}
         <div style={styles.navActions}>
-          <button
-            type="button"
-            onClick={() => onOpenChat(ticket)}
-            style={styles.chatBtn}
-            title="Open ticket conversation messages"
-            className="support-chat-btn"
-          >
-            <MessageSquare size={14} color="#011F39" />
-            <span>Chat</span>
-            {messageCount > 0 && (
-              <span style={styles.chatBadge}>{messageCount}</span>
-            )}
-          </button>
-
           <button
             type="button"
             onClick={() => onView(ticket)}
