@@ -60,23 +60,84 @@ export const MemberSidebar: React.FC<MemberSidebarProps> = ({
         className={mobileOpen ? 'sidebar-mobile-open' : ''}
       >
         {/* Brand / Logo Section */}
-        <div style={styles.header}>
-          <div style={styles.logoWrap}>
+        <div
+          style={{
+            ...styles.header,
+            padding: isEffectiveCollapsed ? '0 4px' : '0 16px',
+            justifyContent: isEffectiveCollapsed ? 'center' : 'space-between',
+          }}
+        >
+          <div
+            style={{
+              ...styles.logoWrap,
+              width: isEffectiveCollapsed ? '100%' : 'auto',
+              flex: isEffectiveCollapsed ? undefined : 1,
+              overflow: isEffectiveCollapsed ? 'visible' : 'hidden',
+              whiteSpace: isEffectiveCollapsed ? 'nowrap' : 'normal',
+            }}
+          >
             {!isEffectiveCollapsed ? (
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <span style={{ fontSize: '15px', fontWeight: 900, color: '#FFFFFF', letterSpacing: '0.04em', fontFamily: 'serif', lineHeight: 1.2 }}>
-                  HRSJM
+              <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, paddingRight: '4px' }}>
+                <span
+                  style={{
+                    fontSize: '13px',
+                    fontWeight: 800,
+                    color: '#FFFFFF',
+                    letterSpacing: '0.01em',
+                    fontFamily: 'serif',
+                    lineHeight: 1.25,
+                  }}
+                >
+                  Human Rights &amp; Social Justice Mission
                 </span>
-                <span style={{ fontSize: '9px', fontWeight: 700, color: '#FAD465', textTransform: 'uppercase', letterSpacing: '0.08em', lineHeight: 1.2 }}>
+                <span
+                  style={{
+                    fontSize: '9px',
+                    fontWeight: 700,
+                    color: '#FAD465',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.08em',
+                    lineHeight: 1.2,
+                    marginTop: '3px',
+                  }}
+                >
                   MEMBER PORTAL
                 </span>
               </div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
-                <span style={{ fontSize: '13px', fontWeight: 900, color: '#FFFFFF', letterSpacing: '0.05em' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '100%',
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: '13px',
+                    fontWeight: 900,
+                    color: '#FFFFFF',
+                    letterSpacing: '0.02em',
+                    fontFamily: 'serif',
+                    lineHeight: 1.2,
+                    textAlign: 'center',
+                  }}
+                >
                   HRSJM
                 </span>
-                <span style={{ fontSize: '7.5px', fontWeight: 700, color: '#FAD465', textTransform: 'uppercase' }}>
+                <span
+                  style={{
+                    fontSize: '7.5px',
+                    fontWeight: 700,
+                    color: '#FAD465',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    marginTop: '2px',
+                    textAlign: 'center',
+                  }}
+                >
                   Member
                 </span>
               </div>

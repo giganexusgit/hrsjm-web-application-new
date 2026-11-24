@@ -169,7 +169,7 @@ export const AdminDashboardPage: React.FC = () => {
         <div>
           <h1 style={styles.headingTitle}>Welcome, Administrator</h1>
           <p style={styles.headingSubtitle}>
-            Human Rights Sarv Janhit Manch — National Digital Governance &amp; Membership Overview
+            Human Rights &amp; Social Justice Mission — National Digital Governance &amp; Membership Overview
           </p>
         </div>
         <div style={styles.dateBadge}>

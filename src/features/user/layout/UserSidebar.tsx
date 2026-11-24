@@ -43,21 +43,25 @@ export const UserSidebar: React.FC<UserSidebarProps> = ({
         aria-label="User navigation sidebar"
       >
         {/* Top Header / Brand Logo Section */}
-        <div className="h-16 flex items-center justify-between px-4 border-b border-[#123F68] shrink-0">
-          <div className="flex items-center gap-3 overflow-hidden">
+        <div className={`h-16 flex items-center shrink-0 border-b border-[#123F68] ${
+          collapsed && !mobileOpen ? 'justify-center px-1' : 'justify-between px-4'
+        }`}>
+          <div className={`flex items-center ${
+            collapsed && !mobileOpen ? 'justify-center w-full overflow-visible' : 'min-w-0 flex-1 overflow-hidden pr-2'
+          }`}>
             {(!collapsed || mobileOpen) ? (
-              <div className="flex flex-col truncate">
-                <span className="text-base font-black tracking-tight text-white leading-tight">
-                  HRSJM
+              <div className="flex flex-col min-w-0">
+                <span className="text-[13px] font-extrabold text-white leading-snug tracking-tight font-serif">
+                  Human Rights &amp; Social Justice Mission
                 </span>
-                <span className="text-[9.5px] font-bold text-[#FAD465] uppercase tracking-wider leading-tight">
+                <span className="text-[9px] font-bold text-[#FAD465] uppercase tracking-wider leading-tight mt-0.5">
                   User Portal
                 </span>
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center w-full">
-                <span className="text-sm font-black tracking-wider text-white">HRSJM</span>
-                <span className="text-[8px] font-bold text-[#FAD465] uppercase">Portal</span>
+                <span className="text-[13px] font-black tracking-normal text-white font-serif">HRSJM</span>
+                <span className="text-[7.5px] font-bold text-[#FAD465] uppercase tracking-wider mt-0.5">Portal</span>
               </div>
             )}
           </div>
