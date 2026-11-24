@@ -13,7 +13,7 @@ export const UserLayout: React.FC = () => {
   // Auto-collapse sidebar on smaller laptop/tablet screens
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth < 1024) {
+      if (window.innerWidth <= 1024) {
         setCollapsed(true);
       } else {
         setCollapsed(false);

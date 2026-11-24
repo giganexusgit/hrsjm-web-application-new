@@ -103,7 +103,7 @@ export const SeekerLayout: React.FC = () => {
   };
 
   const handleToggleHamburger = () => {
-    if (window.innerWidth < 1024) {
+    if (window.innerWidth <= 1024) {
       setMobileDrawerOpen((prev) => !prev);
     } else {
       setDesktopCollapsed((prev) => !prev);

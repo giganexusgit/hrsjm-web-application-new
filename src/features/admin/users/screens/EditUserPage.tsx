@@ -119,8 +119,8 @@ export const EditUserPage: React.FC = () => {
     }
 
     const cleanPhone = phone.replace(/\D/g, '');
-    if (phone.trim() && cleanPhone.length < 10) {
-      err.phone = 'Please enter a valid 10-digit phone number';
+    if (phone.trim() && cleanPhone.length !== 10) {
+      err.phone = 'Phone number must be exactly 10 digits';
     }
 
     setErrors(err);
@@ -360,7 +360,8 @@ export const EditUserPage: React.FC = () => {
                 <input
                   type="tel"
                   value={phone}
-                  onChange={e => setPhone(e.target.value)}
+                  onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                  maxLength={10}
                   style={{
                     width: '100%',
                     boxSizing: 'border-box',

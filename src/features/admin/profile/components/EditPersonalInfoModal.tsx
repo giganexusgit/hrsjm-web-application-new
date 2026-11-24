@@ -42,8 +42,11 @@ export const EditPersonalInfoModal: React.FC<EditPersonalInfoModalProps> = ({
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       errs.email = 'Please enter a valid email address.';
     }
-    if (!formData.phone.trim()) {
+    const cleanPhone = formData.phone.replace(/\D/g, '').slice(-10);
+    if (!cleanPhone) {
       errs.phone = 'Phone number is required.';
+    } else if (cleanPhone.length !== 10) {
+      errs.phone = 'Phone number must be exactly 10 digits.';
     }
     setErrors(errs);
     return Object.keys(errs).length === 0;
@@ -110,10 +113,11 @@ export const EditPersonalInfoModal: React.FC<EditPersonalInfoModalProps> = ({
                   <Phone size={16} color="#94A3B8" style={styles.inputIcon} />
                   <input
                     type="tel"
+                    maxLength={10}
                     value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
                     style={{ ...styles.input, ...(errors.phone ? styles.inputError : {}) }}
-                    placeholder="+91 98765 43210"
+                    placeholder="9876543210"
                   />
                 </div>
                 {errors.phone && <span style={styles.errorText}>{errors.phone}</span>}

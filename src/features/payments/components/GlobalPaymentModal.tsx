@@ -71,8 +71,8 @@ const PaymentModalContent: React.FC<PaymentModalContentProps> = ({
       return;
     }
     const cleanDigits = donorMobile.replace(/\D/g, '').slice(-10);
-    if (cleanDigits.length < 10) {
-      setErrorMessage('Please provide a valid 10-digit mobile number.');
+    if (cleanDigits.length !== 10) {
+      setErrorMessage('Mobile number must be exactly 10 digits.');
       return;
     }
 
@@ -265,7 +265,7 @@ const PaymentModalContent: React.FC<PaymentModalContentProps> = ({
                         maxLength={10}
                         placeholder="10-digit Phone"
                         value={donorMobile}
-                        onChange={(e) => setDonorMobile(e.target.value)}
+                        onChange={(e) => setDonorMobile(e.target.value.replace(/\D/g, '').slice(0, 10))}
                         className="w-full pl-8 pr-3 py-2 rounded-xl bg-[#FAF7F0] border border-[#DCE4EC] text-xs font-medium text-[#06294D] tabular-nums focus:outline-none focus:ring-1 focus:ring-[#06294D]"
                       />
                     </div>

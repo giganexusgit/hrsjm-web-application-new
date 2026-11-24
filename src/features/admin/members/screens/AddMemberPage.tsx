@@ -164,8 +164,8 @@ export const AddMemberPage: React.FC = () => {
     const cleanPhone = phone.replace(/\D/g, '');
     if (!cleanPhone) {
       errs.phone = 'Mobile Number is required';
-    } else if (cleanPhone.length < 10) {
-      errs.phone = 'Please enter a valid 10-digit mobile number';
+    } else if (cleanPhone.length !== 10) {
+      errs.phone = 'Phone number must be exactly 10 digits';
     }
 
     if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
@@ -697,10 +697,11 @@ export const AddMemberPage: React.FC = () => {
                   </label>
                   <input
                     type="tel"
-                    placeholder="+91 98765 43210"
+                    placeholder="9876543210"
+                    maxLength={10}
                     value={phone}
                     onChange={(e) => {
-                      setPhone(e.target.value);
+                      setPhone(e.target.value.replace(/\D/g, '').slice(0, 10));
                       if (errors.phone) setErrors((prev) => ({ ...prev, phone: '' }));
                     }}
                     className={`w-full px-3.5 py-2 text-xs sm:text-sm rounded-xl border bg-white transition focus:outline-none ${errors.phone ? 'border-red-400 bg-red-50/20' : 'border-[#DCE4EC] focus:border-[#06294D]'

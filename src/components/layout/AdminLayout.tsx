@@ -14,13 +14,13 @@ export const AdminLayout: React.FC = () => {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(
-    typeof window !== 'undefined' ? window.innerWidth < 1024 : false
+    typeof window !== 'undefined' ? window.innerWidth <= 1024 : false
   );
 
   // Auto-collapse sidebar on smaller screens & track isMobile
   useEffect(() => {
     const handleResize = () => {
-      const mobile = window.innerWidth < 1024;
+      const mobile = window.innerWidth <= 1024;
       setIsMobile(mobile);
       if (mobile) {
         setCollapsed(true);
@@ -114,7 +114,6 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     flexDirection: 'column',
     minWidth: 0,
-    padding: '1.25rem 1.5rem',
   },
 };
 

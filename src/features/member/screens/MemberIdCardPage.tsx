@@ -61,10 +61,15 @@ export const MemberIdCardPage: React.FC = () => {
 
   const handleSavePersonal = async (e: React.FormEvent) => {
     e.preventDefault();
+    const cleanPhone = formData.phone.replace(/\D/g, '').slice(-10);
+    if (!cleanPhone || cleanPhone.length !== 10) {
+      showToast('Phone number must be exactly 10 digits.');
+      return;
+    }
     await updateProfile({
       full_name: formData.fullName,
       email: formData.email,
-      phone: formData.phone,
+      phone: cleanPhone,
     });
     setIsEditPersonalOpen(false);
     showToast('Personal information updated successfully.');
@@ -354,9 +359,10 @@ export const MemberIdCardPage: React.FC = () => {
                 <input
                   type="tel"
                   required
+                  maxLength={10}
                   value={formData.phone}
                   onChange={(e) =>
-                    setFormData({ ...formData, phone: e.target.value })
+                    setFormData({ ...formData, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })
                   }
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-800 focus:outline-hidden focus:border-[#0C2340]"
                 />

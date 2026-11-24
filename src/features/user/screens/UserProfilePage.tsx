@@ -130,6 +130,11 @@ export const UserProfilePage: React.FC = () => {
 
   const handleSavePersonal = async (e: React.FormEvent) => {
     e.preventDefault();
+    const cleanPhone = editPhone.replace(/\D/g, '').slice(-10);
+    if (!cleanPhone || cleanPhone.length !== 10) {
+      alert('Phone number must be exactly 10 digits.');
+      return;
+    }
     setSavingPersonal(true);
     try {
       const updated = await authService.updateMe({
@@ -524,8 +529,9 @@ export const UserProfilePage: React.FC = () => {
                   <input
                     type="tel"
                     required
+                    maxLength={10}
                     value={editPhone}
-                    onChange={(e) => setEditPhone(e.target.value)}
+                    onChange={(e) => setEditPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
                     className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm font-semibold focus:outline-hidden focus:ring-2 focus:ring-[#06294D]"
                   />
                 </div>

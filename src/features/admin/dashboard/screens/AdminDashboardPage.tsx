@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useSyncExternalStore, useMemo } from 'react';
 import { Calendar, Users, FileText, MessageSquare } from 'lucide-react';
 import { apiClient } from '@/services/apiClient';
 import { DashboardStatCard } from '../components/DashboardStatCard';
@@ -36,6 +36,12 @@ export const AdminDashboardPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [dashboardData, setDashboardData] = useState<LiveDashboardData | null>(null);
 
+  // Subscribe to live client stores for instantaneous real-time reactivity
+  const appsVersion = useSyncExternalStore(applicationsStore.subscribe, applicationsStore.getSnapshot);
+  const eventsSnapshot = useSyncExternalStore(eventsStore.subscribe, eventsStore.getSnapshot);
+  const membersSnapshot = useSyncExternalStore(membersStore.subscribe, membersStore.getSnapshot);
+  const supportSnapshot = useSyncExternalStore(supportStore.subscribe, supportStore.getSnapshot);
+
   const fetchAdminDashboard = async () => {
     setLoading(true);
     setError(null);
@@ -55,15 +61,106 @@ export const AdminDashboardPage: React.FC = () => {
 
   useEffect(() => {
     fetchAdminDashboard();
+    applicationsStore.fetchApplications().catch(() => {});
+    eventsStore.fetchEvents().catch(() => {});
+    membersStore.fetchMembers().catch(() => {});
+    supportStore.fetchTickets().catch(() => {});
   }, []);
 
-  const totalMembers = dashboardData?.memberships?.total ?? membersStore.getAllMembers().length;
-  const totalApps = dashboardData?.applications?.total ?? applicationsStore.getAllApplications().length;
-  const pendingApps = dashboardData?.memberships?.pending ?? 0;
-  const totalTickets = dashboardData?.tickets?.total ?? supportStore.getAllTickets().length;
-  const openTickets = dashboardData?.tickets?.open ?? 0;
-  const totalEvents = dashboardData?.events?.total ?? eventsStore.getAllEvents().length;
-  const upcomingEvents = dashboardData?.events?.upcoming ?? 0;
+  const liveMembers = membersSnapshot.members;
+  const totalMembers = dashboardData?.memberships?.total ?? liveMembers.length;
+
+  const allApps = applicationsStore.getAllApplications();
+  const totalApps = Math.max(dashboardData?.applications?.total ?? 0, allApps.length);
+  const storePendingCount = allApps.filter(
+    (a) => a.status === 'submitted' || (a.status as string) === 'pending'
+  ).length;
+  const pendingApps = Math.max(dashboardData?.memberships?.pending ?? 0, storePendingCount);
+
+  const liveTickets = supportSnapshot.tickets;
+  const totalTickets = Math.max(dashboardData?.tickets?.total ?? 0, liveTickets.length);
+  const openTickets = dashboardData?.tickets?.open ?? liveTickets.filter(t => t.status === 'SUBMITTED' || t.status === 'UNDER_REVIEW').length;
+
+  // Real admin-created events from eventsStore (excludes seeded database fixture stubs)
+  const liveEvents = eventsSnapshot.events;
+  const totalEvents = liveEvents.length;
+  const upcomingEvents = liveEvents.filter(e => e.status === 'UPCOMING' || !e.status).length;
+
+  // Dynamically compute Application Status Distribution segments matching Card 2
+  const applicationSegments = useMemo(() => {
+    const apps = applicationsStore.getAllApplications();
+    if (apps.length > 0) {
+      let pending = 0;
+      let underReview = 0;
+      let approved = 0;
+      let rejected = 0;
+
+      for (const app of apps) {
+        const st = (app.status || '').toLowerCase();
+        if (st === 'approved' || st === 'active') {
+          approved += 1;
+        } else if (st === 'under_review') {
+          underReview += 1;
+        } else if (st === 'rejected' || st === 'cancelled') {
+          rejected += 1;
+        } else {
+          pending += 1;
+        }
+      }
+
+      return [
+        { label: 'Pending', count: pending, color: '#D97706' },
+        { label: 'Under Review', count: underReview, color: '#174A78' },
+        { label: 'Approved', count: approved, color: '#16A34A' },
+        { label: 'Rejected', count: rejected, color: '#DC2626' },
+      ];
+    }
+
+    const pendingCount = (dashboardData?.applicationsByStatus?.PENDING || 0) + (dashboardData?.memberships?.pending || 0);
+    const underReviewCount = dashboardData?.applicationsByStatus?.UNDER_REVIEW || 0;
+    const approvedCount = (dashboardData?.applicationsByStatus?.APPROVED || 0) + (dashboardData?.memberships?.active || 0);
+    const rejectedCount = dashboardData?.applicationsByStatus?.REJECTED || 0;
+
+    return [
+      { label: 'Pending', count: pendingCount, color: '#D97706' },
+      { label: 'Under Review', count: underReviewCount, color: '#174A78' },
+      { label: 'Approved', count: approvedCount, color: '#16A34A' },
+      { label: 'Rejected', count: rejectedCount, color: '#DC2626' },
+    ];
+  }, [appsVersion, dashboardData]);
+
+  // Dynamically compute Support Ticket Resolution segments
+  const ticketSegments = useMemo(() => {
+    const tickets = supportSnapshot.tickets;
+    if (tickets.length > 0) {
+      let submitted = 0;
+      let underReview = 0;
+      let resolved = 0;
+      let closed = 0;
+
+      for (const t of tickets) {
+        const st = (t.status || '').toUpperCase();
+        if (st === 'RESOLVED') resolved += 1;
+        else if (st === 'CLOSED') closed += 1;
+        else if (st === 'IN_PROGRESS' || st === 'UNDER_REVIEW') underReview += 1;
+        else submitted += 1;
+      }
+
+      return [
+        { label: 'Submitted', count: submitted, color: '#D97706' },
+        { label: 'Under Review', count: underReview, color: '#174A78' },
+        { label: 'Resolved', count: resolved, color: '#16A34A' },
+        { label: 'Closed', count: closed, color: '#64748B' },
+      ];
+    }
+
+    return [
+      { label: 'Submitted', count: dashboardData?.ticketsByStatus?.SUBMITTED ?? dashboardData?.tickets?.open ?? 0, color: '#D97706' },
+      { label: 'Under Review', count: dashboardData?.ticketsByStatus?.UNDER_REVIEW ?? 0, color: '#174A78' },
+      { label: 'Resolved', count: dashboardData?.ticketsByStatus?.RESOLVED ?? 0, color: '#16A34A' },
+      { label: 'Closed', count: dashboardData?.ticketsByStatus?.CLOSED ?? 0, color: '#64748B' },
+    ];
+  }, [supportSnapshot, dashboardData]);
 
   return (
     <div style={styles.dashboardContainer}>
@@ -83,7 +180,7 @@ export const AdminDashboardPage: React.FC = () => {
 
       {loading && !dashboardData && (
         <div style={styles.contentGrid}>
-          <div style={styles.statCardsGrid}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full">
             <SkeletonCard height={120} />
             <SkeletonCard height={120} />
             <SkeletonCard height={120} />
@@ -108,8 +205,8 @@ export const AdminDashboardPage: React.FC = () => {
 
       {(!loading || dashboardData) && (
         <div style={styles.normalViewWrapper}>
-          {/* 4 Primary Top Metrics */}
-          <div style={styles.statCardsGrid}>
+          {/* 4 Primary Top Metrics - All 4 in 1 line on desktop */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full">
             <DashboardStatCard
               title="Total Members"
               value={totalMembers.toLocaleString('en-IN')}
@@ -129,7 +226,7 @@ export const AdminDashboardPage: React.FC = () => {
             <DashboardStatCard
               title="Total Complaints"
               value={totalTickets.toLocaleString('en-IN')}
-              subtitle={`${openTickets} open tickets`}
+              subtitle={`${openTickets} ${openTickets === 1 ? 'open ticket' : 'open tickets'}`}
               tone="success"
               linkTo="/admin/support"
               icon={MessageSquare}
@@ -149,24 +246,12 @@ export const AdminDashboardPage: React.FC = () => {
             <MembershipGrowthChart
               growthData={dashboardData?.memberGrowth}
               currentCount={totalMembers}
+              totalMembers={totalMembers}
+              activeMembers={totalMembers}
             />
             <StatusDonutChart
               title="Application Status Distribution"
-              segments={
-                dashboardData?.applicationsByStatus
-                  ? [
-                      { label: 'Pending', count: dashboardData.applicationsByStatus.PENDING || 0, color: '#D97706' },
-                      { label: 'Under Review', count: dashboardData.applicationsByStatus.UNDER_REVIEW || 0, color: '#174A78' },
-                      { label: 'Approved', count: dashboardData.applicationsByStatus.APPROVED || 0, color: '#16A34A' },
-                      { label: 'Rejected', count: dashboardData.applicationsByStatus.REJECTED || 0, color: '#DC2626' },
-                    ]
-                  : [
-                      { label: 'Pending', count: 0, color: '#D97706' },
-                      { label: 'Under Review', count: 0, color: '#174A78' },
-                      { label: 'Approved', count: 0, color: '#16A34A' },
-                      { label: 'Rejected', count: 0, color: '#DC2626' },
-                    ]
-              }
+              segments={applicationSegments}
             />
           </div>
 
@@ -192,21 +277,7 @@ export const AdminDashboardPage: React.FC = () => {
             />
             <StatusDonutChart
               title="Complaints Resolution"
-              segments={
-                dashboardData?.ticketsByStatus
-                  ? [
-                      { label: 'Submitted', count: dashboardData.ticketsByStatus.SUBMITTED || 0, color: '#D97706' },
-                      { label: 'Under Review', count: dashboardData.ticketsByStatus.UNDER_REVIEW || 0, color: '#174A78' },
-                      { label: 'Resolved', count: dashboardData.ticketsByStatus.RESOLVED || 0, color: '#16A34A' },
-                      { label: 'Closed', count: dashboardData.ticketsByStatus.CLOSED || 0, color: '#64748B' },
-                    ]
-                  : [
-                      { label: 'Submitted', count: 0, color: '#D97706' },
-                      { label: 'Under Review', count: 0, color: '#174A78' },
-                      { label: 'Resolved', count: 0, color: '#16A34A' },
-                      { label: 'Closed', count: 0, color: '#64748B' },
-                    ]
-              }
+              segments={ticketSegments}
             />
           </div>
         </div>
@@ -264,8 +335,9 @@ const styles: Record<string, React.CSSProperties> = {
   },
   statCardsGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+    gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
     gap: '16px',
+    width: '100%',
   },
   twoColumnGrid: {
     display: 'grid',

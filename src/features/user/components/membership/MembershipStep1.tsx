@@ -78,8 +78,8 @@ export const MembershipStep1: React.FC<MembershipStep1Props> = ({
     }
 
     const cleanMobile = formData.mobile.replace(/\D/g, '').slice(-10);
-    if (cleanMobile.length !== 10) {
-      errs.mobile = 'Please enter a valid 10-digit mobile number.';
+    if (!cleanMobile || cleanMobile.length !== 10) {
+      errs.mobile = 'Mobile number must be exactly 10 digits.';
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -237,8 +237,9 @@ export const MembershipStep1: React.FC<MembershipStep1Props> = ({
             <input
               type="tel"
               required
+              maxLength={10}
               value={formData.mobile}
-              onChange={e => setFormData({ ...formData, mobile: e.target.value })}
+              onChange={e => setFormData({ ...formData, mobile: e.target.value.replace(/\D/g, '').slice(0, 10) })}
               placeholder="e.g. 9876543210"
               className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold focus:outline-hidden focus:ring-2 focus:ring-[#06294D]"
             />

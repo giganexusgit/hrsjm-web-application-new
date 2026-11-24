@@ -18,6 +18,7 @@ export const MemberSidebar: React.FC<MemberSidebarProps> = ({
   mobileOpen,
   onCloseMobile,
 }) => {
+  const isEffectiveCollapsed = collapsed && !mobileOpen;
   const navigate = useNavigate();
   const unreadCount = useMemberUnreadCount();
   const navScrollRef = useRef<HTMLDivElement>(null);
@@ -53,7 +54,7 @@ export const MemberSidebar: React.FC<MemberSidebarProps> = ({
       <aside
         style={{
           ...styles.sidebar,
-          width: collapsed ? '74px' : '268px',
+          width: mobileOpen ? '280px' : isEffectiveCollapsed ? '74px' : '268px',
           transform: mobileOpen ? 'translateX(0)' : undefined,
         }}
         className={mobileOpen ? 'sidebar-mobile-open' : ''}
@@ -61,7 +62,7 @@ export const MemberSidebar: React.FC<MemberSidebarProps> = ({
         {/* Brand / Logo Section */}
         <div style={styles.header}>
           <div style={styles.logoWrap}>
-            {!collapsed ? (
+            {!isEffectiveCollapsed ? (
               <div style={{ display: 'flex', flexDirection: 'column' }}>
                 <span style={{ fontSize: '15px', fontWeight: 900, color: '#FFFFFF', letterSpacing: '0.04em', fontFamily: 'serif', lineHeight: 1.2 }}>
                   HRSJM
@@ -102,10 +103,10 @@ export const MemberSidebar: React.FC<MemberSidebarProps> = ({
         >
           {MEMBER_NAV_GROUPS.map((group) => (
             <div key={group.groupTitle} style={styles.groupContainer}>
-              {!collapsed && (
+              {!isEffectiveCollapsed && (
                 <div style={styles.groupHeader}>{group.groupTitle}</div>
               )}
-              {collapsed && <div style={styles.collapsedDivider} />}
+              {isEffectiveCollapsed && <div style={styles.collapsedDivider} />}
 
               <div style={styles.groupItems}>
                 {group.items.map((item) => {
@@ -124,10 +125,10 @@ export const MemberSidebar: React.FC<MemberSidebarProps> = ({
                       style={({ isActive }) => ({
                         ...styles.navLink,
                         ...(isActive ? styles.navLinkActive : {}),
-                        justifyContent: collapsed ? 'center' : 'flex-start',
-                        padding: collapsed ? '10px 0' : '10px 14px',
+                        justifyContent: isEffectiveCollapsed ? 'center' : 'flex-start',
+                        padding: isEffectiveCollapsed ? '10px 0' : '10px 14px',
                       })}
-                      title={collapsed ? item.title : undefined}
+                      title={isEffectiveCollapsed ? item.title : undefined}
                     >
                       {({ isActive }) => (
                         <>
@@ -141,7 +142,7 @@ export const MemberSidebar: React.FC<MemberSidebarProps> = ({
                             style={{ flexShrink: 0 }}
                           />
 
-                          {!collapsed && (
+                          {!isEffectiveCollapsed && (
                             <span
                               style={{
                                 ...styles.linkText,
@@ -164,7 +165,7 @@ export const MemberSidebar: React.FC<MemberSidebarProps> = ({
                                 : item.badge;
 
                             return (
-                              !collapsed &&
+                              !isEffectiveCollapsed &&
                               effectiveBadge && (
                                 <span
                                   style={{
@@ -194,7 +195,7 @@ export const MemberSidebar: React.FC<MemberSidebarProps> = ({
         <div
           style={{
             ...styles.footer,
-            padding: collapsed ? '10px 8px' : '12px 14px',
+            padding: isEffectiveCollapsed ? '10px 8px' : '12px 14px',
           }}
         >
           {/* Sign Out Action Button */}
@@ -209,11 +210,11 @@ export const MemberSidebar: React.FC<MemberSidebarProps> = ({
               width: '100%',
               cursor: 'pointer',
               textAlign: 'left',
-              justifyContent: collapsed ? 'center' : 'flex-start',
-              padding: collapsed ? '10px 0' : '10px 12px',
+              justifyContent: isEffectiveCollapsed ? 'center' : 'flex-start',
+              padding: isEffectiveCollapsed ? '10px 0' : '10px 12px',
               borderRadius: '8px',
             }}
-            title={collapsed ? 'Sign Out' : undefined}
+            title={isEffectiveCollapsed ? 'Sign Out' : undefined}
           >
             <LogOut
               size={18}
@@ -221,7 +222,7 @@ export const MemberSidebar: React.FC<MemberSidebarProps> = ({
               strokeWidth={1.8}
               style={{ flexShrink: 0 }}
             />
-            {!collapsed && (
+            {!isEffectiveCollapsed && (
               <span
                 style={{
                   ...styles.linkText,
@@ -237,24 +238,27 @@ export const MemberSidebar: React.FC<MemberSidebarProps> = ({
           </button>
 
           {/* Desktop Collapse Toggle Button */}
-          <button
-            type="button"
-            onClick={onToggleCollapse}
-            style={{
-              ...styles.collapseBtn,
-              marginTop: '8px',
-            }}
-            title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          >
-            {collapsed ? (
-              <ChevronRight size={18} color="#FAD465" />
-            ) : (
-              <>
-                <ChevronLeft size={18} color="#FAD465" />
-                <span style={styles.collapseBtnText}>Collapse menu</span>
-              </>
-            )}
-          </button>
+          {!mobileOpen && (
+            <button
+              type="button"
+              onClick={onToggleCollapse}
+              className="hidden lg:flex"
+              style={{
+                ...styles.collapseBtn,
+                marginTop: '8px',
+              }}
+              title={isEffectiveCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            >
+              {isEffectiveCollapsed ? (
+                <ChevronRight size={18} color="#FAD465" />
+              ) : (
+                <>
+                  <ChevronLeft size={18} color="#FAD465" />
+                  <span style={styles.collapseBtnText}>Collapse menu</span>
+                </>
+              )}
+            </button>
+          )}
         </div>
       </aside>
     </>
@@ -272,7 +276,7 @@ const styles: Record<string, React.CSSProperties> = {
     top: 0,
     zIndex: 40,
     borderRight: '1px solid #123F68',
-    transition: 'width 0.22s cubic-bezier(0.4, 0, 0.2, 1)',
+    transition: 'width 0.22s cubic-bezier(0.4, 0, 0.2, 1), transform 0.22s cubic-bezier(0.4, 0, 0.2, 1)',
     flexShrink: 0,
   },
   mobileBackdrop: {

@@ -49,8 +49,9 @@ const EditMemberForm: React.FC<EditMemberFormProps> = ({
       setErrorMsg('Full Name is required.');
       return;
     }
-    if (!phone.trim()) {
-      setErrorMsg('Mobile number is required.');
+    const cleanPhone = phone.replace(/\D/g, '').slice(-10);
+    if (!cleanPhone || cleanPhone.length !== 10) {
+      setErrorMsg('Mobile number must be exactly 10 digits.');
       return;
     }
 
@@ -124,8 +125,9 @@ const EditMemberForm: React.FC<EditMemberFormProps> = ({
             <input
               type="tel"
               required
+              maxLength={10}
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
               style={inputStyle}
             />
           </div>

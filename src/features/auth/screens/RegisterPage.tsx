@@ -27,9 +27,13 @@ export const RegisterPage: React.FC = () => {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
+    let finalValue = value;
+    if (name === 'mobile') {
+      finalValue = value.replace(/\D/g, '').slice(0, 10);
+    }
     setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value,
+      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : finalValue,
     }));
   };
 
@@ -40,9 +44,9 @@ export const RegisterPage: React.FC = () => {
       return;
     }
 
-    const cleanMobile = formData.mobile.replace(/\D/g, '');
-    if (cleanMobile.length < 10) {
-      setError('Please enter a valid 10-digit mobile number.');
+    const cleanMobile = formData.mobile.replace(/\D/g, '').slice(-10);
+    if (!cleanMobile || cleanMobile.length !== 10) {
+      setError('Mobile number must be exactly 10 digits.');
       return;
     }
 

@@ -127,9 +127,9 @@ export const SeekerApplyPage: React.FC = () => {
       errs.fullName = 'Full legal name is required (min 2 characters).';
     }
 
-    const cleanMobile = mobile.replace(/\D/g, '');
-    if (!cleanMobile || cleanMobile.length < 10) {
-      errs.mobile = 'Enter a valid 10-digit mobile number.';
+    const cleanMobile = mobile.replace(/\D/g, '').slice(-10);
+    if (!cleanMobile || cleanMobile.length !== 10) {
+      errs.mobile = 'Mobile number must be exactly 10 digits.';
     }
 
     if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
@@ -325,8 +325,9 @@ export const SeekerApplyPage: React.FC = () => {
                     <input
                       type="tel"
                       value={mobile}
-                      onChange={(e) => setMobile(e.target.value)}
+                      onChange={(e) => setMobile(e.target.value.replace(/\D/g, '').slice(0, 10))}
                       placeholder="10-digit mobile number"
+                      maxLength={10}
                       className="w-full pl-9 pr-3.5 py-2 text-xs bg-white border border-[#DCE4EC] rounded-xl text-[#0B2F52] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FAD465] focus:border-transparent transition"
                     />
                   </div>

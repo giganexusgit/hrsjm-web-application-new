@@ -109,14 +109,17 @@ export const MemberHeader: React.FC<MemberHeaderProps> = ({
   };
 
   return (
-    <header style={styles.header}>
+    <header
+      style={styles.header}
+      className="portal-header sticky top-0 z-30 bg-white border-b border-[#DCE4EC] shadow-xs flex items-center justify-between gap-2 sm:gap-4 select-none"
+    >
       {/* Left Section: Menu Toggle, Brand Logo (mobile only) & Title */}
-      <div style={styles.leftSection}>
+      <div style={styles.leftSection} className="flex items-center gap-2 sm:gap-3.5 min-w-0">
         {/* Responsive single menu toggle button */}
         <button
           type="button"
           onClick={() => {
-            if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+            if (typeof window !== 'undefined' && window.innerWidth <= 1024) {
               onToggleMobileSidebar();
             } else {
               onToggleDesktopCollapse();
@@ -125,27 +128,33 @@ export const MemberHeader: React.FC<MemberHeaderProps> = ({
           style={styles.toggleBtn}
           aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          className="shrink-0"
         >
           <Menu size={19} color="#06294D" />
         </button>
 
         {/* Brand logo in header for mobile when sidebar is hidden */}
-        <div style={styles.mobileLogo}>
+        <div style={styles.mobileLogo} className="hidden">
           <HrsjmLogo size="sm" variant="dark" showWordmark={true} subtitle="" />
         </div>
 
-        <div style={styles.titleWrap}>
-          <div style={styles.breadcrumb}>
+        <div style={styles.titleWrap} className="flex flex-col min-w-0 justify-center">
+          <div style={styles.breadcrumb} className="portal-header-breadcrumb items-center gap-1.5">
             <span style={styles.breadcrumbRoot}>HRSJM Member</span>
             <span style={styles.breadcrumbSep}>/</span>
             <span style={styles.breadcrumbCurrent}>{currentTitle}</span>
           </div>
-          <h1 style={styles.pageHeading}>{currentTitle}</h1>
+          <h1
+            style={styles.pageHeading}
+            className="portal-header-title font-bold text-[#06294D] tracking-tight leading-tight"
+          >
+            {currentTitle}
+          </h1>
         </div>
       </div>
 
       {/* Right Section: Donate Now, Status, Bell & Profile */}
-      <div style={styles.rightSection}>
+      <div style={styles.rightSection} className="flex items-center gap-2 sm:gap-3 shrink-0">
         {/* Member Status Pill */}
         <div
           style={{
@@ -155,6 +164,7 @@ export const MemberHeader: React.FC<MemberHeaderProps> = ({
             borderColor: statusBadge.border,
           }}
           title={`Valid until ${member.validUpto}`}
+          className="hidden lg:inline-flex items-center gap-1.5"
         >
           <StatusIcon size={13} color={statusBadge.color} />
           <span>{statusBadge.label}</span>
@@ -166,6 +176,7 @@ export const MemberHeader: React.FC<MemberHeaderProps> = ({
           style={styles.donateBtn}
           onClick={() => navigate('/member/donate')}
           aria-label="Donate Now to Social Causes"
+          className="hidden sm:inline-flex items-center gap-1.5"
         >
           <Heart size={14} color="#0B2F52" fill="#0B2F52" />
           <span>Donate Now</span>
@@ -178,6 +189,7 @@ export const MemberHeader: React.FC<MemberHeaderProps> = ({
           onClick={() => navigate('/member/notifications')}
           aria-label={`Member Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}`}
           title="Notifications & Bulletins"
+          className="shrink-0"
         >
           <Bell size={18} color="#0B2F52" />
           {unreadCount > 0 && (
@@ -188,16 +200,17 @@ export const MemberHeader: React.FC<MemberHeaderProps> = ({
         </button>
 
         {/* Member Profile Menu */}
-        <div style={styles.profileWrapper} ref={dropdownRef}>
+        <div style={styles.profileWrapper} className="relative shrink-0" ref={dropdownRef}>
           <button
             type="button"
             style={styles.profileTrigger}
             onClick={() => setProfileDropdownOpen((prev) => !prev)}
             aria-expanded={profileDropdownOpen}
             aria-haspopup="true"
+            className="flex items-center gap-2 cursor-pointer p-1 rounded-lg hover:bg-slate-50 transition-colors"
           >
             {/* Avatar */}
-            <div style={styles.avatarRing}>
+            <div style={styles.avatarRing} className="shrink-0">
               <div style={styles.avatarCore}>
                 {validAvatarUrl && !imgError ? (
                   <img
@@ -214,12 +227,12 @@ export const MemberHeader: React.FC<MemberHeaderProps> = ({
               </div>
             </div>
 
-            <div style={styles.profileInfo}>
+            <div style={styles.profileInfo} className="portal-header-profile-info flex-col text-left">
               <span style={styles.profileName}>{member.fullName}</span>
               <span style={styles.profileRole}>{member.categoryTitle}</span>
             </div>
 
-            <ChevronDown size={14} color="#718096" />
+            <ChevronDown size={14} color="#718096" className="portal-header-chevron shrink-0" />
           </button>
 
           {/* Profile Dropdown Menu */}
@@ -319,13 +332,8 @@ export const MemberHeader: React.FC<MemberHeaderProps> = ({
 
 const styles: Record<string, React.CSSProperties> = {
   header: {
-    height: '68px',
     backgroundColor: '#FFFFFF',
     borderBottom: '1px solid #DCE4EC',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: '0 24px',
     position: 'sticky',
     top: 0,
     zIndex: 30,
@@ -358,7 +366,6 @@ const styles: Record<string, React.CSSProperties> = {
     justifyContent: 'center',
   },
   breadcrumb: {
-    display: 'flex',
     alignItems: 'center',
     gap: '6px',
     fontSize: '11px',
@@ -378,7 +385,6 @@ const styles: Record<string, React.CSSProperties> = {
   },
   pageHeading: {
     margin: 0,
-    fontSize: '18px',
     fontWeight: 700,
     color: '#06294D',
     letterSpacing: '-0.02em',
@@ -485,7 +491,6 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '12px',
   },
   profileInfo: {
-    display: 'flex',
     flexDirection: 'column',
     textAlign: 'left',
   },

@@ -18,6 +18,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   mobileOpen,
   onCloseMobile,
 }) => {
+  const isEffectiveCollapsed = collapsed && !mobileOpen;
   const location = useLocation();
   const unreadCount = useUnreadCount();
   const { getEffectiveBadge, clearBadge } = useAdminNavBadges();
@@ -63,7 +64,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       <aside
         style={{
           ...styles.sidebar,
-          width: collapsed ? '74px' : '268px',
+          width: mobileOpen ? '280px' : isEffectiveCollapsed ? '74px' : '268px',
           transform: mobileOpen ? 'translateX(0)' : undefined,
         }}
         className={mobileOpen ? 'sidebar-mobile-open' : ''}
@@ -71,7 +72,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
         {/* Brand / Logo Section */}
         <div style={styles.header}>
           <div style={styles.logoWrap}>
-            {!collapsed ? (
+            {!isEffectiveCollapsed ? (
               <div style={{ display: 'flex', flexDirection: 'column' }}>
                 <span style={{ fontSize: '15px', fontWeight: 900, color: '#FFFFFF', letterSpacing: '0.04em', fontFamily: 'serif', lineHeight: 1.2 }}>
                   HRSJM
@@ -112,10 +113,10 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
         >
           {ADMIN_NAV_GROUPS.map((group) => (
             <div key={group.groupTitle} style={styles.groupContainer}>
-              {!collapsed && (
+              {!isEffectiveCollapsed && (
                 <div style={styles.groupHeader}>{group.groupTitle}</div>
               )}
-              {collapsed && <div style={styles.collapsedDivider} />}
+              {isEffectiveCollapsed && <div style={styles.collapsedDivider} />}
 
               <div style={styles.groupItems}>
                 {group.items.map((item) => {
@@ -131,10 +132,10 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                       style={({ isActive }) => ({
                         ...styles.navLink,
                         ...(isActive ? styles.navLinkActive : {}),
-                        justifyContent: collapsed ? 'center' : 'flex-start',
-                        padding: collapsed ? '10px 0' : '10px 14px',
+                        justifyContent: isEffectiveCollapsed ? 'center' : 'flex-start',
+                        padding: isEffectiveCollapsed ? '10px 0' : '10px 14px',
                       })}
-                      title={collapsed ? item.title : undefined}
+                      title={isEffectiveCollapsed ? item.title : undefined}
                     >
                       {({ isActive }) => {
                         const effectiveBadge = getEffectiveBadge(item, unreadCount, isActive);
@@ -150,7 +151,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                               style={{ flexShrink: 0 }}
                             />
 
-                            {!collapsed && (
+                            {!isEffectiveCollapsed && (
                               <span
                                 style={{
                                   ...styles.linkText,
@@ -162,7 +163,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                               </span>
                             )}
 
-                            {!collapsed && effectiveBadge && (
+                            {!isEffectiveCollapsed && effectiveBadge && (
                               <span
                                 style={{
                                   ...styles.badge,
@@ -174,7 +175,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                               </span>
                             )}
 
-                            {collapsed && effectiveBadge && (
+                            {isEffectiveCollapsed && effectiveBadge && (
                               <span
                                 style={{
                                   position: 'absolute',
@@ -200,23 +201,25 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
         </div>
 
         {/* Desktop Collapse Toggle Footer */}
-        <div style={styles.footer}>
-          <button
-            type="button"
-            onClick={onToggleCollapse}
-            style={styles.collapseBtn}
-            title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          >
-            {collapsed ? (
-              <ChevronRight size={18} color="#FAD465" />
-            ) : (
-              <>
-                <ChevronLeft size={18} color="#FAD465" />
-                <span style={styles.collapseBtnText}>Collapse menu</span>
-              </>
-            )}
-          </button>
-        </div>
+        {!mobileOpen && (
+          <div style={styles.footer} className="hidden lg:block">
+            <button
+              type="button"
+              onClick={onToggleCollapse}
+              style={styles.collapseBtn}
+              title={isEffectiveCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            >
+              {isEffectiveCollapsed ? (
+                <ChevronRight size={18} color="#FAD465" />
+              ) : (
+                <>
+                  <ChevronLeft size={18} color="#FAD465" />
+                  <span style={styles.collapseBtnText}>Collapse menu</span>
+                </>
+              )}
+            </button>
+          </div>
+        )}
       </aside>
     </>
   );

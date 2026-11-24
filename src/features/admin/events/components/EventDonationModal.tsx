@@ -80,6 +80,12 @@ export const EventDonationModal: React.FC<EventDonationModalProps> = ({
       return;
     }
 
+    const cleanMobile = donorMobile.replace(/\D/g, '').slice(-10);
+    if (donorMobile.trim() && cleanMobile.length !== 10) {
+      setErrorMsg('Mobile number must be exactly 10 digits.');
+      return;
+    }
+
     try {
       setIsSubmitting(true);
 
@@ -361,8 +367,9 @@ export const EventDonationModal: React.FC<EventDonationModalProps> = ({
                     <input
                       type="tel"
                       placeholder="9876543210"
+                      maxLength={10}
                       value={donorMobile}
-                      onChange={(e) => setDonorMobile(e.target.value)}
+                      onChange={(e) => setDonorMobile(e.target.value.replace(/\D/g, '').slice(0, 10))}
                       className="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs text-slate-800 focus:outline-none focus:border-[#011F39]"
                     />
                   </div>

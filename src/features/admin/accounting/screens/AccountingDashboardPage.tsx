@@ -37,6 +37,7 @@ import type {
   AccountItem,
   JournalEntryItem,
   LedgerTransaction,
+  LedgerSummary,
   MainAccountingMode,
 } from '../types/accounting.types';
 import { formatINR } from '../types/accounting.types';
@@ -285,6 +286,31 @@ export const AccountingDashboardPage: React.FC = () => {
     };
   }, [filteredTransactions]);
 
+  // Track if any filter or non-all mode is currently applied
+  const isFiltered = useMemo(() => {
+    return (
+      ledgerMode !== 'PASSBOOK' ||
+      selectedStream !== 'ALL' ||
+      selectedSource !== 'ALL' ||
+      selectedAccountId !== 'ALL' ||
+      Boolean(searchQuery.trim())
+    );
+  }, [ledgerMode, selectedStream, selectedSource, selectedAccountId, searchQuery]);
+
+  // Dynamic summary that reflects active filters and tabs
+  const dynamicSummary: LedgerSummary = useMemo(() => {
+    if (!isFiltered) {
+      return summary;
+    }
+    return {
+      opening_balance: summary.opening_balance,
+      total_debit: filteredTotals.inflow,
+      total_credit: filteredTotals.outflow,
+      closing_balance: summary.opening_balance + filteredTotals.net,
+      net_change: filteredTotals.net,
+    };
+  }, [isFiltered, summary, filteredTotals]);
+
   // Mode counts
   const modeCounts = useMemo(() => {
     let credit = 0;
@@ -448,8 +474,8 @@ export const AccountingDashboardPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Top 4 Summary Cards (Executive Balanced Grid, No Dark Block) */}
-      <LedgerSummaryCards summary={summary} />
+      {/* Top 4 Summary Cards (Executive Balanced Grid, Dynamic to Filters) */}
+      <LedgerSummaryCards summary={dynamicSummary} isFiltered={isFiltered} />
 
       {/* Main Content Box */}
       <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-4 sm:p-6 w-full max-w-full min-w-0">

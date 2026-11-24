@@ -11,6 +11,7 @@ import { usersService } from '../services/usersService';
 import { getValidAvatarUrl } from '@/utils/avatar';
 
 const STORAGE_KEY = 'hrsjm_registered_users';
+const DELETED_USERS_KEY = 'hrsjm_deleted_users';
 
 export const parseUserDateToTimestamp = (dateStr?: string): number => {
   if (!dateStr) return 0;
@@ -23,12 +24,44 @@ export const parseUserDateToTimestamp = (dateStr?: string): number => {
 
 class UsersStore {
   private users: UserItem[] = [];
+  private deletedUserIds: Set<string> = new Set();
   private listeners: Set<() => void> = new Set();
   private version = 0;
 
   constructor() {
-    this.users = this.loadPersistedUsers();
+    this.deletedUserIds = this.loadDeletedUserIds();
+    this.users = this.loadPersistedUsers().filter(u => !this.deletedUserIds.has(u.id));
     this.sortUsersInternal();
+  }
+
+  private loadDeletedUserIds(): Set<string> {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const raw = window.localStorage.getItem(DELETED_USERS_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) {
+            return new Set(parsed);
+          }
+        }
+      }
+    } catch {
+      // Ignore localStorage errors
+    }
+    return new Set();
+  }
+
+  private persistDeletedUserIds(): void {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        window.localStorage.setItem(
+          DELETED_USERS_KEY,
+          JSON.stringify(Array.from(this.deletedUserIds))
+        );
+      }
+    } catch {
+      // Ignore localStorage errors
+    }
   }
 
   private sortUsersInternal(): void {
@@ -106,12 +139,12 @@ class UsersStore {
       const items = Array.isArray(response?.items)
         ? response.items
         : Array.isArray(response?.data)
-        ? response.data
-        : Array.isArray(response?.data?.items)
-        ? response.data.items
-        : Array.isArray(response)
-        ? response
-        : null;
+          ? response.data
+          : Array.isArray(response?.data?.items)
+            ? response.data.items
+            : Array.isArray(response)
+              ? response
+              : null;
 
       if (items && items.length > 0) {
         // Sort chronologically ascending to establish stable 1-based sequential registration numbers starting from HRSJM-00001
@@ -167,13 +200,13 @@ class UsersStore {
           const rawStatus = (u.status || '').toUpperCase();
           let status: UserStatus =
             rawStatus === 'BLOCKED' ||
-            rawStatus === 'INACTIVE' ||
-            rawStatus === 'SUSPENDED' ||
-            u.is_active === false
+              rawStatus === 'INACTIVE' ||
+              rawStatus === 'SUSPENDED' ||
+              u.is_active === false
               ? 'blocked'
               : rawStatus === 'PENDING'
-              ? 'pending'
-              : 'active';
+                ? 'pending'
+                : 'active';
 
           if (userType === 'general' && status === 'pending') {
             status = 'active';
@@ -211,11 +244,17 @@ class UsersStore {
           });
         }
 
-        this.users = mappedUsers;
+        const localOnlyUsers = this.users.filter(u =>
+          !mappedUsers.some(m => m.id === u.id || (m.email && u.email && m.email.toLowerCase() === u.email.toLowerCase())) &&
+          !this.deletedUserIds.has(u.id)
+        );
+
+        this.users = [...localOnlyUsers, ...mappedUsers].filter(u => !this.deletedUserIds.has(u.id));
         this.sortUsersInternal();
         this.notify();
       } else if (items && items.length === 0) {
-        this.users = [];
+        const localOnlyUsers = this.users.filter(u => !this.deletedUserIds.has(u.id));
+        this.users = localOnlyUsers;
         this.notify();
       }
     } catch {
@@ -224,8 +263,9 @@ class UsersStore {
     return this.getAllUsers();
   }
 
-  public getStats(): UserStats {
-    const total = this.users.length;
+  public getStats(pool?: UserItem[]): UserStats {
+    const target = pool || this.users;
+    const total = target.length;
     let active = 0;
     let pending = 0;
     let blocked = 0;
@@ -235,7 +275,7 @@ class UsersStore {
     let donorsCount = 0;
     let generalCount = 0;
 
-    for (const u of this.users) {
+    for (const u of target) {
       if (u.status === 'active') active++;
       else if (u.status === 'pending') pending++;
       else if (u.status === 'blocked') blocked++;
@@ -338,23 +378,24 @@ class UsersStore {
         const data = res?.data || res;
         createdUser = {
           id: data.id || `user-${Date.now()}`,
-          memberId: data.member_id || `HRSJM-${String(this.users.length + 1).padStart(5, '0')}`,
+          memberId: data.membership_number || data.member_id || `HRSJM-${String(this.users.length + 1).padStart(5, '0')}`,
           applicationNumber: payload.userType === 'seeker' ? `HRSJM-SEK-${Math.floor(1000 + Math.random() * 9000)}` : undefined,
-          name: payload.name.trim(),
-          email: payload.email.trim(),
-          phone: payload.phone.trim(),
+          name: data.full_name || payload.name.trim(),
+          email: data.email || payload.email.trim(),
+          phone: data.mobile_number || payload.phone.trim(),
           userType: payload.userType,
           status: payload.status || (payload.userType === 'seeker' ? 'pending' : 'active'),
-          avatarUrl: payload.avatarUrl,
-          joinedDate: new Date().toISOString(),
-          dob: payload.dob,
-          gender: payload.gender,
-          address: payload.address,
+          avatarUrl: data.avatar || payload.avatarUrl,
+          joinedDate: data.created_at || new Date().toISOString(),
+          dob: data.dob || payload.dob,
+          gender: data.gender || payload.gender,
+          address: data.address || payload.address,
           totalDonations: 0,
           donationCount: 0,
           documents: [],
         };
-      } catch {
+      } catch (err) {
+        console.warn('API createUser failed, falling back to local persistent store:', err);
         // Fallback for offline/local simulation
         createdUser = {
           id: `user-${Date.now()}`,
@@ -376,6 +417,9 @@ class UsersStore {
         };
       }
 
+      this.users = this.users.filter(
+        u => u.id !== createdUser.id && (!createdUser.email || u.email?.toLowerCase() !== createdUser.email.toLowerCase())
+      );
       this.users.unshift(createdUser);
       this.sortUsersInternal();
       this.notify();
@@ -532,14 +576,24 @@ class UsersStore {
     return true;
   }
 
-  public deleteUser(id: string): boolean {
-    const beforeCount = this.users.length;
-    this.users = this.users.filter(u => u.id !== id);
-    if (this.users.length !== beforeCount) {
-      this.notify();
-      return true;
+  public async deleteUser(id: string): Promise<boolean> {
+    const cleanId = String(id || '').trim();
+    this.users = this.users.filter(
+      u => String(u.id || '').trim() !== cleanId && String(u.memberId || '').trim() !== cleanId
+    );
+    if (cleanId) {
+      this.deletedUserIds.add(cleanId);
     }
-    return false;
+    this.persistDeletedUserIds();
+    this.persistUsers();
+    this.notify();
+
+    try {
+      await usersService.deleteUser(cleanId);
+    } catch (err) {
+      console.warn('API delete user failed or offline, deleted locally:', err);
+    }
+    return true;
   }
 }
 

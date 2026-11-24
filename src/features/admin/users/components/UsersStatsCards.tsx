@@ -6,19 +6,61 @@ interface UsersStatsCardsProps {
   stats: UserStats;
   selectedStatus: 'all' | UserStatus;
   onSelectStatus: (status: 'all' | UserStatus) => void;
+  activeRole?: string;
 }
 
 export const UsersStatsCards: React.FC<UsersStatsCardsProps> = ({
   stats,
   selectedStatus,
   onSelectStatus,
+  activeRole = 'all',
 }) => {
+  const totalTitle =
+    activeRole === 'member'
+      ? 'Total Members'
+      : activeRole === 'seeker'
+      ? 'Total Seekers'
+      : activeRole === 'admin'
+      ? 'Total Admins'
+      : activeRole === 'general'
+      ? 'General Users'
+      : activeRole === 'donor'
+      ? 'Total Donors'
+      : 'Total Users';
+
+  const totalSubtitle =
+    activeRole === 'member'
+      ? `${stats.active} active, ${stats.pending} pending`
+      : activeRole === 'seeker'
+      ? `${stats.active} approved, ${stats.pending} awaiting review`
+      : activeRole === 'admin'
+      ? `${stats.active} active administrators`
+      : activeRole === 'general'
+      ? `${stats.active} active citizen accounts`
+      : activeRole === 'donor'
+      ? `${stats.active} registered donors`
+      : `${stats.membersCount} members, ${stats.seekersCount} seekers`;
+
+  const activeSubtitle =
+    activeRole === 'seeker'
+      ? 'Approved donation seekers'
+      : activeRole === 'member'
+      ? 'Verified active members'
+      : 'Verified accounts in good standing';
+
+  const pendingSubtitle =
+    activeRole === 'seeker'
+      ? 'Awaiting seeker verification'
+      : activeRole === 'member'
+      ? 'Awaiting membership approval'
+      : 'Awaiting KYC / seeker approval';
+
   const cards = [
     {
       key: 'all' as const,
-      title: 'Total Users',
+      title: totalTitle,
       count: stats.total,
-      subtitle: `${stats.membersCount} members, ${stats.seekersCount} seekers`,
+      subtitle: totalSubtitle,
       icon: Users,
       color: '#06294D',
       bgLight: '#FAF7F0',
@@ -28,7 +70,7 @@ export const UsersStatsCards: React.FC<UsersStatsCardsProps> = ({
       key: 'active' as const,
       title: 'Active / Approved',
       count: stats.active,
-      subtitle: 'Verified accounts in good standing',
+      subtitle: activeSubtitle,
       icon: UserCheck,
       color: '#059669',
       bgLight: '#ECFDF5',
@@ -38,7 +80,7 @@ export const UsersStatsCards: React.FC<UsersStatsCardsProps> = ({
       key: 'pending' as const,
       title: 'Pending Review',
       count: stats.pending,
-      subtitle: 'Awaiting KYC / seeker approval',
+      subtitle: pendingSubtitle,
       icon: Clock,
       color: '#D97706',
       bgLight: '#FFFBEB',

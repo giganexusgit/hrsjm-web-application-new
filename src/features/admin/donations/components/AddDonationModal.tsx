@@ -46,8 +46,11 @@ export const AddDonationModal: React.FC<AddDonationModalProps> = ({
     if (!donorName.trim()) {
       newErrors.donorName = 'Donor full name is required.';
     }
-    if (!mobileNumber.trim()) {
+    const cleanMobile = mobileNumber.replace(/\D/g, '').slice(-10);
+    if (!cleanMobile) {
       newErrors.mobileNumber = 'Mobile number is required.';
+    } else if (cleanMobile.length !== 10) {
+      newErrors.mobileNumber = 'Mobile number must be exactly 10 digits.';
     }
     const numAmount = parseFloat(amount.trim());
     if (!amount.trim() || isNaN(numAmount) || numAmount <= 0) {
@@ -158,10 +161,11 @@ export const AddDonationModal: React.FC<AddDonationModalProps> = ({
               </label>
               <input
                 type="tel"
-                placeholder="e.g. +91 98765 43210"
+                placeholder="e.g. 9876543210"
+                maxLength={10}
                 value={mobileNumber}
                 onChange={e => {
-                  setMobileNumber(e.target.value);
+                  setMobileNumber(e.target.value.replace(/\D/g, '').slice(0, 10));
                   if (errors.mobileNumber) setErrors(prev => ({ ...prev, mobileNumber: '' }));
                 }}
                 className={`w-full rounded-lg border px-3.5 py-2 text-xs text-slate-800 focus:outline-none ${

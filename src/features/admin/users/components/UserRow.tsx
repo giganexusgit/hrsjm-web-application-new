@@ -1,15 +1,16 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import type { UserItem, UserType, UserStatus } from '../types/user.types';
-import { Eye, Edit3, ShieldCheck, KeyRound, Lock, Unlock, Phone, Mail, Award, CheckCircle2 } from 'lucide-react';
+import { Eye, Edit3, KeyRound, Lock, Unlock, Trash2, Phone, Mail, Award, CheckCircle2 } from 'lucide-react';
 import { getValidAvatarUrl } from '@/utils/avatar';
 
 interface UserRowProps {
   user: UserItem;
   onView: (user: UserItem) => void;
   onEdit: (user: UserItem) => void;
-  onVerify: (user: UserItem) => void;
+  onVerify?: (user: UserItem) => void;
   onResetPassword: (user: UserItem) => void;
   onToggleStatus: (user: UserItem, action: 'block' | 'unblock') => void;
+  onDelete?: (user: UserItem) => void;
 }
 
 const USER_TYPE_LABELS: Record<UserType, string> = {
@@ -38,9 +39,9 @@ export const UserRow: React.FC<UserRowProps> = ({
   user,
   onView,
   onEdit,
-  onVerify,
   onResetPassword,
   onToggleStatus,
+  onDelete,
 }) => {
   const [imgError, setImgError] = useState(false);
   const validAvatarUrl = useMemo(() => getValidAvatarUrl(user.avatarUrl), [user.avatarUrl]);
@@ -72,8 +73,6 @@ export const UserRow: React.FC<UserRowProps> = ({
     }
     return user.joinedDate.split('T')[0] || user.joinedDate;
   })();
-
-  const hasDocs = user.documents && user.documents.length > 0;
 
   return (
     <tr
@@ -228,10 +227,10 @@ export const UserRow: React.FC<UserRowProps> = ({
             {isMember
               ? (user.membershipCategory || 'Active Member')
               : user.userType === 'seeker'
-              ? 'Donation Seeker'
-              : user.userType === 'admin'
-              ? 'Executive Staff'
-              : 'Registered User'}
+                ? 'Donation Seeker'
+                : user.userType === 'admin'
+                  ? 'Executive Staff'
+                  : 'Registered User'}
           </div>
         </div>
       </td>
@@ -357,7 +356,7 @@ export const UserRow: React.FC<UserRowProps> = ({
             <Edit3 size={15} />
           </button>
 
-          {/* Verify KYC */}
+          {/* Verify KYC
           {(hasDocs || user.status === 'pending' || user.userType === 'seeker') && (
             <button
               type="button"
@@ -379,7 +378,7 @@ export const UserRow: React.FC<UserRowProps> = ({
             >
               <ShieldCheck size={15} />
             </button>
-          )}
+          )} */}
 
           {/* Reset Password */}
           <button
@@ -427,6 +426,30 @@ export const UserRow: React.FC<UserRowProps> = ({
           >
             {user.status === 'blocked' ? <Unlock size={15} /> : <Lock size={15} />}
           </button>
+
+          {/* Delete User */}
+          {onDelete && (
+            <button
+              type="button"
+              onClick={() => onDelete(user)}
+              title="Delete User"
+              style={{
+                padding: '7px',
+                borderRadius: '8px',
+                border: '1px solid #FECACA',
+                backgroundColor: '#FFFFFF',
+                color: '#DC2626',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
+                transition: 'all 0.15s ease',
+              }}
+              className="hover:bg-red-50 hover:border-red-300 hover:scale-105 active:scale-95"
+            >
+              <Trash2 size={15} />
+            </button>
+          )}
         </div>
       </td>
     </tr>

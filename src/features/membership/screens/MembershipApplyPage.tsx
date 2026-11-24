@@ -48,8 +48,12 @@ export const MembershipApplyPage: React.FC = () => {
         errors.dateOfBirth = 'Must be at least 18 years of age to apply for adult membership';
       }
     }
-    const cleanPhone = formData.personal.mobileNumber.replace(/\D/g, '');
-    if (cleanPhone.length < 10) errors.mobileNumber = 'Enter a valid 10-digit mobile number';
+    const cleanPhone = formData.personal.mobileNumber.replace(/\D/g, '').slice(-10);
+    if (cleanPhone.length !== 10) errors.mobileNumber = 'Mobile number must be exactly 10 digits';
+    const cleanEmergency = formData.address.emergencyContactPhone?.replace(/\D/g, '').slice(-10);
+    if (formData.address.emergencyContactPhone?.trim() && cleanEmergency?.length !== 10) {
+      errors.emergencyContactPhone = 'Emergency phone must be exactly 10 digits';
+    }
     if (!formData.personal.email.trim() || !formData.personal.email.includes('@')) {
       errors.email = 'Valid email address is required';
     }
@@ -253,8 +257,9 @@ export const MembershipApplyPage: React.FC = () => {
                 <input
                   type="tel"
                   placeholder="10-digit mobile number"
+                  maxLength={10}
                   value={formData.personal.mobileNumber}
-                  onChange={(e) => updatePersonal({ mobileNumber: e.target.value })}
+                  onChange={(e) => updatePersonal({ mobileNumber: e.target.value.replace(/\D/g, '').slice(0, 10) })}
                   style={styles.input}
                 />
                 {formErrors.mobileNumber && <span style={styles.err}>{formErrors.mobileNumber}</span>}
@@ -411,8 +416,9 @@ export const MembershipApplyPage: React.FC = () => {
                 <input
                   type="tel"
                   placeholder="10-digit emergency phone"
+                  maxLength={10}
                   value={formData.address.emergencyContactPhone}
-                  onChange={(e) => updateAddress({ emergencyContactPhone: e.target.value })}
+                  onChange={(e) => updateAddress({ emergencyContactPhone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
                   style={styles.input}
                 />
               </div>

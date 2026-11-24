@@ -163,7 +163,7 @@ export const UserDetailsPage: React.FC = () => {
     setConfirmAction(null);
 
     if (action === 'delete') {
-      usersStore.deleteUser(user.id);
+      await usersStore.deleteUser(user.id);
       navigate('/admin/users');
     } else if (action === 'block') {
       await usersStore.updateStatus(user.id, 'blocked');
@@ -941,8 +941,7 @@ export const UserDetailsPage: React.FC = () => {
 
 const styles: Record<string, React.CSSProperties> = {
   pageContainer: {
-    maxWidth: '1240px',
-    margin: '0 auto',
+    width: '100%',
     paddingBottom: '40px',
   },
   topBar: {

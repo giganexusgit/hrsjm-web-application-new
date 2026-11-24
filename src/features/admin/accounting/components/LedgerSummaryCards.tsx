@@ -4,16 +4,17 @@ import { formatINR, type LedgerSummary } from '../types/accounting.types';
 
 interface LedgerSummaryCardsProps {
   summary: LedgerSummary;
+  isFiltered?: boolean;
 }
 
-export const LedgerSummaryCards: React.FC<LedgerSummaryCardsProps> = ({ summary }) => {
+export const LedgerSummaryCards: React.FC<LedgerSummaryCardsProps> = ({ summary, isFiltered = false }) => {
   const cards = [
     {
       id: 'opening',
       label: 'Opening Balance',
       amount: formatINR(summary.opening_balance),
       amountColor: 'text-slate-900',
-      subtitle: 'Carried forward start balance',
+      subtitle: isFiltered ? 'Base carried forward balance' : 'Carried forward start balance',
       icon: Wallet,
       iconBg: 'bg-blue-50 text-blue-700 border-blue-200',
     },
@@ -22,7 +23,7 @@ export const LedgerSummaryCards: React.FC<LedgerSummaryCardsProps> = ({ summary 
       label: 'Total Inflow (Income)',
       amount: summary.total_debit > 0 ? `+ ${formatINR(summary.total_debit)}` : formatINR(0),
       amountColor: 'text-emerald-700',
-      subtitle: 'Donations, memberships & receipts',
+      subtitle: isFiltered ? 'Filtered receipts & inflows' : 'Donations, memberships & receipts',
       icon: ArrowDownLeft,
       iconBg: 'bg-emerald-50 text-emerald-700 border-emerald-200',
     },
@@ -31,7 +32,7 @@ export const LedgerSummaryCards: React.FC<LedgerSummaryCardsProps> = ({ summary 
       label: 'Total Outflow (Expenses)',
       amount: summary.total_credit > 0 ? `- ${formatINR(summary.total_credit)}` : formatINR(0),
       amountColor: 'text-rose-700',
-      subtitle: 'Operations, aid relief & legal costs',
+      subtitle: isFiltered ? 'Filtered disbursements' : 'Operations, aid relief & legal costs',
       icon: ArrowUpRight,
       iconBg: 'bg-rose-50 text-rose-700 border-rose-200',
     },
@@ -40,7 +41,7 @@ export const LedgerSummaryCards: React.FC<LedgerSummaryCardsProps> = ({ summary 
       label: 'Closing Net Balance',
       amount: formatINR(summary.closing_balance),
       amountColor: 'text-[#011F39]',
-      subtitle: 'Net liquid cash & bank reserve',
+      subtitle: isFiltered ? 'Net balance for selected view' : 'Net liquid cash & bank reserve',
       icon: Scale,
       iconBg: 'bg-[#FFF9E6] text-[#B45309] border-[#FDE68A]',
     },
@@ -56,8 +57,8 @@ export const LedgerSummaryCards: React.FC<LedgerSummaryCardsProps> = ({ summary 
             className="bg-white rounded-xl border border-slate-200/90 p-3.5 sm:p-4 shadow-xs hover:shadow-md transition-all duration-200 flex flex-col justify-between min-w-0 w-full overflow-hidden"
           >
             <div className="min-w-0">
-              <div className="flex items-center justify-between gap-2 mb-2.5">
-                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider truncate">
+              <div className="flex items-start justify-between gap-2 mb-2.5">
+                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider leading-snug" title={c.label}>
                   {c.label}
                 </span>
                 <div

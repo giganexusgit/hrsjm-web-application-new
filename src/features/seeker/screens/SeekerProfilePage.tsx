@@ -328,10 +328,11 @@ export const SeekerProfilePage: React.FC = () => {
                   Registered Mobile Number *
                 </label>
                 <input
-                  type="text"
+                  type="tel"
                   required
+                  maxLength={10}
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                  onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
                   className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 font-semibold focus:outline-none focus:ring-1 focus:ring-[#06294D]"
                 />
               </div>

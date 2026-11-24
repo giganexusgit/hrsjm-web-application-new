@@ -60,6 +60,11 @@ export const MemberSettingsPage: React.FC = () => {
       setProfileError('Please enter your email address.');
       return;
     }
+    const cleanPhone = phone.replace(/\D/g, '').slice(-10);
+    if (!cleanPhone || cleanPhone.length !== 10) {
+      setProfileError('Phone number must be exactly 10 digits.');
+      return;
+    }
 
     setIsSavingProfile(true);
     try {
@@ -194,9 +199,10 @@ export const MemberSettingsPage: React.FC = () => {
             <label className="block text-xs font-bold text-slate-700 mb-1">Phone</label>
             <input
               type="tel"
+              maxLength={10}
               value={phone}
               onChange={(e) => {
-                setPhone(e.target.value);
+                setPhone(e.target.value.replace(/\D/g, '').slice(0, 10));
                 setProfileError(null);
                 setProfileSuccess(null);
               }}

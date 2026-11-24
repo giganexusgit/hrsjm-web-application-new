@@ -37,8 +37,8 @@ export const usersService = {
         : payload.userType === 'member'
         ? 'MEMBER'
         : payload.userType === 'seeker'
-        ? 'SEEKER'
-        : 'GENERAL_USER',
+        ? 'DONATION_SEEKER'
+        : 'USER',
       dob: payload.dob || undefined,
       gender: payload.gender || undefined,
       address: payload.address || undefined,
@@ -88,5 +88,12 @@ export const usersService = {
    */
   async approveSeeker(id: string) {
     return apiClient.post<any>(`/users/${id}/approve-seeker`);
+  },
+
+  /**
+   * Deletes a user via DELETE /users/:id
+   */
+  async deleteUser(id: string) {
+    return apiClient.delete<any>(`/users/${id}`);
   },
 };

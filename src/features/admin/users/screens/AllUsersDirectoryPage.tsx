@@ -30,7 +30,7 @@ export const AllUsersDirectoryPage: React.FC = () => {
   const navigate = useNavigate();
 
   // Reactive store subscription
-  useSyncExternalStore(usersStore.subscribe, usersStore.getSnapshot);
+  const storeVersion = useSyncExternalStore(usersStore.subscribe, usersStore.getSnapshot);
 
   // Search & Filter state
   const [activeTab, setActiveTab] = useState<UserTypeTabKey>('all');
@@ -48,7 +48,7 @@ export const AllUsersDirectoryPage: React.FC = () => {
   const [passwordResetUser, setPasswordResetUser] = useState<UserItem | null>(null);
 
   useEffect(() => {
-    usersStore.fetchUsers().catch(() => {});
+    usersStore.fetchUsers().catch(() => { });
   }, []);
 
   const handleRefresh = async () => {
@@ -61,7 +61,10 @@ export const AllUsersDirectoryPage: React.FC = () => {
   };
 
   const allUsers = usersStore.getAllUsers();
-  const stats = usersStore.getStats();
+  const stats = useMemo(() => {
+    const pool = activeTab === 'all' ? allUsers : allUsers.filter((u) => u.userType === activeTab);
+    return usersStore.getStats(pool);
+  }, [allUsers, activeTab]);
 
   // Dynamic tab counts based on current status and search query
   const tabCounts = useMemo(() => {
@@ -99,10 +102,17 @@ export const AllUsersDirectoryPage: React.FC = () => {
       searchQuery,
     };
     return usersStore.getUsers(combinedFilters);
-  }, [activeTab, selectedStatus, searchQuery, extraFilters]);
+  }, [allUsers, activeTab, selectedStatus, searchQuery, extraFilters, storeVersion]);
 
   // Pagination calculation
   const totalPages = Math.ceil(filteredUsers.length / ITEMS_PER_PAGE) || 1;
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(Math.max(1, totalPages));
+    }
+  }, [currentPage, totalPages]);
+
   const paginatedUsers = useMemo(() => {
     const start = (currentPage - 1) * ITEMS_PER_PAGE;
     return filteredUsers.slice(start, start + ITEMS_PER_PAGE);
@@ -231,6 +241,7 @@ export const AllUsersDirectoryPage: React.FC = () => {
       <UsersStatsCards
         stats={stats}
         selectedStatus={selectedStatus}
+        activeRole={activeTab}
         onSelectStatus={(status) => {
           setSelectedStatus(status);
           setCurrentPage(1);
@@ -295,12 +306,16 @@ export const AllUsersDirectoryPage: React.FC = () => {
                       key={user.id}
                       user={user}
                       onView={(u) => navigate(`/admin/users/${u.id}`)}
-                      onEdit={(u) => navigate(`/admin/users/${u.id}/edit`)}
+                      onEdit={(u) => navigate(`/admin/users/${u.id}`)}
                       onVerify={(u) => navigate(`/admin/users/${u.id}/verification`)}
                       onResetPassword={(u) => setPasswordResetUser(u)}
                       onToggleStatus={(u, action) => {
                         setConfirmModalUser(u);
                         setConfirmAction(action);
+                      }}
+                      onDelete={(u) => {
+                        setConfirmModalUser(u);
+                        setConfirmAction('delete');
                       }}
                     />
                   ))}

@@ -69,13 +69,16 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
   };
 
   return (
-    <header style={styles.header}>
+    <header
+      style={styles.header}
+      className="portal-header sticky top-0 z-30 bg-white border-b border-[#DCE4EC] shadow-xs flex items-center justify-between gap-2 sm:gap-4 select-none"
+    >
       {/* Left Section: Mobile Menu Button & Title / Breadcrumb */}
-      <div style={styles.leftSection}>
+      <div style={styles.leftSection} className="flex items-center gap-2 sm:gap-3.5 min-w-0">
         <button
           type="button"
           onClick={() => {
-            if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+            if (typeof window !== 'undefined' && window.innerWidth <= 1024) {
               onToggleMobileSidebar();
             } else {
               onToggleDesktopCollapse();
@@ -84,22 +87,28 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
           style={styles.toggleBtn}
           aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          className="shrink-0"
         >
           <Menu size={19} color="#06294D" />
         </button>
 
-        <div style={styles.titleWrap}>
-          <div style={styles.breadcrumb}>
+        <div style={styles.titleWrap} className="flex flex-col min-w-0 justify-center">
+          <div style={styles.breadcrumb} className="portal-header-breadcrumb items-center gap-1.5">
             <span style={styles.breadcrumbRoot}>HRSJM Admin</span>
             <span style={styles.breadcrumbSep}>/</span>
             <span style={styles.breadcrumbCurrent}>{currentTitle}</span>
           </div>
-          <h1 style={styles.pageHeading}>{currentTitle}</h1>
+          <h1
+            style={styles.pageHeading}
+            className="portal-header-title font-bold text-[#06294D] tracking-tight leading-tight"
+          >
+            {currentTitle}
+          </h1>
         </div>
       </div>
 
       {/* Right Section: Notifications & Admin Profile */}
-      <div style={styles.rightSection}>
+      <div style={styles.rightSection} className="flex items-center gap-2 sm:gap-3 shrink-0">
         {/* Notifications Bell */}
         <button
           type="button"
@@ -107,6 +116,7 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
           style={styles.iconBtn}
           aria-label={`Notifications (${unreadCount} unread)`}
           title="Notifications"
+          className="shrink-0"
         >
           <Bell size={20} color="#06294D" />
           {unreadCount > 0 && (
@@ -114,19 +124,20 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
           )}
         </button>
 
-        <div style={styles.divider} />
+        <div style={styles.divider} className="portal-header-divider" />
 
         {/* Profile Avatar & Dropdown */}
-        <div style={styles.profileContainer} ref={dropdownRef}>
+        <div style={styles.profileContainer} className="relative shrink-0" ref={dropdownRef}>
           <button
             type="button"
             onClick={() => setProfileDropdownOpen((prev) => !prev)}
             style={styles.profileBtn}
             aria-expanded={profileDropdownOpen}
             aria-haspopup="true"
+            className="flex items-center gap-2 cursor-pointer p-1 rounded-lg hover:bg-slate-50 transition-colors"
           >
             {/* Avatar with Navy & Gold Ring */}
-            <div style={styles.avatarRing}>
+            <div style={styles.avatarRing} className="shrink-0">
               <div style={styles.avatarCore}>
                 {validAvatarUrl && !imgError ? (
                   <img
@@ -143,12 +154,12 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
               </div>
             </div>
 
-            <div style={styles.profileInfo}>
+            <div style={styles.profileInfo} className="portal-header-profile-info flex-col text-left">
               <span style={styles.profileName}>{profile.fullName || 'Admin Officer'}</span>
               <span style={styles.profileRole}>{profile.role || 'Super Admin'}</span>
             </div>
 
-            <ChevronDown size={14} color="#718096" />
+            <ChevronDown size={14} color="#718096" className="portal-header-chevron shrink-0" />
           </button>
 
           {/* Dropdown Menu */}
@@ -209,13 +220,8 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
 
 const styles: Record<string, React.CSSProperties> = {
   header: {
-    height: '68px',
     backgroundColor: '#FFFFFF',
     borderBottom: '1px solid #DCE4EC',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: '0 24px',
     position: 'sticky',
     top: 0,
     zIndex: 30,
@@ -244,7 +250,6 @@ const styles: Record<string, React.CSSProperties> = {
     gap: '1px',
   },
   breadcrumb: {
-    display: 'flex',
     alignItems: 'center',
     gap: '6px',
     fontSize: '11.5px',
@@ -261,7 +266,6 @@ const styles: Record<string, React.CSSProperties> = {
     color: '#34516D',
   },
   pageHeading: {
-    fontSize: '18px',
     fontWeight: 700,
     color: '#0B2F52',
     margin: 0,
@@ -344,7 +348,6 @@ const styles: Record<string, React.CSSProperties> = {
     letterSpacing: '0.04em',
   },
   profileInfo: {
-    display: 'flex',
     flexDirection: 'column',
     textAlign: 'left',
   },

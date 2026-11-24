@@ -75,8 +75,8 @@ export const AddUserPage: React.FC = () => {
     const cleanPhone = phone.replace(/\D/g, '');
     if (!cleanPhone) {
       err.phone = 'Phone number is required';
-    } else if (cleanPhone.length < 10) {
-      err.phone = 'Please enter a valid 10-digit phone number';
+    } else if (cleanPhone.length !== 10) {
+      err.phone = 'Phone number must be exactly 10 digits';
     }
 
     if (!password) {
@@ -100,9 +100,8 @@ export const AddUserPage: React.FC = () => {
     setIsSubmitting(true);
     setSuccessMessage(null);
 
-    const formattedPhone = phone.startsWith('+91')
-      ? phone
-      : `+91 ${phone.replace(/\D/g, '').slice(-10)}`;
+    const cleanPhone = phone.replace(/\D/g, '').slice(-10);
+    const formattedPhone = `+91 ${cleanPhone}`;
 
     try {
       const res = await usersStore.addUser({
@@ -348,8 +347,9 @@ export const AddUserPage: React.FC = () => {
                   <input
                     type="tel"
                     value={phone}
-                    onChange={e => setPhone(e.target.value)}
-                    placeholder="98765 43210"
+                    onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                    maxLength={10}
+                    placeholder="9876543210"
                     style={{
                       width: '100%',
                       boxSizing: 'border-box',

@@ -52,6 +52,12 @@ export const UserContactPage: React.FC = () => {
       return;
     }
 
+    const cleanPhone = phone.replace(/\D/g, '').slice(-10);
+    if (phone.trim() && cleanPhone.length !== 10) {
+      setErrorMessage('Mobile phone number must be exactly 10 digits.');
+      return;
+    }
+
     try {
       setSubmitting(true);
       setErrorMessage(null);
@@ -154,8 +160,10 @@ export const UserContactPage: React.FC = () => {
                   <label className="block text-xs font-bold text-[#06294D] mb-1">Mobile Phone Number</label>
                   <input
                     type="tel"
+                    placeholder="10-digit mobile"
+                    maxLength={10}
                     value={phone}
-                    onChange={e => setPhone(e.target.value)}
+                    onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
                     className="w-full px-3.5 py-2.5 rounded-xl border border-[#DCE4EC] text-xs font-semibold focus:outline-hidden focus:ring-2 focus:ring-[#FAD465]"
                   />
                 </div>
