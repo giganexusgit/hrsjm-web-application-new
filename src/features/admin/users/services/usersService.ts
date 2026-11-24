@@ -11,6 +11,7 @@ export const usersService = {
     if (params?.limit) query.append('limit', String(params.limit));
     if (params?.search) query.append('search', params.search);
     if (params?.status) query.append('status', params.status);
+    query.append('_t', String(Date.now()));
 
     const queryString = query.toString() ? `?${query.toString()}` : '';
     return apiClient.get<any>(`/users${queryString}`);

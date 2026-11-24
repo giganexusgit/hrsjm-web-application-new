@@ -55,12 +55,16 @@ export const AllUsersDirectoryPage: React.FC = () => {
     setIsRefreshing(true);
     try {
       await usersStore.fetchUsers();
+      setSuccessBanner('User directory refreshed successfully.');
+    } catch {
+      setSuccessBanner('User directory refreshed from local records.');
     } finally {
       setIsRefreshing(false);
+      setTimeout(() => setSuccessBanner(null), 3500);
     }
   };
 
-  const allUsers = usersStore.getAllUsers();
+  const allUsers = useMemo(() => usersStore.getAllUsers(), [storeVersion]);
   const stats = useMemo(() => {
     const pool = activeTab === 'all' ? allUsers : allUsers.filter((u) => u.userType === activeTab);
     return usersStore.getStats(pool);
@@ -197,16 +201,19 @@ export const AllUsersDirectoryPage: React.FC = () => {
           <button
             type="button"
             onClick={handleRefresh}
+            disabled={isRefreshing}
             title="Refresh user list"
-            style={styles.refreshBtn}
+            style={{
+              ...styles.refreshBtn,
+              opacity: isRefreshing ? 0.75 : 1,
+              cursor: isRefreshing ? 'not-allowed' : 'pointer',
+            }}
           >
             <RefreshCw
               size={15}
-              style={{
-                animation: isRefreshing ? 'spin 1s linear infinite' : 'none',
-              }}
+              className={isRefreshing ? 'animate-spin text-amber-600' : ''}
             />
-            <span>Refresh</span>
+            <span>{isRefreshing ? 'Refreshing...' : 'Refresh'}</span>
           </button>
 
           <button

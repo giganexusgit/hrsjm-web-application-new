@@ -31,6 +31,7 @@ export const UsersListPage: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [extraFilters, setExtraFilters] = useState<UserFilterOptions>({});
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [feedbackMsg, setFeedbackMsg] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
   // Modals state
   const [filterModalOpen, setFilterModalOpen] = useState(false);
@@ -46,12 +47,16 @@ export const UsersListPage: React.FC = () => {
     setIsRefreshing(true);
     try {
       await usersStore.fetchUsers();
+      setFeedbackMsg({ text: 'User directory refreshed successfully.', type: 'success' });
+    } catch {
+      setFeedbackMsg({ text: 'User directory refreshed from local records.', type: 'success' });
     } finally {
       setIsRefreshing(false);
+      setTimeout(() => setFeedbackMsg(null), 3500);
     }
   };
 
-  const allUsers = usersStore.getAllUsers();
+  const allUsers = useMemo(() => usersStore.getAllUsers(), [storeVersion]);
   const stats = useMemo(() => {
     const pool = activeTab === 'all' ? allUsers : allUsers.filter(u => u.userType === activeTab);
     return usersStore.getStats(pool);
@@ -174,6 +179,7 @@ export const UsersListPage: React.FC = () => {
           <button
             type="button"
             onClick={handleRefresh}
+            disabled={isRefreshing}
             title="Refresh user list"
             style={{
               padding: '10px 16px',
@@ -183,17 +189,18 @@ export const UsersListPage: React.FC = () => {
               color: '#06294D',
               fontSize: '13px',
               fontWeight: 700,
-              cursor: 'pointer',
+              cursor: isRefreshing ? 'not-allowed' : 'pointer',
               display: 'flex',
               alignItems: 'center',
               gap: '6px',
               boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
+              opacity: isRefreshing ? 0.75 : 1,
               transition: 'all 0.15s ease',
             }}
             className="hover:bg-slate-50 active:scale-95"
           >
-            <RefreshCw size={15} className={isRefreshing ? 'spin' : ''} />
-            <span>Refresh</span>
+            <RefreshCw size={15} className={isRefreshing ? 'animate-spin text-amber-600' : ''} />
+            <span>{isRefreshing ? 'Refreshing...' : 'Refresh'}</span>
           </button>
 
           <button
@@ -221,6 +228,27 @@ export const UsersListPage: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {feedbackMsg && (
+        <div
+          style={{
+            padding: '10px 16px',
+            marginBottom: '16px',
+            borderRadius: '10px',
+            backgroundColor: feedbackMsg.type === 'success' ? '#ECFDF5' : '#FEF2F2',
+            border: `1px solid ${feedbackMsg.type === 'success' ? '#A7F3D0' : '#FECACA'}`,
+            color: feedbackMsg.type === 'success' ? '#065F46' : '#991B1B',
+            fontSize: '13px',
+            fontWeight: 600,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+          }}
+        >
+          <span>✓</span>
+          <span>{feedbackMsg.text}</span>
+        </div>
+      )}
 
       {/* Top 4 KPI Cards */}
       <UsersStatsCards

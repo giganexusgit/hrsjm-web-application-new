@@ -258,7 +258,8 @@ class UsersStore {
         this.notify();
       }
     } catch {
-      // Gracefully maintain offline/fixtures state
+      // Gracefully maintain offline/fixtures state and notify subscribers
+      this.notify();
     }
     return this.getAllUsers();
   }
