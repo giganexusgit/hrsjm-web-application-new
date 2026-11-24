@@ -645,11 +645,19 @@ export const accountingService = {
 
         // Account Head & Details
         const nominalLine = isExpense ? expenseLine : incomeLine;
-        const accountName =
+        let accountName =
           nominalLine?.account?.account_name ||
           (isExpense ? 'Office & Administration' : 'General Society Income');
-        const accountCode = nominalLine?.account?.account_code || (isExpense ? '5002' : '4001');
+        let accountCode = nominalLine?.account?.account_code || (isExpense ? '5002' : '4001');
         const accountId = nominalLine?.account?.id || nominalLine?.account_id || (isExpense ? '5002' : '4001');
+
+        // Ensure Membership receipts correctly display Membership Income (#4001) instead of Donation Income
+        const currentVoucherNum = entry.entry_number || '';
+        if (streamTag === 'MEMBERSHIP_FEE' || refType.includes('MEMBERSHIP') || currentVoucherNum.startsWith('REC-')) {
+          if (accountCode === '4001' && accountName.toLowerCase().includes('donation')) {
+            accountName = 'Membership Income';
+          }
+        }
 
         // Asset Disbursing / Receiving Account
         const disbursingAsset =
@@ -951,6 +959,13 @@ export const accountingService = {
             rec.received_from || ''
           );
 
+          const isMembershipRec =
+            (rec.category || '').toLowerCase().includes('membership') ||
+            (rec.notes || '').toLowerCase().includes('membership') ||
+            (rec.received_from || '').toLowerCase().includes('member');
+          const defaultAccName = isMembershipRec ? 'Membership Income' : (rec.category || 'General Income');
+          const defaultAccCode = isMembershipRec ? '4001' : (rec.income_account?.account_code || '4003');
+
           consolidatedList.push({
             id: `ltx-rec-${rec.id || Date.now()}`,
             entry_id: rec.id || `rec-${Date.now()}`,
@@ -959,9 +974,9 @@ export const accountingService = {
             entry_date: rec.receipt_date || rec.created_at || new Date().toISOString(),
             created_at: rec.created_at,
             entry_type: 'STANDARD',
-            account_id: rec.income_account_id || '4001',
-            account_name: rec.category || 'Donation Income',
-            account_code: '4001',
+            account_id: rec.income_account_id || defaultAccCode,
+            account_name: defaultAccName,
+            account_code: defaultAccCode,
             account_type: 'INCOME',
             reference_type: 'MANUAL_RECEIPT',
             reference_id: rec.id,
@@ -969,7 +984,7 @@ export const accountingService = {
             debit: 0,
             credit: Number(rec.amount) || 0,
             running_balance: 0,
-            category_tag: 'RECEIPT',
+            category_tag: isMembershipRec ? 'MEMBERSHIP' : 'RECEIPT',
             payment_method: rec.payment_method || 'Online',
             disbursing_account_name: rec.deposit_account?.account_name || 'Bank Account',
             paid_to: null,

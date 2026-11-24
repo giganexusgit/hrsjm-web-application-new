@@ -396,7 +396,7 @@ export const AccountingDashboardPage: React.FC = () => {
   };
 
   return (
-    <div className="w-full max-w-7xl mx-auto space-y-6 min-w-0">
+    <div className="w-full space-y-6 min-w-0">
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -694,13 +694,13 @@ export const AccountingDashboardPage: React.FC = () => {
                   <table className="w-full border-collapse text-left text-xs sm:text-sm">
                     <thead>
                       <tr className="bg-slate-50/90 border-b border-slate-200/90 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                        <th className="px-4 py-3.5 whitespace-nowrap min-w-[210px]">Date & Voucher No</th>
-                        <th className="px-4 py-3.5 whitespace-nowrap min-w-[120px]">Stream Tag</th>
-                        <th className="px-4 py-3.5 min-w-[220px]">Particulars & Beneficiary</th>
-                        <th className="px-4 py-3.5 min-w-[220px]">Account Head & Mode</th>
-                        <th className="px-4 py-3.5 text-right whitespace-nowrap min-w-[145px]">Income (Inflow / Cr)</th>
-                        <th className="px-4 py-3.5 text-right whitespace-nowrap min-w-[145px]">Expense (Outflow / Dr)</th>
-                        <th className="px-4 py-3.5 text-right whitespace-nowrap min-w-[155px]">Running Balance</th>
+                        <th className="px-3.5 py-3.5 whitespace-nowrap min-w-[170px]">Date & Voucher No</th>
+                        <th className="px-3.5 py-3.5 whitespace-nowrap min-w-[110px]" title="Fund / Revenue Stream Category">Category</th>
+                        <th className="px-3.5 py-3.5 min-w-[170px]">Particulars & Beneficiary</th>
+                        <th className="px-3.5 py-3.5 min-w-[160px]">Account Head & Mode</th>
+                        <th className="px-3.5 py-3.5 text-right whitespace-nowrap min-w-[125px]">Income (Inflow / Cr)</th>
+                        <th className="px-3.5 py-3.5 text-right whitespace-nowrap min-w-[125px]">Expense (Outflow / Dr)</th>
+                        <th className="px-3.5 py-3.5 text-right whitespace-nowrap min-w-[130px]">Running Balance</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 bg-white">
@@ -720,7 +720,7 @@ export const AccountingDashboardPage: React.FC = () => {
                               className="hover:bg-slate-50/80 transition-colors group"
                             >
                               {/* Date & Voucher No */}
-                              <td className="px-4 py-3.5 align-middle whitespace-nowrap min-w-[210px]">
+                              <td className="px-3.5 py-3.5 align-middle whitespace-nowrap min-w-[170px]">
                                 <div className="flex items-center gap-1.5 flex-nowrap">
                                   <span className="font-mono text-xs font-bold text-[#011F39] tracking-tight whitespace-nowrap">
                                     {displayVoucherNo}
@@ -779,8 +779,8 @@ export const AccountingDashboardPage: React.FC = () => {
                                 </div>
                               </td>
 
-                              {/* Stream Tag */}
-                              <td className="px-4 py-3.5 align-middle whitespace-nowrap min-w-[120px]">
+                              {/* Category / Stream Tag */}
+                              <td className="px-3.5 py-3.5 align-middle whitespace-nowrap min-w-[110px]">
                                 <span
                                   className="inline-flex items-center text-[10px] font-bold px-2.5 py-0.5 rounded-full border shadow-2xs tracking-wide uppercase whitespace-nowrap"
                                   style={{
@@ -794,7 +794,7 @@ export const AccountingDashboardPage: React.FC = () => {
                               </td>
 
                               {/* Particulars & Beneficiary */}
-                              <td className="px-4 py-3.5 align-middle max-w-xs min-w-[220px]">
+                              <td className="px-3.5 py-3.5 align-middle max-w-xs min-w-[170px]">
                                 {mainParty ? (
                                   <>
                                     <div className="font-semibold text-slate-900 text-xs sm:text-sm truncate">
@@ -814,7 +814,7 @@ export const AccountingDashboardPage: React.FC = () => {
                               </td>
 
                               {/* Account Head & Payment Mode */}
-                              <td className="px-4 py-3.5 align-middle min-w-[220px]">
+                              <td className="px-3.5 py-3.5 align-middle min-w-[160px]">
                                 <div className="flex items-center gap-1.5 flex-wrap">
                                   <span className="font-semibold text-slate-800 text-xs sm:text-sm truncate max-w-[180px]">
                                     {tx.account_name}
@@ -831,7 +831,7 @@ export const AccountingDashboardPage: React.FC = () => {
                               </td>
 
                               {/* Inflow Credit */}
-                              <td className="px-4 py-3.5 align-middle text-right whitespace-nowrap min-w-[145px]">
+                              <td className="px-3.5 py-3.5 align-middle text-right whitespace-nowrap min-w-[125px]">
                                 {inflow > 0 ? (
                                   <span className="font-mono font-bold text-xs sm:text-sm text-emerald-700 bg-emerald-50/70 px-2.5 py-0.5 rounded-md border border-emerald-200/60 inline-block whitespace-nowrap">
                                     + {formatINR(inflow)}
@@ -842,7 +842,7 @@ export const AccountingDashboardPage: React.FC = () => {
                               </td>
 
                               {/* Outflow Debit */}
-                              <td className="px-4 py-3.5 align-middle text-right whitespace-nowrap min-w-[145px]">
+                              <td className="px-3.5 py-3.5 align-middle text-right whitespace-nowrap min-w-[125px]">
                                 {outflow > 0 ? (
                                   <span className="font-mono font-bold text-xs sm:text-sm text-rose-700 bg-rose-50/70 px-2.5 py-0.5 rounded-md border border-rose-200/60 inline-block whitespace-nowrap">
                                     - {formatINR(outflow)}
@@ -853,7 +853,7 @@ export const AccountingDashboardPage: React.FC = () => {
                               </td>
 
                               {/* Running Balance */}
-                              <td className="px-4 py-3.5 align-middle text-right whitespace-nowrap min-w-[155px]">
+                              <td className="px-3.5 py-3.5 align-middle text-right whitespace-nowrap min-w-[130px]">
                                 <span className="font-mono font-bold text-xs sm:text-sm text-[#011F39] whitespace-nowrap">
                                   {formatINR(tx.running_balance)}
                                 </span>
