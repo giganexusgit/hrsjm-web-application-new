@@ -16,9 +16,9 @@ export const ComplaintsOverviewChart: React.FC<ComplaintsOverviewChartProps> = (
   const timeline = data?.timeline || [];
   const maxVal = Math.max(
     ...timeline.map(t => Math.max(t.received, t.resolved, t.pending)),
-    5
+    0
   );
-  const ceiling = Math.ceil((maxVal * 1.2) / 5) * 5;
+  const ceiling = maxVal > 10 ? Math.ceil((maxVal * 1.2) / 5) * 5 : Math.max(maxVal + 2, 5);
 
   const width = 580;
   const height = 150;

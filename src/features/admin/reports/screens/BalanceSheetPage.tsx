@@ -1,4 +1,4 @@
-import React, { useTransition } from 'react';
+import React, { useEffect, useTransition } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   FileText,
@@ -19,6 +19,10 @@ export const BalanceSheetPage: React.FC = () => {
   const navigate = useNavigate();
   const store = useReportsStore();
   const [, startTransition] = useTransition();
+
+  useEffect(() => {
+    reportsStore.fetchBalanceSheet();
+  }, []);
 
   const handleSelectPreset = (key: DatePresetKey) => {
     startTransition(() => {

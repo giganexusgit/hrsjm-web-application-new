@@ -14,7 +14,7 @@ export const UserGrowthChart: React.FC<UserGrowthChartProps> = ({
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
 
   const rawMax = Math.max(...data.map(d => d.count), 0);
-  const maxVal = rawMax > 0 ? Math.ceil((rawMax * 1.15) / 1000) * 1000 : 10000;
+  const maxVal = rawMax > 20 ? Math.ceil((rawMax * 1.15) / 10) * 10 : Math.max(rawMax + 2, 5);
 
   // Chart coordinates
   const width = 580;

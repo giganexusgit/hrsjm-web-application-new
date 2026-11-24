@@ -22,8 +22,8 @@ export const DonationsOverviewChart: React.FC<DonationsOverviewChartProps> = ({
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
 
   const timeline = data?.timeline || [];
-  const maxDonation = Math.max(...timeline.map(t => t.amount), 1000);
-  const ceiling = Math.ceil((maxDonation * 1.15) / 10000) * 10000;
+  const maxDonation = Math.max(...timeline.map(t => t.amount), 0);
+  const ceiling = maxDonation > 500 ? Math.ceil((maxDonation * 1.15) / 1000) * 1000 : Math.max(Math.ceil(maxDonation * 1.2), 100);
 
   const width = 580;
   const height = 150;

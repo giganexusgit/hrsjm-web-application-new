@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useTransition } from 'react';
+import React, { useEffect, useMemo, useState, useTransition } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   TrendingUp,
@@ -22,6 +22,10 @@ export const ProfitLossPage: React.FC = () => {
 
   const [search, setSearch] = useState('');
   const [includeZero, setIncludeZero] = useState(false);
+
+  useEffect(() => {
+    reportsStore.fetchProfitLoss(includeZero);
+  }, []);
 
   const handleSelectPreset = (key: DatePresetKey) => {
     startTransition(() => {

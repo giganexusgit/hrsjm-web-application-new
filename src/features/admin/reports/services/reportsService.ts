@@ -1,4 +1,6 @@
 import { apiClient } from '@/api';
+import { eventsService } from '../../events/services/eventsService';
+import { donationsService } from '../../donations/services/donationsService';
 import type {
   BalanceSheetReportResponse,
   BalanceSheetSummaryResponse,
@@ -51,9 +53,58 @@ export const reportsService = {
       const query = new URLSearchParams();
       if (params?.start_date) query.set('start_date', params.start_date);
       if (params?.end_date) query.set('end_date', params.end_date);
+      query.set('_t', String(Date.now()));
       const url = `/reports/analytics${query.toString() ? `?${query.toString()}` : ''}`;
       const res = await apiClient.get<ReportsAnalyticsResponse>(url);
       if (res && res.kpis) {
+        // Sanitize: ensure events match admin-created events and donations only count completed/successful donations
+        try {
+          const [adminEvents, successfulDonations] = await Promise.all([
+            eventsService.list().catch(() => []),
+            donationsService.getDonations({ status: 'SUCCESS' }).catch(() => []),
+          ]);
+
+          const adminEventsCount = Array.isArray(adminEvents) ? adminEvents.length : 0;
+          if (adminEventsCount === 0) {
+            res.kpis.total_events = 0;
+            res.kpis.events_growth_pct = 0;
+            if (res.events_overview) {
+              res.events_overview.total_events = 0;
+              res.events_overview.total_registrations = 0;
+              res.events_overview.events_growth_pct = 0;
+              res.events_overview.avg_attendance_pct = 0;
+              if (Array.isArray(res.events_overview.timeline)) {
+                res.events_overview.timeline = res.events_overview.timeline.map(t => ({
+                  ...t,
+                  events: 0,
+                  registrations: 0,
+                  attendance: 0,
+                }));
+              }
+            }
+          }
+
+          if (Array.isArray(successfulDonations)) {
+            const realTotal = successfulDonations.reduce((sum, d) => sum + (Number(d.amount) || 0), 0);
+            const realCount = successfulDonations.length;
+            res.kpis.total_donations_amount = realTotal;
+            res.kpis.total_donations_count = realCount;
+            if (res.donations_overview) {
+              res.donations_overview.total_amount = realTotal;
+              res.donations_overview.total_donations = realCount;
+              if (realTotal === 0 && Array.isArray(res.donations_overview.timeline)) {
+                res.donations_overview.timeline = res.donations_overview.timeline.map(t => ({
+                  ...t,
+                  amount: 0,
+                  count: 0,
+                }));
+              }
+            }
+          }
+        } catch {
+          // ignore
+        }
+
         return res;
       }
     } catch (e) {
@@ -75,6 +126,7 @@ export const reportsService = {
       if (params.account_type && params.account_type !== 'ALL') {
         query.set('account_type', params.account_type);
       }
+      query.set('_t', String(Date.now()));
       const res = await apiClient.get<TrialBalanceReportResponse>(`/reports/trial-balance?${query.toString()}`);
       if (res && Array.isArray(res.accounts)) {
         return res;
@@ -109,7 +161,7 @@ export const reportsService = {
   async getTrialBalanceSummary(params: { as_of_date: string }): Promise<TrialBalanceSummaryResponse> {
     try {
       const res = await apiClient.get<TrialBalanceSummaryResponse>(
-        `/reports/trial-balance/summary?as_of_date=${encodeURIComponent(params.as_of_date)}`
+        `/reports/trial-balance/summary?as_of_date=${encodeURIComponent(params.as_of_date)}&_t=${Date.now()}`
       );
       if (res && res.by_account_type) return res;
     } catch (e) {
@@ -132,6 +184,7 @@ export const reportsService = {
       if (params.from_date) query.set('from_date', params.from_date);
       if (params.to_date) query.set('to_date', params.to_date);
       if (params.include_zero_balances) query.set('include_zero_balances', 'true');
+      query.set('_t', String(Date.now()));
       const res = await apiClient.get<ProfitLossReportResponse>(`/reports/profit-loss?${query.toString()}`);
       if (res && res.income && res.expenses) return res;
     } catch (e) {
@@ -150,6 +203,7 @@ export const reportsService = {
       const query = new URLSearchParams();
       if (params.from_date) query.set('from_date', params.from_date);
       if (params.to_date) query.set('to_date', params.to_date);
+      query.set('_t', String(Date.now()));
       const res = await apiClient.get<ProfitLossSummaryResponse>(`/reports/profit-loss/summary?${query.toString()}`);
       if (res && res.total_income !== undefined) return res;
     } catch (e) {
@@ -167,7 +221,7 @@ export const reportsService = {
   async getBalanceSheet(params: { as_of_date: string }): Promise<BalanceSheetReportResponse> {
     try {
       const res = await apiClient.get<BalanceSheetReportResponse>(
-        `/reports/balance-sheet?as_of_date=${encodeURIComponent(params.as_of_date)}`
+        `/reports/balance-sheet?as_of_date=${encodeURIComponent(params.as_of_date)}&_t=${Date.now()}`
       );
       if (res && res.assets && res.liabilities && res.equity) return res;
     } catch (e) {
@@ -183,7 +237,7 @@ export const reportsService = {
   async getBalanceSheetSummary(params: { as_of_date: string }): Promise<BalanceSheetSummaryResponse> {
     try {
       const res = await apiClient.get<BalanceSheetSummaryResponse>(
-        `/reports/balance-sheet/summary?as_of_date=${encodeURIComponent(params.as_of_date)}`
+        `/reports/balance-sheet/summary?as_of_date=${encodeURIComponent(params.as_of_date)}&_t=${Date.now()}`
       );
       if (res && res.total_assets !== undefined) return res;
     } catch (e) {

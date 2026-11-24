@@ -1,4 +1,4 @@
-import React, { useTransition } from 'react';
+import React, { useEffect, useTransition } from 'react';
 import { BarChart3, Printer } from 'lucide-react';
 import { useReportsStore, reportsStore } from '../store/reportsStore';
 import { ReportDateSelector } from '../components/ReportDateSelector';
@@ -16,6 +16,10 @@ import type { DatePresetKey } from '../types/reports.types';
 export const ReportsOverviewPage: React.FC = () => {
   const store = useReportsStore();
   const [, startTransition] = useTransition();
+
+  useEffect(() => {
+    reportsStore.refreshAll();
+  }, []);
 
   const presets = getDatePresets();
   const currentPresetObj = presets.find(p => p.key === store.selectedPreset);

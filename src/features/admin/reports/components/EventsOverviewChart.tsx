@@ -16,9 +16,9 @@ export const EventsOverviewChart: React.FC<EventsOverviewChartProps> = ({
   const timeline = data?.timeline || [];
   const maxEvents = Math.max(
     ...timeline.map(t => Math.max(t.registrations, t.attendance)),
-    10
+    0
   );
-  const ceiling = Math.ceil((maxEvents * 1.15) / 100) * 100;
+  const ceiling = maxEvents > 50 ? Math.ceil((maxEvents * 1.15) / 50) * 50 : Math.max(maxEvents + 5, 10);
 
   const width = 580;
   const height = 150;

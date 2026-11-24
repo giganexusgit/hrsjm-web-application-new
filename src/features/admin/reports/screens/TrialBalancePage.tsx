@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useTransition } from 'react';
+import React, { useEffect, useMemo, useState, useTransition } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Scale,
@@ -37,6 +37,10 @@ export const TrialBalancePage: React.FC = () => {
   const [selectedType, setSelectedType] = useState<AccountTypeFilter>('ALL');
   const [includeZero, setIncludeZero] = useState(false);
   const [drilldownAccount, setDrilldownAccount] = useState<TrialBalanceAccountItem | null>(null);
+
+  useEffect(() => {
+    reportsStore.fetchTrialBalance(includeZero, selectedType);
+  }, []);
 
   const handleSelectPreset = (key: DatePresetKey) => {
     startTransition(() => {
