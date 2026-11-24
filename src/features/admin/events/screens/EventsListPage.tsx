@@ -63,7 +63,7 @@ export const EventsListPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
+    <div className="w-full space-y-6">
       {/* Breadcrumb & Header */}
       <div className="space-y-2">
         {/* Breadcrumb */}
@@ -147,7 +147,7 @@ export const EventsListPage: React.FC = () => {
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredEvents.map((event) => (
             <EventCard
               key={event.id}
