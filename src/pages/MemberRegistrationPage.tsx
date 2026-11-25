@@ -1796,21 +1796,6 @@ export const MemberRegistrationPage: React.FC = () => {
                 </p>
               </div>
 
-              {/* Document Validation Errors Banner */}
-              {Object.keys(documentErrors).length > 0 && (
-                <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-xs text-rose-800 space-y-1.5 shadow-2xs">
-                  <div className="flex items-center gap-2 font-bold text-rose-900">
-                    <AlertCircle size={16} className="text-rose-600 shrink-0" />
-                    <span>Please upload the mandatory documents (1, 2, and 4) to complete your application:</span>
-                  </div>
-                  <ul className="list-disc list-inside text-[11.5px] text-rose-700 pl-1 space-y-0.5 font-medium">
-                    {Object.values(documentErrors).map((msg, i) => (
-                      <li key={i}>{msg}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
               {/* 4 Document Upload Cards in Responsive 2-Col Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* 1. Aadhaar Card (Required Identity Proof) */}
