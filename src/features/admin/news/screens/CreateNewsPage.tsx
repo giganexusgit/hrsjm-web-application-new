@@ -527,7 +527,7 @@ export const CreateNewsPage: React.FC = () => {
                   onChange={() => setForm((prev) => ({ ...prev, status: 'PUBLISHED' }))}
                 />
                 <div>
-                  <strong style={{ color: '#166534' }}>Published Live</strong>
+                  <strong style={{ color: '#166534' }}>Publish</strong>
                   <div style={styles.statusOptionDesc}>Visible immediately to all public users</div>
                 </div>
               </label>
@@ -547,7 +547,7 @@ export const CreateNewsPage: React.FC = () => {
                   onChange={() => setForm((prev) => ({ ...prev, status: 'DRAFT' }))}
                 />
                 <div>
-                  <strong style={{ color: '#92400E' }}>Draft Only</strong>
+                  <strong style={{ color: '#92400E' }}>Draft</strong>
                   <div style={styles.statusOptionDesc}>Private draft for review, hidden from public</div>
                 </div>
               </label>

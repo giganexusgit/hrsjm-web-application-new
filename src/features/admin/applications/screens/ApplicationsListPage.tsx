@@ -8,6 +8,8 @@ import type { StatusTabKey } from '../components/ApplicationsStatusTabs';
 import { ApplicationsSearchBar } from '../components/ApplicationsSearchBar';
 import { ApplicationRow } from '../components/ApplicationRow';
 import { ApplicationsFilterModal } from '../components/ApplicationsFilterModal';
+import { ApplicationPrintModal } from '../components/ApplicationPrintModal';
+import type { MembershipApplicationItem } from '../types/applications.types';
 import { RefreshCw, FileX, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const ITEMS_PER_PAGE = 8;
@@ -22,6 +24,7 @@ export const ApplicationsListPage: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [filterModalOpen, setFilterModalOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [printApplication, setPrintApplication] = useState<MembershipApplicationItem | null>(null);
   const [extraFilters, setExtraFilters] = useState<ApplicationFilterOptions>({
     status: 'all',
     type: 'all',
@@ -42,11 +45,29 @@ export const ApplicationsListPage: React.FC = () => {
   };
 
   const allApps = applicationsStore.getAllApplications();
-  const stats = applicationsStore.getStats();
+  const stats = useMemo(() => {
+    const pool =
+      extraFilters.type && extraFilters.type !== 'all'
+        ? allApps.filter(a => a.accountType === extraFilters.type)
+        : allApps;
+    return applicationsStore.getStats(pool);
+  }, [allApps, extraFilters.type]);
 
-  // Dynamic tab counts based on current search query
+  // Dynamic type counts
+  const typeCounts = useMemo(() => {
+    return {
+      all: allApps.length,
+      membership: allApps.filter(a => a.accountType === 'membership').length,
+      seeker: allApps.filter(a => a.accountType === 'seeker').length,
+    };
+  }, [allApps]);
+
+  // Dynamic tab counts based on current search query and selected application type
   const tabCounts = useMemo(() => {
     let pool = allApps;
+    if (extraFilters.type && extraFilters.type !== 'all') {
+      pool = pool.filter(a => a.accountType === extraFilters.type);
+    }
     if (searchQuery.trim()) {
       const q = searchQuery.trim().toLowerCase();
       pool = pool.filter(
@@ -65,7 +86,7 @@ export const ApplicationsListPage: React.FC = () => {
       approved: pool.filter(a => a.status === 'approved').length,
       rejected: pool.filter(a => a.status === 'rejected').length,
     };
-  }, [allApps, searchQuery]);
+  }, [allApps, searchQuery, extraFilters.type]);
 
   // Combined filtered applications
   const filteredApps = useMemo(() => {
@@ -162,6 +183,66 @@ export const ApplicationsListPage: React.FC = () => {
           marginBottom: '20px',
         }}
       >
+        {/* Application Category Segment Control */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            marginBottom: '16px',
+            paddingBottom: '14px',
+            borderBottom: '1px solid #EDF2F7',
+            flexWrap: 'wrap',
+          }}
+        >
+          {[
+            { key: 'all' as const, label: 'All Applications', count: typeCounts.all },
+            { key: 'membership' as const, label: 'Membership Applications', count: typeCounts.membership },
+            { key: 'seeker' as const, label: 'Cause & Aid Applications', count: typeCounts.seeker },
+          ].map(t => {
+            const isSelected = (extraFilters.type || 'all') === t.key;
+            return (
+              <button
+                key={t.key}
+                type="button"
+                onClick={() => {
+                  setExtraFilters(prev => ({ ...prev, type: t.key }));
+                  setCurrentPage(1);
+                }}
+                style={{
+                  padding: '7px 16px',
+                  borderRadius: '24px',
+                  border: isSelected ? '1.5px solid #011F39' : '1px solid #E2E8F0',
+                  backgroundColor: isSelected ? '#011F39' : '#FFFFFF',
+                  color: isSelected ? '#FFFFFF' : '#334155',
+                  fontSize: '13px',
+                  fontWeight: isSelected ? 700 : 600,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  boxShadow: isSelected ? '0 1px 3px rgba(1,31,57,0.15)' : 'none',
+                  transition: 'all 0.15s ease',
+                }}
+              >
+                <span>{t.label}</span>
+                <span
+                  style={{
+                    backgroundColor: isSelected ? '#FAD465' : '#F1F5F9',
+                    color: isSelected ? '#011F39' : '#475569',
+                    borderRadius: '12px',
+                    padding: '1px 8px',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                  }}
+                >
+                  {t.count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
         <ApplicationsStatusTabs
           activeTab={activeTab}
           onSelectTab={tab => {
@@ -344,6 +425,7 @@ export const ApplicationsListPage: React.FC = () => {
                       key={app.id || app.applicationId}
                       application={app}
                       onView={selected => navigate(`/admin/membership-applications/${selected.id || selected.applicationId}`)}
+                      onPrint={selected => setPrintApplication(selected)}
                     />
                   ))}
                 </tbody>
@@ -440,6 +522,13 @@ export const ApplicationsListPage: React.FC = () => {
           setActiveTab('all');
           setCurrentPage(1);
         }}
+      />
+
+      {/* Official Printable Application Form Modal */}
+      <ApplicationPrintModal
+        isOpen={Boolean(printApplication)}
+        application={printApplication}
+        onClose={() => setPrintApplication(null)}
       />
     </div>
   );

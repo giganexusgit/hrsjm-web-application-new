@@ -10,6 +10,14 @@ export type EventStatusFilter = 'ALL' | EventUiStatus;
 
 export type EventFormat = 'IN_PERSON' | 'ONLINE' | 'HYBRID';
 
+export const isEventFeatured = (tags?: string[] | null): boolean => {
+  if (!tags || !Array.isArray(tags)) return false;
+  return tags.some((t) => {
+    const clean = t.trim().toLowerCase();
+    return clean === 'featured' || clean === 'featured event';
+  });
+};
+
 export interface EventListItem {
   id: string;
   title: string;
@@ -31,6 +39,7 @@ export interface EventListItem {
   language?: string;
   tags?: string[];
   status: EventUiStatus;
+  isFeatured?: boolean;
   isEnabled?: boolean;
   isDonationEnabled?: boolean;
   donationMessage?: string | null;
@@ -69,6 +78,7 @@ export interface CreateEventFormState {
   shortInformation: string;
   tags: string[];
   status: 'DRAFT' | 'PUBLISH';
+  isFeatured: boolean;
   isEnabled: boolean;
   isDonationEnabled: boolean;
   donationMessage: string;

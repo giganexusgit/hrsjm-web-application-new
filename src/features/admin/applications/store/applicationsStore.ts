@@ -8,6 +8,7 @@ import type {
 } from '../types/applications.types';
 import { applicationsService } from '../services/applicationsService';
 import { getOfficialStatutoryDocuments } from '../utils/documentGenerator';
+import { INITIAL_APPLICATION_SEEDS } from '../data/applicationsFixtures';
 
 const STORAGE_KEY = 'hrsjm_local_membership_applications';
 const STORAGE_KEY_VIEWED_APPS = 'hrsjm_admin_viewed_applications_v1';
@@ -556,7 +557,7 @@ class ApplicationsStore {
         const raw = window.localStorage.getItem(STORAGE_KEY);
         if (raw) {
           const parsed = JSON.parse(raw);
-          if (Array.isArray(parsed)) {
+          if (Array.isArray(parsed) && parsed.length > 0) {
             return parsed;
           }
         }
@@ -564,7 +565,7 @@ class ApplicationsStore {
     } catch {
       // Ignore storage errors
     }
-    return [];
+    return [...INITIAL_APPLICATION_SEEDS];
   }
 
   private persist(): void {
@@ -610,19 +611,20 @@ class ApplicationsStore {
     );
   }
 
-  public getStats(): ApplicationStatsData {
+  public getStats(pool?: MembershipApplicationItem[]): ApplicationStatsData {
+    const target = pool || this.applications;
     let underReview = 0;
     let approved = 0;
     let rejected = 0;
 
-    for (const app of this.applications) {
+    for (const app of target) {
       if (app.status === 'under_review' || app.status === 'submitted') underReview++;
       else if (app.status === 'approved') approved++;
       else if (app.status === 'rejected') rejected++;
     }
 
     return {
-      total: this.applications.length,
+      total: target.length,
       underReview,
       approved,
       rejected,
@@ -718,13 +720,29 @@ class ApplicationsStore {
         mapped.push(...aItems.map(mapAssistanceRequestToApplicationItem));
       }
 
-      if (membershipsRes.status === 'fulfilled' || assistanceRes.status === 'fulfilled') {
-        this.applications = mapped;
+      if (mapped.length > 0) {
+        // Merge with existing local/seed applications without duplicating by ID or Application ID
+        const nonDuplicateExisting = this.applications.filter(
+          existing => !mapped.some(m => m.id === existing.id || m.applicationId === existing.applicationId)
+        );
+        this.applications = [...nonDuplicateExisting, ...mapped];
         this.sortInternal();
+        this.notify();
+      } else {
+        // If backend returned empty list, ensure full suite of application seeds is maintained
+        if (this.applications.length === 0) {
+          this.applications = [...INITIAL_APPLICATION_SEEDS];
+          this.sortInternal();
+        }
         this.notify();
       }
     } catch {
       // Gracefully maintain offline/fixtures state
+      if (this.applications.length === 0) {
+        this.applications = [...INITIAL_APPLICATION_SEEDS];
+        this.sortInternal();
+      }
+      this.notify();
     }
     return this.getAllApplications();
   }

@@ -6,8 +6,13 @@ import { eventsStore } from '../store/eventsStore';
 import { EventsStatsCards } from '../components/EventsStatsCards';
 import { EventsFilterBar } from '../components/EventsFilterBar';
 import { EventCard } from '../components/EventCard';
-import { CreateEventModal } from '../components/CreateEventModal';
-import type { EventStatusFilter, CreateEventFormState } from '../types/events.types';
+import { CreateEventModal, EditEventModal } from '../components/CreateEventModal';
+import {
+  type EventStatusFilter,
+  type CreateEventFormState,
+  type EventListItem,
+  isEventFeatured,
+} from '../types/events.types';
 
 export const EventsListPage: React.FC = () => {
   const navigate = useNavigate();
@@ -20,6 +25,7 @@ export const EventsListPage: React.FC = () => {
   const [selectedFormat, setSelectedFormat] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<EventListItem | null>(null);
 
   useEffect(() => {
     eventsStore.fetchEvents().catch(() => {});
@@ -54,6 +60,46 @@ export const EventsListPage: React.FC = () => {
 
   const handleCreateSubmit = (form: CreateEventFormState) => {
     eventsStore.createEvent(form);
+  };
+
+  const handleEditSubmit = async (form: CreateEventFormState, eventId: string) => {
+    try {
+      const startAt = form.eventDate && form.startTime
+        ? new Date(`${form.eventDate}T${form.startTime}:00`).toISOString()
+        : editingEvent?.startAt;
+      const endDateStr = form.endDate || form.eventDate;
+      const endAt = endDateStr && form.endTime
+        ? new Date(`${endDateStr}T${form.endTime}:00`).toISOString()
+        : undefined;
+
+      await eventsStore.updateEvent(eventId, {
+        title: form.title.trim(),
+        description: form.description.trim(),
+        shortInformation: form.shortInformation?.trim() || null,
+        category: form.category,
+        eventType: form.eventType,
+        coverImageUrl: form.coverImageUri,
+        startAt,
+        endAt,
+        allDay: form.allDay,
+        location: form.location.trim(),
+        address: form.address?.trim() || undefined,
+        organizer: form.organizedBy?.trim() || editingEvent?.organizer,
+        capacity: form.totalSeats ? parseInt(form.totalSeats, 10) : editingEvent?.capacity,
+        perPersonLimit: form.perPersonLimit ? parseInt(form.perPersonLimit, 10) : editingEvent?.perPersonLimit,
+        targetAudience: form.targetAudience,
+        tags: form.tags,
+        status: form.status === 'PUBLISH' ? 'UPCOMING' : 'DRAFT',
+      });
+      setEditingEvent(null);
+    } catch {
+      alert('Failed to update event. Please try again.');
+    }
+  };
+
+  const handleToggleFeatured = async (event: EventListItem) => {
+    const isCurrently = isEventFeatured(event.tags);
+    await eventsStore.setFeaturedEvent(event.id, !isCurrently);
   };
 
   const handleDeleteEvent = (id: string) => {
@@ -153,7 +199,9 @@ export const EventsListPage: React.FC = () => {
               key={event.id}
               event={event}
               onPress={(id) => navigate(`/admin/events/${id}`)}
+              onEdit={(evt) => setEditingEvent(evt)}
               onDelete={handleDeleteEvent}
+              onToggleFeatured={handleToggleFeatured}
             />
           ))}
         </div>
@@ -164,6 +212,14 @@ export const EventsListPage: React.FC = () => {
         isOpen={createModalOpen}
         onClose={() => setCreateModalOpen(false)}
         onSubmit={handleCreateSubmit}
+      />
+
+      {/* Edit Event Modal */}
+      <EditEventModal
+        isOpen={Boolean(editingEvent)}
+        event={editingEvent}
+        onClose={() => setEditingEvent(null)}
+        onSubmit={handleEditSubmit}
       />
     </div>
   );

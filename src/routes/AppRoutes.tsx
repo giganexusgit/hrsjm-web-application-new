@@ -236,6 +236,8 @@ export const AppRoutes: React.FC = () => {
         <Route path="/legal-rights" element={<Navigate to="/admin/rights" replace />} />
         <Route path="/expenses" element={<Navigate to="/admin/expenses" replace />} />
         <Route path="/expense" element={<Navigate to="/admin/expenses" replace />} />
+        <Route path="/payment" element={<Navigate to="/admin/expenses" replace />} />
+        <Route path="/payments" element={<Navigate to="/admin/expenses" replace />} />
         <Route path="/vouchers" element={<Navigate to="/admin/expenses" replace />} />
         <Route path="/expense-vouchers" element={<Navigate to="/admin/expenses" replace />} />
         <Route path="/receipts" element={<Navigate to="/admin/receipts" replace />} />
@@ -422,11 +424,13 @@ export const AppRoutes: React.FC = () => {
           <Route path="know-your-rights" element={<Navigate to="/admin/rights" replace />} />
           <Route path="legal-rights" element={<Navigate to="/admin/rights" replace />} />
 
-          {/* Expenses */}
+          {/* Expenses / Payments */}
           <Route path="expenses" element={<ExpensesListPage />} />
           <Route path="expenses/create" element={<CreateExpensePage />} />
           <Route path="expenses/:id" element={<ExpenseDetailsPage />} />
           <Route path="expense" element={<Navigate to="/admin/expenses" replace />} />
+          <Route path="payment" element={<Navigate to="/admin/expenses" replace />} />
+          <Route path="payments" element={<Navigate to="/admin/expenses" replace />} />
           <Route path="expense-vouchers" element={<Navigate to="/admin/expenses" replace />} />
           <Route path="vouchers" element={<Navigate to="/admin/expenses" replace />} />
 

@@ -223,6 +223,48 @@ export const BlogCard: React.FC<BlogCardProps> = ({
             </div>
           )}
         </div>
+
+        {/* Action Row */}
+        <div style={styles.actionRow}>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(blog);
+            }}
+            style={styles.deleteBtn}
+            title="Delete article"
+          >
+            <Trash2 size={14} />
+          </button>
+
+          <div style={styles.actionGroup}>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit(blog);
+              }}
+              style={styles.editBtn}
+              title="Edit article"
+            >
+              <Edit size={12} color="#011F39" />
+              <span>Edit</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onView(blog);
+              }}
+              style={styles.viewBtn}
+            >
+              <span>View Details</span>
+              <ExternalLink size={12} />
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -394,6 +436,60 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'inline-flex',
     alignItems: 'center',
     gap: '4px',
+  },
+  actionRow: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: '12px',
+    marginTop: 'auto',
+    borderTop: '1px solid #F1F5F9',
+    gap: '8px',
+  },
+  actionGroup: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+  },
+  deleteBtn: {
+    padding: '6px',
+    borderRadius: '6px',
+    border: '1px solid transparent',
+    backgroundColor: 'transparent',
+    color: '#94A3B8',
+    cursor: 'pointer',
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    transition: 'all 0.15s ease',
+  },
+  editBtn: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '6px',
+    padding: '6px 12px',
+    borderRadius: '8px',
+    backgroundColor: '#FFF9E6',
+    border: '1px solid #FDE68A',
+    color: '#011F39',
+    fontSize: '12px',
+    fontWeight: 600,
+    cursor: 'pointer',
+    transition: 'all 0.15s ease',
+  },
+  viewBtn: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '6px',
+    padding: '6px 12px',
+    borderRadius: '8px',
+    backgroundColor: '#011F39',
+    border: '1px solid #011F39',
+    color: '#FFFFFF',
+    fontSize: '12px',
+    fontWeight: 600,
+    cursor: 'pointer',
+    transition: 'all 0.15s ease',
   },
 };
 

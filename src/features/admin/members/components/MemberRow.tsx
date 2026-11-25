@@ -13,6 +13,7 @@ import {
   Hourglass,
   AlertCircle,
   Infinity as InfinityIcon,
+  Printer,
 } from 'lucide-react';
 import type { Member } from '../types/members.types';
 import { MemberStatusBadge } from './MemberStatusBadge';
@@ -22,6 +23,7 @@ interface MemberRowProps {
   member: Member;
   onView: (member: Member) => void;
   onViewIdCard: (member: Member) => void;
+  onPrintApplication?: (member: Member) => void;
   onEdit: (member: Member) => void;
   onResetPassword: (member: Member) => void;
   onToggleStatus: (member: Member) => void;
@@ -122,6 +124,7 @@ export const MemberRow: React.FC<MemberRowProps> = ({
   member,
   onView,
   onViewIdCard,
+  onPrintApplication,
   onEdit,
   onResetPassword,
   onToggleStatus,
@@ -344,77 +347,115 @@ export const MemberRow: React.FC<MemberRowProps> = ({
 
       {/* Row Context Actions Menu */}
       <td style={{ padding: '14px 16px', verticalAlign: 'middle', textAlign: 'right' }}>
-        <div style={{ position: 'relative', display: 'inline-block' }} ref={menuRef}>
-          <button
-            type="button"
-            onClick={() => setMenuOpen(!menuOpen)}
-            style={{
-              padding: '6px',
-              borderRadius: '6px',
-              border: '1px solid #E5E7EB',
-              backgroundColor: '#FFFFFF',
-              color: '#4B5563',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-            aria-label="Actions"
-          >
-            <MoreVertical size={16} />
-          </button>
-
-          {menuOpen && (
-            <div
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+          {onPrintApplication && (
+            <button
+              type="button"
+              onClick={() => onPrintApplication(member)}
+              title="Print Official Application Form"
               style={{
-                position: 'absolute',
-                right: 0,
-                top: '100%',
-                marginTop: '4px',
-                width: '190px',
-                backgroundColor: '#FFFFFF',
-                borderRadius: '8px',
-                boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+                padding: '6px',
+                borderRadius: '6px',
                 border: '1px solid #E5E7EB',
-                zIndex: 50,
-                padding: '4px 0',
+                backgroundColor: '#FFFFFF',
+                color: '#06294D',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'all 0.15s ease',
               }}
+              className="hover:bg-amber-50 hover:border-amber-200 hover:scale-105 active:scale-95"
             >
-              <button
-                type="button"
-                onClick={() => {
-                  setMenuOpen(false);
-                  onView(member);
-                }}
-                style={menuItemStyle}
-              >
-                <Eye size={15} color="#011F39" />
-                <span>View Profile</span>
-              </button>
+              <Printer size={15} color="#06294D" />
+            </button>
+          )}
 
-              <button
-                type="button"
-                onClick={() => {
-                  setMenuOpen(false);
-                  onViewIdCard(member);
-                }}
-                style={menuItemStyle}
-              >
-                <IdCard size={15} color="#00A859" />
-                <span>Digital ID Card</span>
-              </button>
+          <div style={{ position: 'relative', display: 'inline-block' }} ref={menuRef}>
+            <button
+              type="button"
+              onClick={() => setMenuOpen(!menuOpen)}
+              style={{
+                padding: '6px',
+                borderRadius: '6px',
+                border: '1px solid #E5E7EB',
+                backgroundColor: '#FFFFFF',
+                color: '#4B5563',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+              aria-label="Actions"
+            >
+              <MoreVertical size={16} />
+            </button>
 
-              <button
-                type="button"
-                onClick={() => {
-                  setMenuOpen(false);
-                  onEdit(member);
+            {menuOpen && (
+              <div
+                style={{
+                  position: 'absolute',
+                  right: 0,
+                  top: '100%',
+                  marginTop: '4px',
+                  width: '190px',
+                  backgroundColor: '#FFFFFF',
+                  borderRadius: '8px',
+                  boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+                  border: '1px solid #E5E7EB',
+                  zIndex: 50,
+                  padding: '4px 0',
                 }}
-                style={menuItemStyle}
               >
-                <Edit size={15} color="#2563EB" />
-                <span>Edit Details</span>
-              </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    onView(member);
+                  }}
+                  style={menuItemStyle}
+                >
+                  <Eye size={15} color="#011F39" />
+                  <span>View Profile</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    onViewIdCard(member);
+                  }}
+                  style={menuItemStyle}
+                >
+                  <IdCard size={15} color="#00A859" />
+                  <span>Digital ID Card</span>
+                </button>
+
+                {onPrintApplication && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      onPrintApplication(member);
+                    }}
+                    style={menuItemStyle}
+                  >
+                    <Printer size={15} color="#06294D" />
+                    <span>Print Application</span>
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    onEdit(member);
+                  }}
+                  style={menuItemStyle}
+                >
+                  <Edit size={15} color="#2563EB" />
+                  <span>Edit Details</span>
+                </button>
 
               <button
                 type="button"
@@ -455,6 +496,7 @@ export const MemberRow: React.FC<MemberRowProps> = ({
               </button>
             </div>
           )}
+          </div>
         </div>
       </td>
     </tr>

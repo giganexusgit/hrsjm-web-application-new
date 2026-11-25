@@ -1,10 +1,11 @@
-import type {
-  EventListItem,
-  EventStatsSummary,
-  EventUiStatus,
-  CreateEventFormState,
+import {
+  type EventListItem,
+  type EventStatsSummary,
+  type EventUiStatus,
+  type CreateEventFormState,
+  isEventFeatured,
 } from '../types/events.types';
-import { eventsService, isAdminCreatedEvent } from '../services/eventsService';
+import { eventsService } from '../services/eventsService';
 
 const STORAGE_KEY = 'hrsjm_local_events_v1';
 
@@ -107,7 +108,7 @@ class EventsStore {
     try {
       const items = await eventsService.list();
       if (Array.isArray(items)) {
-        this.events = items.filter(isAdminCreatedEvent);
+        this.events = items;
         this.sortInternal();
         this.notify();
       }
@@ -117,6 +118,25 @@ class EventsStore {
   }
 
   public async createEvent(form: CreateEventFormState): Promise<EventListItem> {
+    // If newly created event is featured, unfeature any other existing featured events
+    if (form.isFeatured || isEventFeatured(form.tags)) {
+      const otherFeatured = this.events.filter((e) => isEventFeatured(e.tags));
+      for (const other of otherFeatured) {
+        const strippedTags = (other.tags || []).filter(
+          (t) => t.trim().toLowerCase() !== 'featured' && t.trim().toLowerCase() !== 'featured event'
+        );
+        eventsService.update(other.id, { tags: strippedTags }).catch(() => {});
+        const oIdx = this.events.findIndex((e) => e.id === other.id);
+        if (oIdx !== -1) {
+          this.events[oIdx] = {
+            ...this.events[oIdx],
+            tags: strippedTags,
+            isFeatured: false,
+          };
+        }
+      }
+    }
+
     let newEvent: EventListItem;
     try {
       newEvent = await eventsService.create(form);
@@ -169,6 +189,27 @@ class EventsStore {
     id: string,
     updates: Partial<EventListItem>
   ): Promise<EventListItem | undefined> {
+    // If updating tags and the new tags contain 'Featured', automatically unfeature other events
+    if (updates.tags && isEventFeatured(updates.tags)) {
+      const otherFeatured = this.events.filter(
+        (e) => e.id !== id && isEventFeatured(e.tags)
+      );
+      for (const other of otherFeatured) {
+        const strippedTags = (other.tags || []).filter(
+          (t) => t.trim().toLowerCase() !== 'featured' && t.trim().toLowerCase() !== 'featured event'
+        );
+        eventsService.update(other.id, { tags: strippedTags }).catch(() => {});
+        const oIdx = this.events.findIndex((e) => e.id === other.id);
+        if (oIdx !== -1) {
+          this.events[oIdx] = {
+            ...this.events[oIdx],
+            tags: strippedTags,
+            isFeatured: false,
+          };
+        }
+      }
+    }
+
     try {
       await eventsService.update(id, updates);
     } catch {
@@ -180,6 +221,7 @@ class EventsStore {
       const updated: EventListItem = {
         ...this.events[index],
         ...updates,
+        isFeatured: updates.tags !== undefined ? isEventFeatured(updates.tags) : this.events[index].isFeatured,
         updated_at: new Date().toISOString(),
       };
       this.events[index] = updated;
@@ -188,6 +230,94 @@ class EventsStore {
       return updated;
     }
     return undefined;
+  }
+
+  /**
+   * Set an event as the sole Featured Event (or unfeature it).
+   * Ensures strictly only ONE event is featured across the entire system.
+   */
+  public async setFeaturedEvent(targetId: string, shouldBeFeatured: boolean): Promise<boolean> {
+    const target = this.events.find((e) => e.id === targetId);
+    if (!target) return false;
+
+    try {
+      if (shouldBeFeatured) {
+        // 1. Unfeature any OTHER event that is currently featured
+        const otherFeaturedEvents = this.events.filter(
+          (e) => e.id !== targetId && isEventFeatured(e.tags)
+        );
+
+        for (const other of otherFeaturedEvents) {
+          const strippedTags = (other.tags || []).filter(
+            (t) => t.trim().toLowerCase() !== 'featured' && t.trim().toLowerCase() !== 'featured event'
+          );
+          try {
+            await eventsService.update(other.id, { tags: strippedTags });
+          } catch (e) {
+            console.warn(`Failed to unfeature event ${other.id}:`, e);
+          }
+          const idx = this.events.findIndex((e) => e.id === other.id);
+          if (idx !== -1) {
+            this.events[idx] = {
+              ...this.events[idx],
+              tags: strippedTags,
+              isFeatured: false,
+              updated_at: new Date().toISOString(),
+            };
+          }
+        }
+
+        // 2. Feature the target event
+        const cleanTags = (target.tags || []).filter(
+          (t) => t.trim().toLowerCase() !== 'featured' && t.trim().toLowerCase() !== 'featured event'
+        );
+        cleanTags.unshift('Featured');
+
+        try {
+          await eventsService.update(targetId, { tags: cleanTags });
+        } catch (e) {
+          console.warn(`Failed to feature event ${targetId}:`, e);
+        }
+
+        const targetIdx = this.events.findIndex((e) => e.id === targetId);
+        if (targetIdx !== -1) {
+          this.events[targetIdx] = {
+            ...this.events[targetIdx],
+            tags: cleanTags,
+            isFeatured: true,
+            updated_at: new Date().toISOString(),
+          };
+        }
+      } else {
+        // Unfeature this target event
+        const strippedTags = (target.tags || []).filter(
+          (t) => t.trim().toLowerCase() !== 'featured' && t.trim().toLowerCase() !== 'featured event'
+        );
+        try {
+          await eventsService.update(targetId, { tags: strippedTags });
+        } catch (e) {
+          console.warn(`Failed to unfeature event ${targetId}:`, e);
+        }
+
+        const targetIdx = this.events.findIndex((e) => e.id === targetId);
+        if (targetIdx !== -1) {
+          this.events[targetIdx] = {
+            ...this.events[targetIdx],
+            tags: strippedTags,
+            isFeatured: false,
+            updated_at: new Date().toISOString(),
+          };
+        }
+      }
+
+      this.sortInternal();
+      this.notify();
+      return true;
+    } catch (err) {
+      console.error('Failed to set featured event:', err);
+      this.notify();
+      return false;
+    }
   }
 
   public async updateStatus(id: string, status: EventUiStatus): Promise<boolean> {

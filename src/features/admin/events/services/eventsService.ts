@@ -4,9 +4,10 @@
  * and normalizes entity representations.
  */
 import { apiClient, ENDPOINTS } from '@/api';
-import type { EventListItem, CreateEventFormState } from '../types/events.types';
+import { type EventListItem, type CreateEventFormState, isEventFeatured } from '../types/events.types';
 
 export function mapBackendEventToUi(item: any): EventListItem {
+  const tags = Array.isArray(item.tags) ? item.tags : [];
   return {
     id: item.id,
     title: item.title,
@@ -26,8 +27,9 @@ export function mapBackendEventToUi(item: any): EventListItem {
     perPersonLimit: item.per_person_limit ?? item.perPersonLimit,
     targetAudience: item.target_audience || item.targetAudience,
     language: item.language,
-    tags: item.tags || [],
+    tags,
     status: item.status || 'UPCOMING',
+    isFeatured: isEventFeatured(tags),
     isEnabled: item.is_enabled ?? item.isEnabled ?? true,
     isDonationEnabled: item.is_donation_enabled ?? item.isDonationEnabled ?? false,
     donationMessage: item.donation_message ?? item.donationMessage ?? '',
@@ -38,12 +40,10 @@ export function mapBackendEventToUi(item: any): EventListItem {
 }
 
 /**
- * Returns true only for events created via the Admin module (excludes DB-seeded fixtures).
+ * Returns true for all valid events from the database.
  */
-export function isAdminCreatedEvent(event: EventListItem): boolean {
-  const idStr = String(event.id || '');
-  if (idStr.startsWith('10000000-') || idStr.startsWith('evt-')) return false;
-  return Boolean(event.createdBy);
+export function isAdminCreatedEvent(_event: EventListItem): boolean {
+  return true;
 }
 
 export const eventsService = {
@@ -124,6 +124,11 @@ export const eventsService = {
     if ('eventType' in form && form.eventType !== undefined) payload.event_type = form.eventType;
     if ('coverImageUri' in form && form.coverImageUri !== undefined) payload.cover_image_url = form.coverImageUri;
     if ('coverImageUrl' in form && form.coverImageUrl !== undefined) payload.cover_image_url = form.coverImageUrl;
+    if ('startAt' in form && form.startAt) payload.start_at = form.startAt;
+    if ('start_at' in form && (form as any).start_at) payload.start_at = (form as any).start_at;
+    if ('endAt' in form && form.endAt !== undefined) payload.end_at = form.endAt || null;
+    if ('end_at' in form && (form as any).end_at !== undefined) payload.end_at = (form as any).end_at || null;
+    if ('allDay' in form && form.allDay !== undefined) payload.all_day = Boolean(form.allDay);
     if (form.location !== undefined) payload.location = form.location.trim();
     if (form.address !== undefined) payload.address = form.address.trim();
     if ('organizedBy' in form && form.organizedBy !== undefined) payload.organized_by = form.organizedBy.trim();
@@ -143,7 +148,9 @@ export const eventsService = {
     if ('targetAudience' in form && form.targetAudience !== undefined) payload.target_audience = form.targetAudience.trim();
     if ('language' in form && form.language !== undefined) payload.language = form.language.trim();
     if (form.tags !== undefined) payload.tags = form.tags;
-    if ('status' in form && form.status !== undefined) payload.status = form.status;
+    if ('status' in form && form.status !== undefined) {
+      payload.status = form.status === 'PUBLISH' ? 'UPCOMING' : form.status;
+    }
     if ('isEnabled' in form && form.isEnabled !== undefined) {
       payload.is_enabled = Boolean(form.isEnabled);
     }

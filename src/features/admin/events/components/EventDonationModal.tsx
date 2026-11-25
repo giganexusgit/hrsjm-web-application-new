@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   HeartHandshake,
   X,
@@ -33,6 +33,16 @@ export const EventDonationModal: React.FC<EventDonationModalProps> = ({
   defaultDonorMobile = '',
   defaultDonorEmail = '',
 }) => {
+  useEffect(() => {
+    if (isOpen) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = originalOverflow;
+      };
+    }
+  }, [isOpen]);
+
   const [customAmount, setCustomAmount] = useState<string>('');
   const [donorName, setDonorName] = useState<string>(defaultDonorName);
   const [donorMobile, setDonorMobile] = useState<string>(defaultDonorMobile);

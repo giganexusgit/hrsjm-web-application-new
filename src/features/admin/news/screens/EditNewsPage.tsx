@@ -1,4 +1,4 @@
-import React, { useState, useSyncExternalStore } from 'react';
+import React, { useState, useRef, useSyncExternalStore } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -6,6 +6,7 @@ import {
   Send,
   FileEdit,
   X,
+  Upload,
 } from 'lucide-react';
 import { newsStore } from '../store/newsStore';
 import {
@@ -49,6 +50,32 @@ export const EditNewsPage: React.FC = () => {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [selectedFileName, setSelectedFileName] = useState<string>('');
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      setErrors((err) => ({ ...err, featuredImageUri: 'Please select a valid image file (PNG, JPG, WEBP).' }));
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setErrors((err) => ({ ...err, featuredImageUri: 'Image size must be 5 MB or less.' }));
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        setForm((prev) => ({ ...prev, featuredImageUri: reader.result as string }));
+        setSelectedFileName(file.name);
+        if (errors.featuredImageUri) {
+          setErrors((err) => ({ ...err, featuredImageUri: undefined }));
+        }
+      }
+    };
+    reader.readAsDataURL(file);
+  };
 
   if (!existing) {
     return (
@@ -280,32 +307,35 @@ export const EditNewsPage: React.FC = () => {
 
           <div style={styles.fieldGroup}>
             <label style={styles.label}>
-              Cover Image URL <span style={styles.requiredStar}>*</span>
+              Cover Image <span style={styles.requiredStar}>*</span>
             </label>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleImageSelect}
+              style={{ display: 'none' }}
+            />
             <div style={styles.imageInputRow}>
-              <input
-                type="text"
-                value={form.featuredImageUri || ''}
-                onChange={(e) => {
-                  setForm((prev) => ({ ...prev, featuredImageUri: e.target.value }));
-                  if (errors.featuredImageUri) {
-                    setErrors((err) => ({ ...err, featuredImageUri: undefined }));
-                  }
-                }}
-                style={styles.input}
-              />
               <button
                 type="button"
-                onClick={() =>
-                  setForm((prev) => ({
-                    ...prev,
-                    featuredImageUri: `https://picsum.photos/seed/news-${Date.now()}/800/450`,
-                  }))
-                }
-                style={styles.randomThumbBtn}
+                onClick={() => fileInputRef.current?.click()}
+                style={{
+                  ...styles.randomThumbBtn,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  backgroundColor: '#011F39',
+                  color: '#FFFFFF',
+                  border: '1px solid #011F39',
+                }}
               >
-                Sample Image
+                <Upload size={15} />
+                <span>{form.featuredImageUri ? 'Change Image' : 'Select Image'}</span>
               </button>
+              <span style={{ fontSize: 13, color: '#64748B', alignSelf: 'center' }}>
+                {selectedFileName || (form.featuredImageUri ? 'Image selected' : 'PNG, JPG, or WEBP (max 5 MB)')}
+              </span>
             </div>
 
             {form.featuredImageUri && (
@@ -321,7 +351,11 @@ export const EditNewsPage: React.FC = () => {
                 />
                 <button
                   type="button"
-                  onClick={() => setForm((prev) => ({ ...prev, featuredImageUri: null }))}
+                  onClick={() => {
+                    setForm((prev) => ({ ...prev, featuredImageUri: null }));
+                    setSelectedFileName('');
+                    if (fileInputRef.current) fileInputRef.current.value = '';
+                  }}
                   style={styles.removeImageBtn}
                   title="Remove image"
                 >
@@ -450,7 +484,7 @@ export const EditNewsPage: React.FC = () => {
                 onChange={() => setForm((prev) => ({ ...prev, status: 'PUBLISHED' }))}
               />
               <div>
-                <strong style={{ color: '#166534' }}>Published Live</strong>
+                <strong style={{ color: '#166534' }}>Publish</strong>
                 <div style={styles.statusOptionDesc}>Visible to all public visitors and members</div>
               </div>
             </label>
@@ -470,28 +504,8 @@ export const EditNewsPage: React.FC = () => {
                 onChange={() => setForm((prev) => ({ ...prev, status: 'DRAFT' }))}
               />
               <div>
-                <strong style={{ color: '#92400E' }}>Draft Only</strong>
+                <strong style={{ color: '#92400E' }}>Draft</strong>
                 <div style={styles.statusOptionDesc}>Hidden from public, saved for review</div>
-              </div>
-            </label>
-
-            <label
-              style={{
-                ...styles.statusOptionLabel,
-                backgroundColor: form.status === 'ARCHIVED' ? '#F1F5F9' : '#FFFFFF',
-                borderColor: form.status === 'ARCHIVED' ? '#64748B' : '#DCE4EC',
-              }}
-            >
-              <input
-                type="radio"
-                name="status"
-                value="ARCHIVED"
-                checked={form.status === 'ARCHIVED'}
-                onChange={() => setForm((prev) => ({ ...prev, status: 'ARCHIVED' }))}
-              />
-              <div>
-                <strong style={{ color: '#475569' }}>Archived</strong>
-                <div style={styles.statusOptionDesc}>Removed from active feeds, preserved in archive</div>
               </div>
             </label>
           </div>

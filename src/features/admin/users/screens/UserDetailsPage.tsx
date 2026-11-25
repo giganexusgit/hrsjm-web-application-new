@@ -5,6 +5,8 @@ import type { UserType, UserStatus, UserVerificationDocument } from '../types/us
 import { UserConfirmationModal } from '../components/UserConfirmationModal';
 import { UserPasswordResetModal } from '../components/UserPasswordResetModal';
 import { UserDocumentViewerModal } from '../components/UserDocumentViewerModal';
+import { ApplicationPrintModal } from '@/features/admin/applications/components/ApplicationPrintModal';
+import { resolveApplicationForUser } from '@/features/admin/applications/utils/resolveApplication';
 import { getValidAvatarUrl, getInitials } from '@/utils/avatar';
 import {
   ChevronLeft,
@@ -31,6 +33,7 @@ import {
   CheckCircle2,
   AlertTriangle,
   HeartHandshake,
+  Printer,
 } from 'lucide-react';
 
 type UserTab = 'profile' | 'documents' | 'security' | 'donations';
@@ -118,6 +121,7 @@ export const UserDetailsPage: React.FC = () => {
   const [confirmAction, setConfirmAction] = useState<'block' | 'unblock' | 'delete' | null>(null);
   const [showPasswordResetModal, setShowPasswordResetModal] = useState(false);
   const [viewingDoc, setViewingDoc] = useState<UserVerificationDocument | null>(null);
+  const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
 
   // Avatar state
   const [imgError, setImgError] = useState(false);
@@ -219,6 +223,16 @@ export const UserDetailsPage: React.FC = () => {
         </button>
 
         <div style={styles.topActions}>
+          <button
+            type="button"
+            onClick={() => setIsPrintModalOpen(true)}
+            style={styles.topSecondaryBtn}
+            title="Print Official Application Form"
+          >
+            <Printer size={15} color="#011F39" />
+            <span>Print Application</span>
+          </button>
+
           <button
             type="button"
             onClick={() => setShowPasswordResetModal(true)}
@@ -902,14 +916,26 @@ export const UserDetailsPage: React.FC = () => {
           </button>
         </div>
 
-        <button
-          type="button"
-          onClick={() => navigate(`/admin/users/${user.id}/edit`)}
-          style={styles.footerPrimaryBtn}
-        >
-          <Edit3 size={15} color="#011F39" />
-          <span>Edit Profile</span>
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <button
+            type="button"
+            onClick={() => setIsPrintModalOpen(true)}
+            style={styles.topSecondaryBtn}
+            title="Print Official Application Form"
+          >
+            <Printer size={15} color="#011F39" />
+            <span>Print Application</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => navigate(`/admin/users/${user.id}/edit`)}
+            style={styles.footerPrimaryBtn}
+          >
+            <Edit3 size={15} color="#011F39" />
+            <span>Edit Profile</span>
+          </button>
+        </div>
       </div>
 
       {/* Modals */}
@@ -934,6 +960,13 @@ export const UserDetailsPage: React.FC = () => {
         onVerify={(docId) => {
           usersStore.updateDocumentVerification(user.id, docId, true);
         }}
+      />
+
+      {/* Official Printable Application Modal */}
+      <ApplicationPrintModal
+        isOpen={isPrintModalOpen}
+        application={resolveApplicationForUser(user)}
+        onClose={() => setIsPrintModalOpen(false)}
       />
     </div>
   );

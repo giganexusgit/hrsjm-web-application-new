@@ -2,12 +2,37 @@ import { apiClient } from '@/services/apiClient';
 import type {
   AdminBroadcastItem,
   CreateBroadcastInput,
+  NotificationCategory,
   NotificationItem,
+  NotificationPriority,
   NotificationStats,
 } from '../types/notifications.types';
 
 const NOTIFICATIONS_STORAGE_KEY = 'hrsjm_admin_notifications_v1';
 const BROADCASTS_STORAGE_KEY = 'hrsjm_admin_broadcasts_v1';
+
+function inferCategoryAndPriority(title: string, body: string): { category: NotificationCategory; priority: NotificationPriority } {
+  const text = `${title} ${body}`.toLowerCase();
+  if (text.includes('donation') || text.includes('contribution') || text.includes('₹') || text.includes('fund')) {
+    return { category: 'DONATION', priority: 'HIGH' };
+  }
+  if (text.includes('grievance') || text.includes('complaint') || text.includes('ticket') || text.includes('urgent')) {
+    return { category: 'SUPPORT', priority: 'URGENT' };
+  }
+  if (text.includes('application') || text.includes('membership') || text.includes('seeker') || text.includes('candidate')) {
+    return { category: 'APPLICATION', priority: 'NORMAL' };
+  }
+  if (text.includes('event') || text.includes('conclave') || text.includes('seminar')) {
+    return { category: 'EVENT', priority: 'NORMAL' };
+  }
+  if (text.includes('security') || text.includes('password') || text.includes('login') || text.includes('alert')) {
+    return { category: 'SECURITY', priority: 'HIGH' };
+  }
+  if (text.includes('announcement') || text.includes('broadcast') || text.includes('circular')) {
+    return { category: 'ANNOUNCEMENT', priority: 'NORMAL' };
+  }
+  return { category: 'SYSTEM', priority: 'NORMAL' };
+}
 
 export class NotificationsService {
   private static instance: NotificationsService;
@@ -31,8 +56,31 @@ export class NotificationsService {
       });
       const data = (res as any)?.data || res;
       if (Array.isArray(data?.items)) {
-        this.saveNotifications(data.items);
-        return data.items;
+        const normalized: NotificationItem[] = data.items.map((it: any) => {
+          const title = it.notification?.title || it.title || 'System Notification';
+          const body = it.notification?.body || it.body || '';
+          const inferred = inferCategoryAndPriority(title, body);
+          return {
+            recipient_id: it.recipient_id || it.id || `rec-${Date.now()}-${Math.random()}`,
+            is_read: Boolean(it.is_read || it.read_at),
+            read_at: it.read_at || null,
+            created_at: it.created_at || new Date().toISOString(),
+            notification: {
+              id: it.notification?.id || it.id || `notif-${Date.now()}`,
+              title,
+              body,
+              target_audience: it.notification?.target_audience || 'ALL_USERS',
+              sent_at: it.notification?.sent_at || it.created_at || new Date().toISOString(),
+              category: it.notification?.category || inferred.category,
+              priority: it.notification?.priority || inferred.priority,
+              deepLinkUrl: it.notification?.deepLinkUrl,
+              actionLabel: it.notification?.actionLabel,
+            },
+          };
+        });
+
+        this.saveNotifications(normalized);
+        return normalized;
       }
     } catch (err) {
       console.warn('Could not fetch notifications from /notifications/me:', err);

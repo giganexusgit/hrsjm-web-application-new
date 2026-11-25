@@ -1,4 +1,4 @@
-import type React from 'react';
+import React, { useEffect } from 'react';
 import { X, Calendar, Clock, User, Eye, Tag } from 'lucide-react';
 import type { CreateNewsFormState } from '../types/news.types';
 import { STATUS_META } from '../types/news.types';
@@ -14,6 +14,16 @@ export const NewsPreviewModal: React.FC<NewsPreviewModalProps> = ({
   onClose,
   form,
 }) => {
+  useEffect(() => {
+    if (isOpen) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = originalOverflow;
+      };
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const statusInfo = STATUS_META[form.status] || STATUS_META.DRAFT;

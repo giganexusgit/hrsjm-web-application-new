@@ -90,12 +90,10 @@ export function mapBackendNewsToUi(item: BackendNewsItem): NewsListItem {
 }
 
 /**
- * Returns true only for news articles created via the Admin module (excludes DB-seeded fixtures).
+ * Returns true for all valid news articles from the database.
  */
-export function isAdminCreatedNews(item: NewsListItem): boolean {
-  const idStr = String(item.id || '');
-  if (idStr.startsWith('20000000-') || idStr.startsWith('news-')) return false;
-  return Boolean(item.createdBy);
+export function isAdminCreatedNews(_item: NewsListItem): boolean {
+  return true;
 }
 
 export const newsService = {
@@ -113,7 +111,10 @@ export const newsService = {
         },
       });
 
-      const items = data?.items || [];
+      const rawData = data as any;
+      const items: BackendNewsItem[] = Array.isArray(data)
+        ? data
+        : (rawData?.items || rawData?.news || rawData?.data || []);
       return {
         news: items.map(mapBackendNewsToUi),
         stats: data?.stats || {

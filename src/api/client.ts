@@ -38,7 +38,7 @@ export const clearAuthToken = (): void => {
   }
 };
 
-function buildUrl(endpoint: string, params?: Record<string, string | number | boolean | undefined | null>): string {
+export function buildUrl(endpoint: string, params?: Record<string, string | number | boolean | undefined | null>): string {
   const cleanEndpoint = endpoint.startsWith('http')
     ? endpoint
     : `${BASE_URL}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
@@ -131,8 +131,50 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
       // Body is not valid JSON
     }
 
-    // Clear invalid or expired session on 401 Unauthorized
-    if (response.status === 401 && !url.includes('/auth/login')) {
+    // Attempt token refresh on 401 Unauthorized before clearing session
+    if (response.status === 401 && !url.includes('/auth/login') && !url.includes('/auth/refresh')) {
+      const storedRefreshToken = typeof window !== 'undefined' ? localStorage.getItem('hrsjm_refresh_token') : null;
+      if (storedRefreshToken) {
+        try {
+          const refreshUrl = buildUrl('/auth/refresh');
+          const refreshRes = await fetch(refreshUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+            body: JSON.stringify({ refresh_token: storedRefreshToken }),
+          });
+          if (refreshRes.ok) {
+            const refreshData = await refreshRes.json();
+            const session = refreshData?.data || refreshData;
+            if (session?.access_token) {
+              setAuthToken(session.access_token);
+              if (session.refresh_token) {
+                localStorage.setItem('hrsjm_refresh_token', session.refresh_token);
+              }
+              // Retry original request with newly issued bearer token
+              const retryHeaders = {
+                ...headers,
+                Authorization: `Bearer ${session.access_token}`,
+              };
+              const retryResponse = await fetch(url, {
+                ...fetchInit,
+                headers: retryHeaders,
+                body: isFormData ? (body as FormData) : body !== undefined ? JSON.stringify(body) : undefined,
+              });
+              if (retryResponse.ok) {
+                if (retryResponse.status === 204) return null as T;
+                const retryJson = await retryResponse.json();
+                if (retryJson && typeof retryJson === 'object' && 'data' in retryJson && 'success' in retryJson) {
+                  return (retryJson as ApiResponse<T>).data;
+                }
+                return retryJson as T;
+              }
+            }
+          }
+        } catch {
+          // Token refresh failed, continue to session purge
+        }
+      }
+
       clearAuthToken();
       try {
         localStorage.removeItem('hrsjm_auth_token');

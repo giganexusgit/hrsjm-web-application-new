@@ -47,7 +47,7 @@ export default defineConfig(async ({ mode }) => {
       },
     },
     server: {
-      port: 5173,
+      port: process.env.PORT ? parseInt(process.env.PORT, 10) : 5173,
       host: true,
       proxy: {
         '/api/v1': {

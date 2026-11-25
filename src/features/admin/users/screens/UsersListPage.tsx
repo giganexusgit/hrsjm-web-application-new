@@ -14,6 +14,9 @@ import { UserRow } from '../components/UserRow';
 import { UserConfirmationModal } from '../components/UserConfirmationModal';
 import { UserPasswordResetModal } from '../components/UserPasswordResetModal';
 import { UserFilterModal } from '../components/UserFilterModal';
+import { ApplicationPrintModal } from '@/features/admin/applications/components/ApplicationPrintModal';
+import { resolveApplicationForUser } from '@/features/admin/applications/utils/resolveApplication';
+import type { MembershipApplicationItem } from '@/features/admin/applications/types/applications.types';
 import { UserPlus, ChevronLeft, ChevronRight, UserX, RefreshCw } from 'lucide-react';
 
 const ITEMS_PER_PAGE = 8;
@@ -38,6 +41,7 @@ export const UsersListPage: React.FC = () => {
   const [confirmModalUser, setConfirmModalUser] = useState<UserItem | null>(null);
   const [confirmAction, setConfirmAction] = useState<'block' | 'unblock' | 'delete' | null>(null);
   const [passwordResetUser, setPasswordResetUser] = useState<UserItem | null>(null);
+  const [printApplication, setPrintApplication] = useState<MembershipApplicationItem | null>(null);
 
   useEffect(() => {
     usersStore.fetchUsers().catch(() => { });
@@ -475,6 +479,7 @@ export const UsersListPage: React.FC = () => {
                       user={user}
                       onView={u => navigate(`/admin/users/${u.id}`)}
                       onEdit={u => navigate(`/admin/users/${u.id}`)}
+                      onPrint={u => setPrintApplication(resolveApplicationForUser(u))}
                       onVerify={u => navigate(`/admin/users/${u.id}/verification`)}
                       onResetPassword={u => setPasswordResetUser(u)}
                       onToggleStatus={(u, action) => {
@@ -611,6 +616,13 @@ export const UsersListPage: React.FC = () => {
           setExtraFilters({});
           setCurrentPage(1);
         }}
+      />
+
+      {/* Official Printable Application Modal */}
+      <ApplicationPrintModal
+        isOpen={Boolean(printApplication)}
+        application={printApplication}
+        onClose={() => setPrintApplication(null)}
       />
     </div>
   );

@@ -38,7 +38,6 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
     groupTitle: 'MAIN NAVIGATION',
     items: [
       { id: 'dashboard', title: 'Dashboard', path: '/admin/dashboard', icon: House },
-      { id: 'users', title: 'User Management', path: '/admin/users', icon: Users },
       { id: 'membership_applications', title: 'All Applications', path: '/admin/membership-applications', icon: FileText },
       { id: 'members', title: 'Members Directory', path: '/admin/members', icon: UserCheck },
       { id: 'assistance', title: 'Donation Causes & Aid', path: '/admin/assistance', icon: HeartHandshake },
@@ -63,8 +62,8 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
   {
     groupTitle: 'FINANCE & ACCOUNTS',
     items: [
-      { id: 'expenses', title: 'Expenses', path: '/admin/expenses', icon: Receipt },
-      { id: 'receipts', title: 'Income (Receipts)', path: '/admin/receipts', icon: ArrowDownToLine },
+      { id: 'expenses', title: 'Payment', path: '/admin/expenses', icon: Receipt },
+      { id: 'receipts', title: 'Receipt', path: '/admin/receipts', icon: ArrowDownToLine },
       { id: 'accounting', title: 'Accounting & Ledger', path: '/admin/accounting', icon: Briefcase },
       { id: 'reports', title: 'Financial Reports', path: '/admin/reports', icon: BarChart3 },
       { id: 'donations', title: 'Donations Management', path: '/admin/donations', icon: Gift },

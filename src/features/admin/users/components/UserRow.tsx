@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import type { UserItem, UserType, UserStatus } from '../types/user.types';
-import { Eye, Edit3, KeyRound, Lock, Unlock, Trash2, Phone, Mail, Award, CheckCircle2 } from 'lucide-react';
+import { Eye, Edit3, KeyRound, Lock, Unlock, Trash2, Phone, Mail, Award, CheckCircle2, Printer } from 'lucide-react';
 import { getValidAvatarUrl } from '@/utils/avatar';
 
 interface UserRowProps {
   user: UserItem;
   onView: (user: UserItem) => void;
   onEdit: (user: UserItem) => void;
+  onPrint?: (user: UserItem) => void;
   onVerify?: (user: UserItem) => void;
   onResetPassword: (user: UserItem) => void;
   onToggleStatus: (user: UserItem, action: 'block' | 'unblock') => void;
@@ -39,6 +40,7 @@ export const UserRow: React.FC<UserRowProps> = ({
   user,
   onView,
   onEdit,
+  onPrint,
   onResetPassword,
   onToggleStatus,
   onDelete,
@@ -355,6 +357,30 @@ export const UserRow: React.FC<UserRowProps> = ({
           >
             <Edit3 size={15} />
           </button>
+
+          {/* Print Application Form */}
+          {onPrint && (
+            <button
+              type="button"
+              onClick={() => onPrint(user)}
+              title="Print Application Form"
+              style={{
+                padding: '7px',
+                borderRadius: '8px',
+                border: '1px solid #E2E8F0',
+                backgroundColor: '#FFFFFF',
+                color: '#06294D',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
+                transition: 'all 0.15s ease',
+              }}
+              className="hover:bg-amber-50 hover:border-amber-200 hover:scale-105 active:scale-95"
+            >
+              <Printer size={15} color="#06294D" />
+            </button>
+          )}
 
           {/* Verify KYC
           {(hasDocs || user.status === 'pending' || user.userType === 'seeker') && (

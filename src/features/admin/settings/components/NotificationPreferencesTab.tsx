@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Bell, Mail, MessageSquare, AlertTriangle, FileText, HeartHandshake, CheckCircle2 } from 'lucide-react';
 import type { NotificationPreferences } from '../types/settings.types';
+import { pushNotificationService, type PushPermissionState } from '@/features/admin/notifications/services/pushNotificationService';
 
 interface NotificationPreferencesTabProps {
   notifications: NotificationPreferences;
@@ -11,8 +12,20 @@ export const NotificationPreferencesTab: React.FC<NotificationPreferencesTabProp
   notifications,
   onUpdate,
 }) => {
-  const toggleItem = (key: keyof NotificationPreferences) => {
-    onUpdate({ [key]: !notifications[key] });
+  const [permission, setPermission] = useState<PushPermissionState>(() =>
+    pushNotificationService.getPermission()
+  );
+
+  const toggleItem = async (key: keyof NotificationPreferences) => {
+    const nextVal = !notifications[key];
+    onUpdate({ [key]: nextVal });
+
+    if (nextVal && (key === 'inAppAlerts' || (key as string) === 'pushAlerts')) {
+      if (pushNotificationService.getPermission() === 'default') {
+        const res = await pushNotificationService.requestPermission();
+        setPermission(res);
+      }
+    }
   };
 
   return (
@@ -199,7 +212,22 @@ export const NotificationPreferencesTab: React.FC<NotificationPreferencesTabProp
               </div>
               <div>
                 <span style={styles.itemTitle}>Push Notifications</span>
-                <p style={styles.itemDesc}>Deliver real-time mobile push notifications to active devices and member portals.</p>
+                <p style={styles.itemDesc}>Deliver real-time mobile and desktop push notifications for operations.</p>
+                <div style={{ marginTop: '4px' }}>
+                  {permission === 'granted' ? (
+                    <span style={{ fontSize: '11px', color: '#059669', fontWeight: 600 }}>
+                      ✓ Browser Permission: Granted (Active)
+                    </span>
+                  ) : permission === 'denied' ? (
+                    <span style={{ fontSize: '11px', color: '#DC2626', fontWeight: 600 }}>
+                      ⚠ Browser Permission: Blocked (click (i) in address bar to allow)
+                    </span>
+                  ) : (
+                    <span style={{ fontSize: '11px', color: '#64748B', fontWeight: 500 }}>
+                      Browser Permission: Not requested yet (turn on to enable)
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
             <label style={styles.switch}>

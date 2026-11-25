@@ -31,6 +31,9 @@ import {
   type ConfirmationType,
 } from '../components/MemberConfirmationModal';
 import { MemberFilterModal } from '../components/MemberFilterModal';
+import { ApplicationPrintModal } from '@/features/admin/applications/components/ApplicationPrintModal';
+import { resolveApplicationForMember } from '@/features/admin/applications/utils/resolveApplication';
+import type { MembershipApplicationItem } from '@/features/admin/applications/types/applications.types';
 
 export const MembersListPage: React.FC = () => {
   // Reactive state from membersStore
@@ -55,6 +58,7 @@ export const MembersListPage: React.FC = () => {
   const [profileModalMember, setProfileModalMember] = useState<Member | null>(null);
   const [idCardModalMember, setIdCardModalMember] = useState<Member | null>(null);
   const [editModalMember, setEditModalMember] = useState<Member | null>(null);
+  const [printApplication, setPrintApplication] = useState<MembershipApplicationItem | null>(null);
   const [addModalVisible, setAddModalVisible] = useState(false);
   const [filterModalVisible, setFilterModalVisible] = useState(false);
   const [confirmationModal, setConfirmationModal] = useState<{
@@ -460,6 +464,7 @@ export const MembersListPage: React.FC = () => {
                     member={member}
                     onView={handleView}
                     onViewIdCard={handleViewIdCard}
+                    onPrintApplication={(m) => setPrintApplication(resolveApplicationForMember(m))}
                     onEdit={handleEdit}
                     onResetPassword={handleResetPassword}
                     onToggleStatus={handleToggleStatus}
@@ -633,6 +638,13 @@ export const MembersListPage: React.FC = () => {
           setSortOption('default');
           setCurrentPage(1);
         }}
+      />
+
+      {/* Official Printable Application Modal */}
+      <ApplicationPrintModal
+        isOpen={Boolean(printApplication)}
+        application={printApplication}
+        onClose={() => setPrintApplication(null)}
       />
     </div>
   );

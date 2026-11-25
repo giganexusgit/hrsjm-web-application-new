@@ -5,11 +5,12 @@ import {
   getApplicationFeeAmount,
   getApplicationPaymentStatus,
 } from '../types/applications.types';
-import { Eye, ChevronRight } from 'lucide-react';
+import { Eye, ChevronRight, Printer } from 'lucide-react';
 
 interface ApplicationRowProps {
   application: MembershipApplicationItem;
   onView: (app: MembershipApplicationItem) => void;
+  onPrint?: (app: MembershipApplicationItem) => void;
 }
 
 const STATUS_STYLES: Record<string, { bg: string; text: string; dot: string; label: string }> = {
@@ -22,6 +23,7 @@ const STATUS_STYLES: Record<string, { bg: string; text: string; dot: string; lab
 export const ApplicationRow: React.FC<ApplicationRowProps> = ({
   application,
   onView,
+  onPrint,
 }) => {
   const [imgError, setImgError] = React.useState(false);
   const isSeeker = getApplicationAccountType(application) === 'seeker';
@@ -223,28 +225,56 @@ export const ApplicationRow: React.FC<ApplicationRowProps> = ({
 
       {/* Actions */}
       <td style={{ padding: '14px 16px', verticalAlign: 'middle', textAlign: 'right' }}>
-        <button
-          type="button"
-          onClick={() => onView(application)}
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '6px',
-            padding: '7px 14px',
-            backgroundColor: '#FFFFFF',
-            border: '1px solid #DBE5EE',
-            borderRadius: '8px',
-            color: '#011F39',
-            fontSize: '13px',
-            fontWeight: 600,
-            cursor: 'pointer',
-            transition: 'all 0.15s ease',
-          }}
-        >
-          <Eye size={14} />
-          <span>Review</span>
-          <ChevronRight size={14} color="#718096" />
-        </button>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+          {onPrint && (
+            <button
+              type="button"
+              onClick={() => onPrint(application)}
+              title="Print Application Form"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px',
+                padding: '7px 12px',
+                backgroundColor: '#FAF7F0',
+                border: '1px solid #E2E8F0',
+                borderRadius: '8px',
+                color: '#011F39',
+                fontSize: '13px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+              }}
+              className="hover:bg-amber-50 hover:border-amber-200"
+            >
+              <Printer size={14} color="#011F39" />
+              <span>Print</span>
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={() => onView(application)}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '7px 14px',
+              backgroundColor: '#FFFFFF',
+              border: '1px solid #DBE5EE',
+              borderRadius: '8px',
+              color: '#011F39',
+              fontSize: '13px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              transition: 'all 0.15s ease',
+            }}
+          >
+            <Eye size={14} />
+            <span>Review</span>
+            <ChevronRight size={14} color="#718096" />
+          </button>
+        </div>
       </td>
     </tr>
   );
