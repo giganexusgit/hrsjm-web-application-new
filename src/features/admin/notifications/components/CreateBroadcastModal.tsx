@@ -63,7 +63,7 @@ export const CreateBroadcastModal: React.FC<CreateBroadcastModalProps> = ({
         <div style={styles.header}>
           <div style={styles.headerTitleWrap}>
             <Radio size={18} color="#06294D" />
-            <h3 style={styles.headerTitle}>New Broadcast Announcement</h3>
+            <h3 style={styles.headerTitle}>Send Push Notification / Broadcast</h3>
           </div>
           <button type="button" onClick={onClose} style={styles.closeBtn} aria-label="Close">
             <X size={18} color="#64748B" />
@@ -200,7 +200,7 @@ export const CreateBroadcastModal: React.FC<CreateBroadcastModalProps> = ({
             </button>
             <button type="submit" style={styles.submitBtn}>
               <Send size={14} color="#011F39" />
-              <span>{formData.scheduled_at ? 'Schedule Broadcast' : 'Send Broadcast Now'}</span>
+              <span>{formData.scheduled_at ? 'Schedule Push Notification' : 'Send Push Notification Now'}</span>
             </button>
           </div>
         </form>

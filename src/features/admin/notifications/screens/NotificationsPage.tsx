@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronRight, Radio, RefreshCw, Bell } from 'lucide-react';
+import { ChevronRight, Radio, RefreshCw, Bell, BellRing } from 'lucide-react';
 import { useNotificationsStore } from '../store/notificationsStore';
 import { NotificationsStatsCards } from '../components/NotificationsStatsCards';
 import {
@@ -97,7 +97,15 @@ export const NotificationsPage: React.FC = () => {
             </p>
           </div>
 
-          <div className="flex items-center gap-2.5 self-start sm:self-auto">
+          <div className="flex items-center gap-2.5 self-start sm:self-auto flex-wrap">
+            <button
+              type="button"
+              onClick={() => setCreateBroadcastOpen(true)}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs sm:text-sm font-bold bg-[#011F39] hover:bg-[#022c50] text-[#FAD465] shadow-xs transition-colors cursor-pointer"
+            >
+              <BellRing size={15} strokeWidth={2.5} />
+              <span>Push Notification</span>
+            </button>
             <button
               type="button"
               onClick={() => setCreateBroadcastOpen(true)}

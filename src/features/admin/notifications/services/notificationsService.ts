@@ -173,6 +173,22 @@ export class NotificationsService {
     const updatedBroadcasts = [newBroadcast, ...broadcasts];
     this.saveBroadcasts(updatedBroadcasts);
 
+    // Also push notification to backend API if available
+    try {
+      apiClient.post('/notifications', {
+        title: input.title.trim(),
+        body: input.body.trim(),
+        target_audience: input.target_audience,
+        category: input.category,
+        priority: input.priority,
+        scheduled_at: input.scheduled_at || undefined,
+      }).catch((err) => {
+        console.warn('Backend push notification dispatch warning:', err);
+      });
+    } catch {
+      // ignore
+    }
+
     // If sent immediately, also push to current admin notifications inbox
     const notifications = this.getNotifications();
     let updatedNotifications = notifications;

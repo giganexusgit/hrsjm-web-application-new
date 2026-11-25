@@ -191,6 +191,42 @@ export const NotificationPreferencesTab: React.FC<NotificationPreferencesTabProp
         </div>
 
         <div style={styles.list}>
+          {/* Push Notifications */}
+          <div style={styles.itemRow}>
+            <div style={styles.itemLeft}>
+              <div style={styles.itemIconBadge}>
+                <Bell size={16} color="#06294D" />
+              </div>
+              <div>
+                <span style={styles.itemTitle}>Push Notifications</span>
+                <p style={styles.itemDesc}>Deliver real-time mobile push notifications to active devices and member portals.</p>
+              </div>
+            </div>
+            <label style={styles.switch}>
+              <input
+                type="checkbox"
+                checked={notifications.pushAlerts !== false}
+                onChange={() => toggleItem('pushAlerts' as any)}
+                style={{ display: 'none' }}
+              />
+              <span
+                style={{
+                  ...styles.slider,
+                  backgroundColor: notifications.pushAlerts !== false ? '#06294D' : '#CBD5E1',
+                }}
+              >
+                <span
+                  style={{
+                    ...styles.knob,
+                    transform: notifications.pushAlerts !== false ? 'translateX(18px)' : 'translateX(0)',
+                  }}
+                />
+              </span>
+            </label>
+          </div>
+
+          <div style={styles.divider} />
+
           {/* Email alerts */}
           <div style={styles.itemRow}>
             <div style={styles.itemLeft}>

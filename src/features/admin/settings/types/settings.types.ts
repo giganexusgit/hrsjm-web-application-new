@@ -28,6 +28,7 @@ export interface OrganizationSettings {
 /** Notification & Dispatch Preferences */
 export interface NotificationPreferences {
   inAppAlerts: boolean;
+  pushAlerts?: boolean;
   emailAlerts: boolean;
   smsAlerts: boolean;
   urgentGrievancePush: boolean;
