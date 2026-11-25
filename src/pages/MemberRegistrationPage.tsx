@@ -1856,7 +1856,7 @@ export const MemberRegistrationPage: React.FC = () => {
                     <div className="flex items-center gap-2">
                       <MapPin size={18} className={documents.addressProof ? 'text-emerald-600' : 'text-slate-400'} />
                       <span className="text-xs font-bold text-[#011F39]">
-                        2. Address Proof <span className="text-rose-500 font-bold text-[10px]">* (Required)</span>
+                        2. Address Proof <span className="text-rose-500 font-bold text-[10px]">*</span>
                       </span>
                     </div>
                     <span className="text-[10px] text-slate-400">Electricity Bill, Ration Card, Bank Passbook</span>
@@ -1930,7 +1930,7 @@ export const MemberRegistrationPage: React.FC = () => {
                     <div className="flex items-center gap-2">
                       <User size={18} className={documents.photograph || personal.profilePhotoUri ? 'text-emerald-600' : 'text-slate-400'} />
                       <span className="text-xs font-bold text-[#011F39]">
-                        4. Photograph <span className="text-rose-500 font-bold text-[10px]">* (Required)</span>
+                        4. Photograph <span className="text-rose-500 font-bold text-[10px]">*</span>
                       </span>
                     </div>
                     <span className="text-[10px] text-slate-400">Passport Size Photograph</span>
