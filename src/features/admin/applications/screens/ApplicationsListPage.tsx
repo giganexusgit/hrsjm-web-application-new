@@ -273,7 +273,7 @@ export const ApplicationsListPage: React.FC = () => {
                         letterSpacing: '0.05em',
                       }}
                     >
-                      Application ID
+                      Application NO
                     </th>
                     <th
                       style={{
