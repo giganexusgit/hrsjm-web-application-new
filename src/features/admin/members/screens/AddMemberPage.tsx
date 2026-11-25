@@ -209,6 +209,18 @@ export const AddMemberPage: React.FC = () => {
       setServerError('Please accept the mandatory declarations to complete member enrollment.');
       return;
     }
+    if (!identityProofDoc) {
+      setServerError('Please upload 1. Identity Proof (Aadhaar / Voter ID / PAN) to complete enrollment.');
+      return;
+    }
+    if (!addressProofDoc) {
+      setServerError('Please upload 2. Address Proof to complete enrollment.');
+      return;
+    }
+    if (!photoDoc) {
+      setServerError('Please upload 4. Photograph to complete enrollment.');
+      return;
+    }
 
     setIsSubmitting(true);
     setServerError('');
@@ -922,7 +934,7 @@ export const AddMemberPage: React.FC = () => {
                 <div className="p-3.5 rounded-xl border border-[#DCE4EC] bg-[#FAF7F0]/40 flex flex-col justify-between">
                   <div>
                     <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-xs font-bold text-[#011F39]">1. Identity Proof</span>
+                      <span className="text-xs font-bold text-[#011F39]">1. Identity Proof <span className="text-rose-500">*</span></span>
                       <span className="text-[10px] text-slate-400">Aadhaar, Voter ID, PAN</span>
                     </div>
                     {identityProofDoc ? (
@@ -955,7 +967,7 @@ export const AddMemberPage: React.FC = () => {
                 <div className="p-3.5 rounded-xl border border-[#DCE4EC] bg-[#FAF7F0]/40 flex flex-col justify-between">
                   <div>
                     <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-xs font-bold text-[#011F39]">2. Address Proof</span>
+                      <span className="text-xs font-bold text-[#011F39]">2. Address Proof <span className="text-rose-500">*</span></span>
                       <span className="text-[10px] text-slate-400">Ration Card, Electricity</span>
                     </div>
                     {addressProofDoc ? (
@@ -1021,7 +1033,7 @@ export const AddMemberPage: React.FC = () => {
                 <div className="p-3.5 rounded-xl border border-[#DCE4EC] bg-[#FAF7F0]/40 flex flex-col justify-between">
                   <div>
                     <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-xs font-bold text-[#011F39]">4. Photograph</span>
+                      <span className="text-xs font-bold text-[#011F39]">4. Photograph <span className="text-rose-500">*</span></span>
                       <span className="text-[10px] text-slate-400">Passport Photo</span>
                     </div>
                     {photoDoc ? (
