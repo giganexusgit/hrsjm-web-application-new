@@ -176,37 +176,16 @@ export const AddMemberPage: React.FC = () => {
     return Object.keys(errs).length === 0;
   };
 
-  // Validation: Step 2 (Address Details)
-  const validateStep2 = (): boolean => {
-    const errs: Record<string, string> = {};
-    if (!address.trim()) {
-      errs.address = 'Street Address / House No. is required';
-    }
-    if (!state.trim()) {
-      errs.state = 'State is required';
-    }
-    if (!city.trim()) {
-      errs.city = 'City / District is required';
-    }
-    const cleanPin = pincode.replace(/\D/g, '');
-    if (!cleanPin) {
-      errs.pincode = 'Pincode is required';
-    } else if (cleanPin.length !== 6) {
-      errs.pincode = 'Pincode must be exactly 6 digits';
-    }
-
-    setErrors(errs);
-    return Object.keys(errs).length === 0;
-  };
-
   const handleNext = () => {
     if (currentStep === 1) {
       if (validateStep1()) {
         setShowPostPicker(false);
         setCurrentStep(2);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     } else if (currentStep === 2) {
-      if (validateStep2()) setCurrentStep(3);
+      setCurrentStep(3);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
@@ -287,23 +266,26 @@ export const AddMemberPage: React.FC = () => {
         <div className="bg-[#FAF7F0] border-b border-[#DCE4EC] px-6 py-4">
           <div className="flex items-center justify-between max-w-md mx-auto relative">
             {/* Step 1 */}
-            <div className="flex flex-col items-center z-10">
-              <button
-                type="button"
-                onClick={() => currentStep > 1 && setCurrentStep(1)}
+            <button
+              type="button"
+              onClick={() => {
+                setCurrentStep(1);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              className="flex flex-col items-center z-10 cursor-pointer group focus:outline-none"
+            >
+              <div
                 className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition shadow-xs ${currentStep > 1
-                  ? 'bg-[#E9B82E] text-white cursor-pointer'
-                  : currentStep === 1
-                    ? 'bg-[#011F39] text-[#FAD465] border-2 border-[#E9B82E]'
-                    : 'bg-slate-200 text-slate-500'
+                  ? 'bg-[#E9B82E] text-white'
+                  : 'bg-[#011F39] text-[#FAD465] border-2 border-[#E9B82E]'
                   }`}
               >
                 {currentStep > 1 ? <Check size={16} /> : '1'}
-              </button>
+              </div>
               <span className="text-[10.5px] font-bold text-[#011F39] mt-1.5 text-center leading-tight">
                 Personal<br />Info
               </span>
-            </div>
+            </button>
 
             <div
               className={`flex-1 h-0.5 mx-2 -mt-5 transition-colors ${currentStep > 1 ? 'bg-[#E9B82E]' : 'bg-slate-200'
@@ -311,26 +293,28 @@ export const AddMemberPage: React.FC = () => {
             />
 
             {/* Step 2 */}
-            <div className="flex flex-col items-center z-10">
-              <button
-                type="button"
-                onClick={() => {
-                  if (currentStep > 2) setCurrentStep(2);
-                  else if (currentStep === 1 && validateStep1()) setCurrentStep(2);
-                }}
+            <button
+              type="button"
+              onClick={() => {
+                setCurrentStep(2);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              className="flex flex-col items-center z-10 cursor-pointer group focus:outline-none"
+            >
+              <div
                 className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition shadow-xs ${currentStep > 2
-                  ? 'bg-[#E9B82E] text-white cursor-pointer'
+                  ? 'bg-[#E9B82E] text-white'
                   : currentStep === 2
                     ? 'bg-[#011F39] text-[#FAD465] border-2 border-[#E9B82E]'
-                    : 'bg-slate-200 text-slate-500'
+                    : 'bg-slate-200 text-slate-500 group-hover:bg-slate-300'
                   }`}
               >
                 {currentStep > 2 ? <Check size={16} /> : '2'}
-              </button>
+              </div>
               <span className="text-[10.5px] font-bold text-[#011F39] mt-1.5 text-center leading-tight">
                 Address<br />Details
               </span>
-            </div>
+            </button>
 
             <div
               className={`flex-1 h-0.5 mx-2 -mt-5 transition-colors ${currentStep > 2 ? 'bg-[#E9B82E]' : 'bg-slate-200'
@@ -338,11 +322,18 @@ export const AddMemberPage: React.FC = () => {
             />
 
             {/* Step 3 */}
-            <div className="flex flex-col items-center z-10">
+            <button
+              type="button"
+              onClick={() => {
+                setCurrentStep(3);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              className="flex flex-col items-center z-10 cursor-pointer group focus:outline-none"
+            >
               <div
                 className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition shadow-xs ${currentStep === 3
                   ? 'bg-[#011F39] text-[#FAD465] border-2 border-[#E9B82E]'
-                  : 'bg-slate-200 text-slate-500'
+                  : 'bg-slate-200 text-slate-600 group-hover:bg-slate-300'
                   }`}
               >
                 3
@@ -350,7 +341,7 @@ export const AddMemberPage: React.FC = () => {
               <span className="text-[10.5px] font-bold text-[#011F39] mt-1.5 text-center leading-tight">
                 Documents<br />&amp; Pledge
               </span>
-            </div>
+            </button>
           </div>
         </div>
 
@@ -800,7 +791,7 @@ export const AddMemberPage: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-bold text-[#34516D] mb-1">
-                  Street Address / House No. *
+                  Street Address / House No.
                 </label>
                 <input
                   type="text"
@@ -818,7 +809,7 @@ export const AddMemberPage: React.FC = () => {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-[#34516D] mb-1">State *</label>
+                  <label className="block text-xs font-bold text-[#34516D] mb-1">State</label>
                   <select
                     value={state}
                     onChange={(e) => {
@@ -837,7 +828,7 @@ export const AddMemberPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-[#34516D] mb-1">City / District *</label>
+                  <label className="block text-xs font-bold text-[#34516D] mb-1">City / District</label>
                   {citiesForState.length > 0 ? (
                     <select
                       value={city}
@@ -872,7 +863,7 @@ export const AddMemberPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-[#34516D] mb-1">Pincode *</label>
+                  <label className="block text-xs font-bold text-[#34516D] mb-1">Pincode</label>
                   <input
                     type="text"
                     maxLength={6}
