@@ -192,20 +192,9 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({
   // Validation: Step 2 (Address Details)
   const validateStep2 = (): boolean => {
     const errs: Record<string, string> = {};
-    if (!address.trim()) {
-      errs.address = 'Street Address / House No. is required';
-    }
-    if (!state.trim()) {
-      errs.state = 'State is required';
-    }
-    if (!city.trim()) {
-      errs.city = 'City / District is required';
-    }
     const cleanPin = pincode.replace(/\D/g, '');
-    if (!cleanPin) {
-      errs.pincode = 'Pincode is required';
-    } else if (cleanPin.length !== 6) {
-      errs.pincode = 'Pincode must be exactly 6 digits';
+    if (cleanPin && cleanPin.length !== 6) {
+      errs.pincode = 'Pincode must be exactly 6 digits if provided';
     }
 
     setErrors(errs);
@@ -411,14 +400,20 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({
 
             {/* Step 3 */}
             <div className="flex flex-col items-center z-10">
-              <div
-                className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition shadow-xs ${currentStep === 3
+              <button
+                type="button"
+                onClick={() => {
+                  if (validateStep1() && validateStep2()) {
+                    setCurrentStep(3);
+                  }
+                }}
+                className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition shadow-xs cursor-pointer ${currentStep === 3
                   ? 'bg-[#011F39] text-[#FAD465] border-2 border-[#E9B82E]'
-                  : 'bg-slate-200 text-slate-500'
+                  : 'bg-slate-200 text-slate-600 hover:bg-slate-300'
                   }`}
               >
                 3
-              </div>
+              </button>
               <span className="text-[10px] font-bold text-[#011F39] mt-1 text-center">
                 Documents<br />&amp; Pledge
               </span>
@@ -874,7 +869,7 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({
 
                 <div>
                   <label className="block text-xs font-bold text-[#34516D] mb-1">
-                    Street Address / House No. *
+                    Street Address / House No.
                   </label>
                   <input
                     type="text"
@@ -892,7 +887,7 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                   <div>
-                    <label className="block text-xs font-bold text-[#34516D] mb-1">State *</label>
+                    <label className="block text-xs font-bold text-[#34516D] mb-1">State</label>
                     <select
                       value={state}
                       onChange={(e) => {
@@ -911,7 +906,7 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-[#34516D] mb-1">City / District *</label>
+                    <label className="block text-xs font-bold text-[#34516D] mb-1">City / District</label>
                     {citiesForState.length > 0 ? (
                       <select
                         value={city}
@@ -946,7 +941,7 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-[#34516D] mb-1">Pincode *</label>
+                    <label className="block text-xs font-bold text-[#34516D] mb-1">Pincode</label>
                     <input
                       type="text"
                       maxLength={6}

@@ -179,20 +179,9 @@ export const AddMemberPage: React.FC = () => {
   // Validation: Step 2 (Address Details)
   const validateStep2 = (): boolean => {
     const errs: Record<string, string> = {};
-    if (!address.trim()) {
-      errs.address = 'Street Address / House No. is required';
-    }
-    if (!state.trim()) {
-      errs.state = 'State is required';
-    }
-    if (!city.trim()) {
-      errs.city = 'City / District is required';
-    }
     const cleanPin = pincode.replace(/\D/g, '');
-    if (!cleanPin) {
-      errs.pincode = 'Pincode is required';
-    } else if (cleanPin.length !== 6) {
-      errs.pincode = 'Pincode must be exactly 6 digits';
+    if (cleanPin && cleanPin.length !== 6) {
+      errs.pincode = 'Pincode must be exactly 6 digits if provided';
     }
 
     setErrors(errs);
@@ -204,9 +193,13 @@ export const AddMemberPage: React.FC = () => {
       if (validateStep1()) {
         setShowPostPicker(false);
         setCurrentStep(2);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     } else if (currentStep === 2) {
-      if (validateStep2()) setCurrentStep(3);
+      if (validateStep2()) {
+        setCurrentStep(3);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
     }
   };
 
@@ -339,14 +332,21 @@ export const AddMemberPage: React.FC = () => {
 
             {/* Step 3 */}
             <div className="flex flex-col items-center z-10">
-              <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition shadow-xs ${currentStep === 3
+              <button
+                type="button"
+                onClick={() => {
+                  if (validateStep1() && validateStep2()) {
+                    setCurrentStep(3);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }
+                }}
+                className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition shadow-xs cursor-pointer ${currentStep === 3
                   ? 'bg-[#011F39] text-[#FAD465] border-2 border-[#E9B82E]'
-                  : 'bg-slate-200 text-slate-500'
+                  : 'bg-slate-200 text-slate-600 hover:bg-slate-300'
                   }`}
               >
                 3
-              </div>
+              </button>
               <span className="text-[10.5px] font-bold text-[#011F39] mt-1.5 text-center leading-tight">
                 Documents<br />&amp; Pledge
               </span>
@@ -800,7 +800,7 @@ export const AddMemberPage: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-bold text-[#34516D] mb-1">
-                  Street Address / House No. *
+                  Street Address / House No.
                 </label>
                 <input
                   type="text"
@@ -818,7 +818,7 @@ export const AddMemberPage: React.FC = () => {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-[#34516D] mb-1">State *</label>
+                  <label className="block text-xs font-bold text-[#34516D] mb-1">State</label>
                   <select
                     value={state}
                     onChange={(e) => {
@@ -837,7 +837,7 @@ export const AddMemberPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-[#34516D] mb-1">City / District *</label>
+                  <label className="block text-xs font-bold text-[#34516D] mb-1">City / District</label>
                   {citiesForState.length > 0 ? (
                     <select
                       value={city}
@@ -872,7 +872,7 @@ export const AddMemberPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-[#34516D] mb-1">Pincode *</label>
+                  <label className="block text-xs font-bold text-[#34516D] mb-1">Pincode</label>
                   <input
                     type="text"
                     maxLength={6}
