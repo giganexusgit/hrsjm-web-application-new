@@ -9,6 +9,8 @@ import {
   Users,
   CheckCircle,
   Receipt,
+  Printer,
+  Download,
   X,
 } from 'lucide-react';
 import heroHomeImage from '@/assets/images/hero-home.webp';
@@ -173,11 +175,45 @@ export const UserDonationsPage: React.FC<UserDonationsPageProps> = ({ isMember =
               Your donation of <strong className="text-slate-800">₹{completedDonation.amount.toLocaleString('en-IN')}</strong> will directly empower vulnerable citizens and fund grassroots legal aid.
             </p>
           </div>
-          <div className="flex items-center justify-center gap-3 pt-1">
+          <div className="flex flex-wrap items-center justify-center gap-3 pt-1">
+            <button
+              type="button"
+              onClick={() => {
+                donationsService
+                  .getReceiptByDonationId(completedDonation.id)
+                  .then((receipt) => {
+                    donationsService.printDonationReceipt(receipt);
+                  })
+                  .catch(() => {
+                    window.open(`/donations/${completedDonation.id}/receipt`, '_blank');
+                  });
+              }}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs cursor-pointer transition-colors"
+            >
+              <Printer size={15} />
+              <span>Print 80G Receipt</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                donationsService
+                  .getReceiptByDonationId(completedDonation.id)
+                  .then((receipt) => {
+                    donationsService.downloadDonationReceipt(receipt);
+                  })
+                  .catch(() => {
+                    window.open(`/donations/${completedDonation.id}/receipt`, '_blank');
+                  });
+              }}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#06294D] hover:bg-[#021f3d] text-[#FAD465] text-xs font-bold shadow-xs cursor-pointer transition-colors"
+            >
+              <Download size={15} />
+              <span>Download 80G PDF</span>
+            </button>
             <button
               type="button"
               onClick={() => setCompletedDonation(null)}
-              className="px-4 py-2 rounded-xl bg-[#06294D] text-white text-xs font-bold cursor-pointer"
+              className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold cursor-pointer transition-colors"
             >
               Make Another Donation
             </button>
@@ -487,9 +523,47 @@ export const UserDonationsPage: React.FC<UserDonationsPageProps> = ({ isMember =
                         {d.transaction_id || d.id} • {new Date(d.created_at).toLocaleDateString('en-GB')}
                       </p>
                     </div>
-                    <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
-                      80G Verified
-                    </span>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <span className="hidden sm:inline-block px-2.5 py-1 rounded-full text-[10px] font-bold uppercase bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        80G
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          donationsService
+                            .getReceiptByDonationId(d.id)
+                            .then((receipt) => {
+                              donationsService.printDonationReceipt(receipt);
+                            })
+                            .catch(() => {
+                              window.open(`/donations/${d.id}/receipt`, '_blank');
+                            });
+                        }}
+                        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold text-[11px] transition cursor-pointer"
+                        title="Print 80G Receipt"
+                      >
+                        <Printer size={13} />
+                        <span>Print</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          donationsService
+                            .getReceiptByDonationId(d.id)
+                            .then((receipt) => {
+                              donationsService.downloadDonationReceipt(receipt);
+                            })
+                            .catch(() => {
+                              window.open(`/donations/${d.id}/receipt`, '_blank');
+                            });
+                        }}
+                        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#011F39] hover:bg-[#022c50] text-[#FAD465] font-semibold text-[11px] transition cursor-pointer"
+                        title="Download 80G PDF"
+                      >
+                        <Download size={13} />
+                        <span>PDF</span>
+                      </button>
+                    </div>
                   </div>
                 ))
               )}

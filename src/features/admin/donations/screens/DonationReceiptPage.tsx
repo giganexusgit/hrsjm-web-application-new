@@ -47,11 +47,19 @@ export const DonationReceiptPage: React.FC = () => {
       <div className="flex items-center justify-between">
         <button
           type="button"
-          onClick={() => navigate(`/admin/donations/${id}`)}
+          onClick={() => {
+            if (window.location.pathname.startsWith('/admin')) {
+              navigate(`/admin/donations/${id}`);
+            } else if (window.history.length > 1) {
+              navigate(-1);
+            } else {
+              navigate('/donations');
+            }
+          }}
           className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-[#011F39] transition-colors"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
-          Back to Donation
+          Back
         </button>
         <div className="flex items-center gap-2">
           <button
