@@ -14,10 +14,13 @@ import {
   Check,
   RefreshCw,
   Info,
+  Printer,
 } from 'lucide-react';
 import { useUserAuth } from '../store/userAuthStore';
 import { membershipService } from '@/features/membership/services/membershipService';
 import { applicationsStore } from '@/features/admin/applications/store/applicationsStore';
+import { ApplicationPrintModal } from '@/features/admin/applications/components/ApplicationPrintModal';
+import type { MembershipApplicationItem } from '@/features/admin/applications/types/applications.types';
 import {
   DISTRICT_STATE_POSTS,
   LETTER_PAD_POSTS,
@@ -92,6 +95,7 @@ export const UserMembershipPage: React.FC = () => {
   });
 
   const [copied, setCopied] = useState<boolean>(false);
+  const [isPrintModalOpen, setIsPrintModalOpen] = useState<boolean>(false);
 
   // Live status derived from backend and synced stores
   const rawStatus = (
@@ -121,6 +125,58 @@ export const UserMembershipPage: React.FC = () => {
     membershipData?.adminNotes ||
     membershipData?.remarks ||
     membershipData?.reviewer_remarks;
+
+  const userPrintAppItem: MembershipApplicationItem | null =
+    membershipData || justSubmitted
+      ? {
+          id: membershipData?.id || submittedAppId || 'USER-APP',
+          applicationId:
+            membershipData?.membership_number ||
+            membershipData?.applicationId ||
+            submittedAppId ||
+            'HRSJM-APP',
+          applicantName:
+            membershipData?.user?.full_name ||
+            user?.full_name ||
+            step1Data.fullName ||
+            'Member Candidate',
+          membershipType:
+            membershipData?.category?.name ||
+            membershipData?.application_data?.membership_type ||
+            selectedPost?.postName ||
+            'Council Cadre Member',
+          status: isApproved ? 'approved' : isRejected ? 'rejected' : 'under_review',
+          submittedAt: membershipData?.created_at
+            ? new Date(membershipData.created_at).toLocaleDateString('en-GB')
+            : new Date().toLocaleDateString('en-GB'),
+          submittedDate: membershipData?.created_at
+            ? new Date(membershipData.created_at).toLocaleDateString('en-GB')
+            : new Date().toLocaleDateString('en-GB'),
+          phone: membershipData?.user?.mobile_number || user?.mobile_number || step1Data.mobile,
+          email: membershipData?.user?.email || user?.email || step1Data.email,
+          gender:
+            membershipData?.application_data?.personal_details?.gender || step1Data.gender,
+          dob:
+            membershipData?.application_data?.personal_details?.dob || step1Data.dob,
+          address: [
+            membershipData?.application_data?.personal_details?.address_line1 || step2Data.addressLine1,
+            membershipData?.application_data?.personal_details?.city || step2Data.city || user?.city,
+            membershipData?.application_data?.personal_details?.state || step2Data.state || user?.state,
+          ]
+            .filter(Boolean)
+            .join(', '),
+          policeStation:
+            membershipData?.application_data?.personal_details?.police_station ||
+            step1Data.policeStation,
+          amount: membershipData?.category?.fee
+            ? Number(membershipData.category.fee)
+            : 800,
+          paymentStatus: 'PAID',
+          avatarUrl: membershipData?.user?.avatar || user?.avatar || step1Data.photoUrl,
+          stateChapter: (step2Data.state || user?.state) || undefined,
+          district: (step2Data.city || user?.city) || undefined,
+        }
+      : null;
 
   // Synchronize authenticated user's real membership record & categories
   useEffect(() => {
@@ -649,6 +705,15 @@ export const UserMembershipPage: React.FC = () => {
 
                   {/* Actions */}
                   <div className="flex flex-col sm:flex-row items-center gap-3 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setIsPrintModalOpen(true)}
+                      className="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-slate-300 bg-white text-xs font-bold text-[#06294D] hover:bg-slate-50 transition flex items-center justify-center gap-2 cursor-pointer shadow-2xs"
+                    >
+                      <Printer size={15} className="text-[#06294D]" />
+                      <span>Print Application Form</span>
+                    </button>
+
                     <Link
                       to="/user/dashboard"
                       className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-[#011F39] hover:bg-[#06294D] text-[#FAD465] text-xs font-bold shadow-xs transition flex items-center justify-center gap-2"
@@ -708,6 +773,15 @@ export const UserMembershipPage: React.FC = () => {
 
                   {/* Actions */}
                   <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsPrintModalOpen(true)}
+                      className="w-full sm:w-auto px-5 py-3 rounded-xl border border-slate-300 bg-white text-xs font-bold text-[#06294D] hover:bg-slate-50 transition flex items-center justify-center gap-2 cursor-pointer shadow-xs"
+                    >
+                      <Printer size={15} className="text-[#06294D]" />
+                      <span>Print Application Form</span>
+                    </button>
+
                     <Link
                       to="/member/dashboard"
                       className="w-full sm:w-auto px-6 py-3 rounded-xl bg-[#FAD465] hover:bg-[#E9B82E] text-[#011F39] text-xs font-extrabold uppercase tracking-wider shadow-md hover:shadow-lg transition flex items-center justify-center gap-2"
@@ -1143,6 +1217,13 @@ export const UserMembershipPage: React.FC = () => {
           setViewMode('submitted');
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }}
+      />
+
+      {/* Official Printable Application Form Modal */}
+      <ApplicationPrintModal
+        isOpen={isPrintModalOpen}
+        application={userPrintAppItem}
+        onClose={() => setIsPrintModalOpen(false)}
       />
     </div>
   );

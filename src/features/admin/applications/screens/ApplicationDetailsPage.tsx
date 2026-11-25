@@ -8,6 +8,7 @@ import { ApplicationDocumentsTab } from '../components/ApplicationDocumentsTab';
 import { ApplicationActivityLogTab } from '../components/ApplicationActivityLogTab';
 import { ApplicationStatusConfirmationModal } from '../components/ApplicationStatusConfirmationModal';
 import type { ConfirmationType } from '../components/ApplicationStatusConfirmationModal';
+import { ApplicationPrintModal } from '../components/ApplicationPrintModal';
 import {
   ChevronLeft,
   CheckCircle2,
@@ -16,6 +17,7 @@ import {
   FileText,
   History,
   AlertCircle,
+  Printer,
 } from 'lucide-react';
 
 export type DetailsTabKey = 'details' | 'documents' | 'activity';
@@ -40,6 +42,7 @@ export const ApplicationDetailsPage: React.FC = () => {
   const [confirmationType, setConfirmationType] = useState<ConfirmationType | null>(null);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [isPrintModalOpen, setIsPrintModalOpen] = useState<boolean>(false);
 
   React.useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' });
@@ -184,7 +187,30 @@ export const ApplicationDetailsPage: React.FC = () => {
           <span>Back to Applications</span>
         </button>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <button
+            type="button"
+            onClick={() => setIsPrintModalOpen(true)}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '6px 14px',
+              borderRadius: '8px',
+              backgroundColor: '#FFFFFF',
+              color: '#06294D',
+              border: '1px solid #CBD5E1',
+              fontSize: '12.5px',
+              fontWeight: 700,
+              cursor: 'pointer',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+            }}
+            className="hover:bg-slate-50 transition"
+          >
+            <Printer size={15} color="#06294D" />
+            <span>Print Application</span>
+          </button>
+
           <span
             style={{
               display: 'inline-flex',
@@ -343,25 +369,50 @@ export const ApplicationDetailsPage: React.FC = () => {
           gap: '16px',
         }}
       >
-        <button
-          type="button"
-          onClick={() => navigate('/admin/membership-applications')}
-          style={{
-            padding: '10px 18px',
-            borderRadius: '8px',
-            border: '1px solid #DBE5EE',
-            backgroundColor: '#FFFFFF',
-            color: '#34516D',
-            fontSize: '14px',
-            fontWeight: 600,
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-          }}
-        >
-          <ChevronLeft size={16} /> Back to List
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <button
+            type="button"
+            onClick={() => navigate('/admin/membership-applications')}
+            style={{
+              padding: '10px 18px',
+              borderRadius: '8px',
+              border: '1px solid #DBE5EE',
+              backgroundColor: '#FFFFFF',
+              color: '#34516D',
+              fontSize: '14px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+            }}
+          >
+            <ChevronLeft size={16} /> Back to List
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setIsPrintModalOpen(true)}
+            style={{
+              padding: '10px 18px',
+              borderRadius: '8px',
+              border: '1px solid #CBD5E1',
+              backgroundColor: '#FFFFFF',
+              color: '#06294D',
+              fontSize: '13px',
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+            }}
+            className="hover:bg-slate-50 transition"
+          >
+            <Printer size={15} color="#06294D" />
+            <span>Print Application Form</span>
+          </button>
+        </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
           {/* Under Review Button (if not already under review or approved) */}
@@ -490,6 +541,13 @@ export const ApplicationDetailsPage: React.FC = () => {
           }
           setConfirmationType(null);
         }}
+      />
+
+      {/* Official Printable Application Form Modal */}
+      <ApplicationPrintModal
+        isOpen={isPrintModalOpen}
+        application={application}
+        onClose={() => setIsPrintModalOpen(false)}
       />
     </div>
   );

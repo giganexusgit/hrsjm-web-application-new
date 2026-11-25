@@ -6,15 +6,17 @@ import {
   Award,
   Copy,
   Check,
-  Download,
   ArrowRight,
   ShieldCheck,
   MapPin,
   LayoutDashboard,
+  Printer,
 } from 'lucide-react';
 import type { MembershipPostData } from '../../data/membershipCategoriesData';
 import type { Step1FormData } from './MembershipStep1';
 import type { Step2FormData } from './MembershipStep2';
+import { ApplicationPrintModal } from '../../../admin/applications/components/ApplicationPrintModal';
+import type { MembershipApplicationItem } from '../../../admin/applications/types/applications.types';
 
 interface MembershipSubmittedProps {
   applicationId: string;
@@ -35,6 +37,7 @@ export const MembershipSubmitted: React.FC<MembershipSubmittedProps> = ({
 }) => {
   const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
+  const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
 
   const handleCopyId = () => {
     navigator.clipboard.writeText(applicationId);
@@ -43,7 +46,28 @@ export const MembershipSubmitted: React.FC<MembershipSubmittedProps> = ({
   };
 
   const handleDownload = () => {
-    window.print();
+    setIsPrintModalOpen(true);
+  };
+
+  const printApplicationData: MembershipApplicationItem = {
+    id: applicationId,
+    applicationId,
+    applicantName: step1Data.fullName,
+    membershipType: selectedPost.postName,
+    status: 'submitted',
+    submittedAt: new Date().toLocaleDateString('en-GB'),
+    submittedDate: new Date().toLocaleDateString('en-GB'),
+    phone: step1Data.mobile,
+    email: step1Data.email,
+    gender: step1Data.gender,
+    dob: step1Data.dob,
+    address: `${step2Data.addressLine1}${step2Data.addressLine2 ? `, ${step2Data.addressLine2}` : ''}, ${step2Data.city}, ${step2Data.state} - ${step2Data.pincode}`,
+    policeStation: step1Data.policeStation,
+    amount: selectedPost.fee ? Number(selectedPost.fee.replace(/\D/g, '')) : 800,
+    paymentStatus: 'PAID',
+    avatarUrl: step1Data.photoUrl,
+    stateChapter: step2Data.state,
+    district: step2Data.city,
   };
 
   return (
@@ -160,10 +184,10 @@ export const MembershipSubmitted: React.FC<MembershipSubmittedProps> = ({
         <button
           type="button"
           onClick={handleDownload}
-          className="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-slate-300 text-xs font-bold text-slate-700 hover:bg-slate-50 cursor-pointer flex items-center justify-center gap-2"
+          className="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-[#CBD5E1] bg-white text-xs font-bold text-[#06294D] hover:bg-slate-50 cursor-pointer flex items-center justify-center gap-2 shadow-2xs"
         >
-          <Download className="w-4 h-4" />
-          <span>Download Acknowledgement PDF</span>
+          <Printer className="w-4 h-4 text-[#06294D]" />
+          <span>Print / Download Application Form</span>
         </button>
 
         <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
@@ -193,6 +217,13 @@ export const MembershipSubmitted: React.FC<MembershipSubmittedProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Official Printable Application Form Modal */}
+      <ApplicationPrintModal
+        isOpen={isPrintModalOpen}
+        application={printApplicationData}
+        onClose={() => setIsPrintModalOpen(false)}
+      />
     </div>
   );
 };

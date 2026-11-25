@@ -14,6 +14,7 @@ import {
   UserVerificationPage,
   ApplicationsListPage,
   ApplicationDetailsPage,
+  ApplicationPrintPage,
   MembersListPage,
   MemberDetailsPage,
   AddMemberPage,
@@ -225,6 +226,8 @@ export const AppRoutes: React.FC = () => {
         <Route path="/users" element={<Navigate to="/admin/users" replace />} />
         <Route path="/all-users" element={<Navigate to="/admin/all-users" replace />} />
         <Route path="/members" element={<Navigate to="/admin/members" replace />} />
+        <Route path="/applications/:id/print" element={<ApplicationPrintPage />} />
+        <Route path="/membership-applications/:id/print" element={<ApplicationPrintPage />} />
         <Route path="/applications" element={<Navigate to="/admin/membership-applications" replace />} />
         <Route path="/assistance" element={<Navigate to="/admin/assistance" replace />} />
         <Route path="/tickets" element={<Navigate to="/admin/support" replace />} />
@@ -357,8 +360,10 @@ export const AppRoutes: React.FC = () => {
           {/* Applications */}
           <Route path="applications" element={<ApplicationsListPage />} />
           <Route path="applications/:id" element={<ApplicationDetailsPage />} />
+          <Route path="applications/:id/print" element={<ApplicationPrintPage />} />
           <Route path="membership-applications" element={<ApplicationsListPage />} />
           <Route path="membership-applications/:id" element={<ApplicationDetailsPage />} />
+          <Route path="membership-applications/:id/print" element={<ApplicationPrintPage />} />
 
           {/* Members */}
           <Route path="members" element={<MembersListPage />} />

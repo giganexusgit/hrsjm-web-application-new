@@ -16,6 +16,7 @@ export * from './users/screens/UserVerificationPage';
 // KYC Membership Applications
 export * from './applications/screens/ApplicationsListPage';
 export * from './applications/screens/ApplicationDetailsPage';
+export * from './applications/screens/ApplicationPrintPage';
 
 // Verified Members Roster
 export * from './members/screens/MembersListPage';

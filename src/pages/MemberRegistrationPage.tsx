@@ -26,7 +26,9 @@ import {
   Loader2,
   Clock,
   LayoutDashboard,
+  Printer,
 } from 'lucide-react';
+import { ApplicationPrintModal } from '../features/admin/applications/components/ApplicationPrintModal';
 import { authStore } from '../features/auth/store/authStore';
 import { authService } from '../features/auth/services/authService';
 import { userAuthStore } from '../features/user/store/userAuthStore';
@@ -156,6 +158,7 @@ export const MemberRegistrationPage: React.FC = () => {
   // Completed Application
   const [submittedRecord, setSubmittedRecord] = useState<SubmittedMembershipRecord | null>(null);
   const [copied, setCopied] = useState(false);
+  const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
 
   // Accessible unique IDs for file upload inputs
   const profileUploadId = useId();
@@ -878,6 +881,15 @@ export const MemberRegistrationPage: React.FC = () => {
           {/* Actions */}
           <div className="space-y-3">
             <button
+              type="button"
+              onClick={() => setIsPrintModalOpen(true)}
+              className="w-full py-3 px-4 rounded-xl bg-white hover:bg-slate-50 text-[#06294D] border border-slate-300 font-bold text-xs uppercase tracking-wider transition flex items-center justify-center gap-2 cursor-pointer shadow-xs"
+            >
+              <Printer size={16} className="text-[#06294D]" />
+              <span>Print Official Application Form</span>
+            </button>
+
+            <button
               onClick={() => navigate(`/user/membership-status?id=${encodeURIComponent(submittedRecord.applicationId)}`)}
               className="w-full py-3.5 px-4 rounded-xl bg-[#FAD465] hover:bg-[#E9B82E] text-[#011F39] font-bold text-xs uppercase tracking-wider shadow-md hover:shadow-lg transition flex items-center justify-center gap-2 cursor-pointer"
             >
@@ -895,6 +907,32 @@ export const MemberRegistrationPage: React.FC = () => {
             </button>
           </div>
         </div>
+
+        {/* Printable Official Application Form Modal */}
+        <ApplicationPrintModal
+          isOpen={isPrintModalOpen}
+          application={submittedRecord ? {
+            id: submittedRecord.id || `app-${Date.now()}`,
+            applicationId: submittedRecord.applicationId || 'HRSJM-APP',
+            applicantName: submittedRecord.applicantName || personal.fullName,
+            membershipType: selectedPost?.postName || 'Council Cadre Member',
+            status: 'submitted',
+            submittedAt: new Date().toLocaleDateString('en-GB'),
+            submittedDate: new Date().toLocaleDateString('en-GB'),
+            phone: personal.mobileNumber,
+            email: personal.email,
+            gender: personal.gender,
+            dob: personal.dateOfBirth,
+            address: `${address.addressLine1}${address.addressLine2 ? `, ${address.addressLine2}` : ''}, ${address.city}, ${address.state} - ${address.pincode}`,
+            policeStation: personal.policeStation,
+            amount: selectedPost?.fee ? Number(selectedPost.fee.replace(/\D/g, '')) : 800,
+            paymentStatus: 'PAID',
+            avatarUrl: personal.profilePhotoUri,
+            stateChapter: address.state,
+            district: address.city,
+          } : null}
+          onClose={() => setIsPrintModalOpen(false)}
+        />
       </div>
     );
   }
