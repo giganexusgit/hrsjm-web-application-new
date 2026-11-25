@@ -93,6 +93,7 @@ export const EVENT_CATEGORIES: string[] = [
   'Community',
   'Youth Convention',
   'Education',
+  'Others',
 ];
 
 export const EVENT_FORMAT_OPTIONS: Array<{ id: EventFormat; label: string; icon: string }> = [
