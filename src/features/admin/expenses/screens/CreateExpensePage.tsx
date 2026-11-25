@@ -356,7 +356,7 @@ export const CreateExpensePage: React.FC = () => {
                 style={styles.select}
               >
                 {(expenseAccounts.length > 0 ? expenseAccounts : OFFICIAL_EXPENSE_TYPES).map((t) => (
-                  <option key={t.id || t.code} value={t.id || t.code}>
+                  <option key={t.id || t.code} value={t.id || t.code} style={{ fontSize: '15px', fontWeight: 600, color: '#06294D' }}>
                     {t.code} — {t.name}
                   </option>
                 ))}
@@ -599,15 +599,19 @@ const styles: Record<string, React.CSSProperties> = {
   },
   select: {
     width: '100%',
-    padding: '9px 12px',
+    padding: '10px 14px',
     borderRadius: '8px',
-    border: '1px solid #CBD5E1',
-    fontSize: '14px',
-    color: '#0F172A',
+    border: '1.5px solid #94A3B8',
+    fontSize: '15px',
+    fontWeight: 600,
+    color: '#06294D',
+    lineHeight: '1.5',
+    letterSpacing: '0.01em',
     outline: 'none',
     backgroundColor: '#FFFFFF',
     cursor: 'pointer',
     boxSizing: 'border-box',
+    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.04)',
   },
   errorText: {
     fontSize: '12px',
