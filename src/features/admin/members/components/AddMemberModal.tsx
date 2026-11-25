@@ -190,7 +190,11 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({
     return Object.keys(errs).length === 0;
   };
 
-  const handleNext = () => {
+  const handleNext = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     if (currentStep === 1) {
       if (validateStep1()) {
         setShowPostPicker(false);
@@ -211,6 +215,10 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (currentStep !== 3) {
+      handleNext();
+      return;
+    }
     if (!agreedConstitution || !agreedVerification) {
       setServerError('Please accept the mandatory declarations to complete member enrollment.');
       return;
@@ -1211,17 +1219,33 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({
                 Step {currentStep} of 3
               </span>
 
-              {currentStep < 3 ? (
+              {currentStep === 1 && (
                 <button
+                  key="modal-step1-next"
                   type="button"
                   onClick={handleNext}
                   className="px-5 py-2.5 rounded-xl bg-[#011F39] hover:bg-[#06294D] text-[#FAD465] text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-xs"
                 >
-                  <span>{currentStep === 1 ? 'Next: Address Details' : 'Next: Documents & Pledge'}</span>
+                  <span>Next: Address Details</span>
                   <ArrowRight size={14} />
                 </button>
-              ) : (
+              )}
+
+              {currentStep === 2 && (
                 <button
+                  key="modal-step2-next"
+                  type="button"
+                  onClick={handleNext}
+                  className="px-5 py-2.5 rounded-xl bg-[#011F39] hover:bg-[#06294D] text-[#FAD465] text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-xs"
+                >
+                  <span>Next: Documents & Pledge</span>
+                  <ArrowRight size={14} />
+                </button>
+              )}
+
+              {currentStep === 3 && (
+                <button
+                  key="modal-step3-submit"
                   type="submit"
                   disabled={isSubmitting}
                   className="px-6 py-2.5 rounded-xl bg-[#011F39] hover:bg-[#06294D] text-[#FAD465] text-xs font-bold transition flex items-center gap-2 cursor-pointer shadow-sm disabled:opacity-50"
