@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import type { MembershipApplicationItem, ApplicationDocument } from '../types/applications.types';
 import { ApplicationDocumentViewerModal } from './ApplicationDocumentViewerModal';
+import { getOfficialStatutoryDocuments } from '../utils/documentGenerator';
 import { apiClient } from '@/api/client';
 import {
   FileText,
@@ -25,63 +26,40 @@ export const ApplicationDocumentsTab: React.FC<ApplicationDocumentsTabProps> = (
   const [isLiveServer, setIsLiveServer] = useState(false);
 
   // Generate official statutory verification documents if empty
-  const docAppId = (application.applicationId || application.id?.substring(0, 8) || 'MEM').toLowerCase();
-  
-  const defaultDocs = useMemo<ApplicationDocument[]>(() => [
-    {
-      id: `doc-${application.id}-idproof`,
-      title: 'Aadhaar Card (Identity Proof)',
-      fileName: `aadhaar_card_${docAppId}.pdf`,
-      fileSize: '1.8 MB',
-      uploadDate: application.submittedAt || 'Recently',
-      verified: true,
-      uri: '/docs/sample_aadhaar.pdf',
-    },
-    {
-      id: `doc-${application.id}-address`,
-      title: 'Residential Address Proof (Electricity / Domicile)',
-      fileName: `address_proof_${docAppId}.pdf`,
-      fileSize: '2.1 MB',
-      uploadDate: application.submittedAt || 'Recently',
-      verified: application.status === 'approved' || application.status === 'under_review',
-      uri: '/docs/sample_address.pdf',
-    },
-    {
-      id: `doc-${application.id}-qualification`,
-      title: application.accountType === 'seeker' ? 'Humanitarian / Medical Need Proof' : 'Educational Qualification Certificate',
-      fileName: application.accountType === 'seeker' ? `medical_need_proof_${docAppId}.pdf` : `qualification_certificate_${docAppId}.pdf`,
-      fileSize: '1.4 MB',
-      uploadDate: application.submittedAt || 'Recently',
-      verified: application.status === 'approved' || application.status === 'under_review',
-      uri: '/docs/sample_qualification.pdf',
-    },
-    {
-      id: `doc-${application.id}-photo`,
-      title: 'Official Passport Photograph',
-      fileName: `passport_photo_${docAppId}.jpg`,
-      fileSize: '680 KB',
-      uploadDate: application.submittedAt || 'Recently',
-      verified: true,
-      uri:
-        application.avatarUrl ||
-        'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80',
-    },
-  ], [application.id, application.applicationId, application.submittedAt, application.status, application.accountType, application.avatarUrl, docAppId]);
+  const defaultDocs = useMemo<ApplicationDocument[]>(() => {
+    return getOfficialStatutoryDocuments({
+      id: application.id,
+      applicationId: application.applicationId,
+      applicantName: application.applicantName,
+      submittedAt: application.submittedAt,
+      address: application.address,
+      avatarUrl: application.avatarUrl,
+      isApproved: application.status === 'approved',
+    });
+  }, [application.id, application.applicationId, application.applicantName, application.submittedAt, application.address, application.avatarUrl, application.status]);
 
-  // Initial documents resolution from cache or application props
-  const [docList, setDocList] = useState<ApplicationDocument[]>(() => {
-    if (typeof window !== 'undefined' && window.localStorage) {
-      try {
-        const cached =
-          localStorage.getItem(`hrsjm_app_docs_${application.id}`) ||
-          (application.applicationId ? localStorage.getItem(`hrsjm_app_docs_${application.applicationId}`) : null);
-        if (cached) {
-          const parsed = JSON.parse(cached);
-          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-        }
-      } catch {}
+  const normalizeDocUri = (rawUri: any): string => {
+    if (!rawUri || typeof rawUri !== 'string') return '';
+    const trimmed = rawUri.trim();
+    if (trimmed.startsWith('data:') || trimmed.startsWith('blob:') || trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+      return trimmed;
     }
-    return application.documents && application.documents.length > 0 ? application.documents : defaultDocs;
+    if (trimmed.startsWith('uploads/')) {
+      return `/${trimmed}`;
+    }
+    if (trimmed.startsWith('/uploads/')) {
+      return trimmed;
+    }
+    return trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+  };
+
+  // Initial documents resolution from valid application props or defaultDocs
+  const [docList, setDocList] = useState<ApplicationDocument[]>(() => {
+    if (Array.isArray(application.documents) && application.documents.length > 0) {
+      const clean = application.documents.filter(d => d.uri && !d.uri.includes('sample_aadhaar') && !d.uri.includes('sample_address') && !d.uri.includes('sample_qualification'));
+      if (clean.length > 0) return clean;
+    }
+    return defaultDocs;
   });
 
   const saveDocsToCache = (docs: ApplicationDocument[]) => {
@@ -105,96 +83,107 @@ export const ApplicationDocumentsTab: React.FC<ApplicationDocumentsTabProps> = (
     try {
       let fetched: ApplicationDocument[] = [];
 
-      // 1. Check localStorage cache first
-      if (typeof window !== 'undefined' && window.localStorage) {
+      // 1. Query live server API first for real attachments
+      if (application.accountType === 'membership' || !application.accountType) {
         try {
-          const cached =
-            localStorage.getItem(`hrsjm_app_docs_${application.id}`) ||
-            (application.applicationId ? localStorage.getItem(`hrsjm_app_docs_${application.applicationId}`) : null);
-          if (cached) {
-            const parsed = JSON.parse(cached);
-            if (Array.isArray(parsed) && parsed.length > 0) {
-              fetched = parsed;
+          const res = await apiClient.get<any>(`/memberships/${application.id}/documents`);
+          const raw = res?.data?.documents || res?.documents || res?.data;
+          if (Array.isArray(raw) && raw.length > 0) {
+            fetched = raw
+              .filter((d: any) => {
+                const u = d.storage_path || d.uri || d.fileUri || d.url;
+                return u && !String(u).includes('sample_aadhaar') && !String(u).includes('sample_address') && !String(u).includes('sample_qualification');
+              })
+              .map((d: any, idx: number) => ({
+                id: d.id || `doc-mem-${idx + 1}`,
+                title: d.document_name || d.title || 'Official Cadre Document',
+                fileName: d.file_name || d.fileName || 'document.pdf',
+                fileSize: d.file_size ? `${(d.file_size / (1024 * 1024)).toFixed(1)} MB` : d.fileSize || '1.5 MB',
+                uploadDate: d.created_at ? new Date(d.created_at).toLocaleDateString('en-GB') : (application.submittedAt || 'Verified Upload'),
+                uri: normalizeDocUri(d.storage_path || d.uri || d.fileUri || d.url || (d.id ? `/api/v1/documents/${d.id}/download` : '')),
+                verified: true,
+              }));
+            if (fetched.length > 0) {
+              setIsLiveServer(true);
+            }
+          }
+        } catch (err) {
+          console.warn('[ApplicationDocumentsTab] Could not query /memberships/:id/documents:', err);
+        }
+      }
+
+      if (fetched.length === 0 && application.accountType === 'seeker') {
+        try {
+          const res = await apiClient.get<any>(`/assistance-requests/${application.id}/documents`);
+          const raw = res?.data || res;
+          if (Array.isArray(raw) && raw.length > 0) {
+            fetched = raw
+              .filter((d: any) => {
+                const u = d.storage_path || d.uri || d.fileUri || d.url;
+                return u && !String(u).includes('sample_aadhaar') && !String(u).includes('sample_address') && !String(u).includes('sample_qualification');
+              })
+              .map((d: any, idx: number) => ({
+                id: d.id || `doc-ast-${idx + 1}`,
+                title: d.document_name || d.title || 'Assistance Need Proof',
+                fileName: d.file_name || d.fileName || 'document.pdf',
+                fileSize: d.file_size ? `${(d.file_size / (1024 * 1024)).toFixed(1)} MB` : d.fileSize || '1.2 MB',
+                uploadDate: d.created_at ? new Date(d.created_at).toLocaleDateString('en-GB') : (application.submittedAt || 'Verified Upload'),
+                uri: normalizeDocUri(d.storage_path || d.uri || d.fileUri || d.url || (d.id ? `/api/v1/documents/${d.id}/download` : '')),
+                verified: true,
+              }));
+            if (fetched.length > 0) {
+              setIsLiveServer(true);
             }
           }
         } catch {}
       }
 
-      // 2. If not found in cache, query live server API
       if (fetched.length === 0) {
-        if (application.accountType === 'membership') {
-          try {
-            const res = await apiClient.get<any>(`/memberships/${application.id}/documents`);
-            const raw = res?.data?.documents || res?.documents || res?.data;
-            if (Array.isArray(raw) && raw.length > 0) {
-              fetched = raw.map((d: any, idx: number) => ({
-                id: d.id || `doc-mem-${idx + 1}`,
-                title: d.document_name || d.title || 'Official Cadre Document',
-                fileName: d.file_name || d.fileName || 'document.pdf',
-                fileSize: d.file_size ? `${(d.file_size / (1024 * 1024)).toFixed(1)} MB` : d.fileSize || '1.5 MB',
-                uploadDate: d.created_at ? new Date(d.created_at).toLocaleDateString('en-GB') : 'Verified Server Upload',
-                uri: d.storage_path ? (d.storage_path.startsWith('/') ? d.storage_path : `/${d.storage_path}`) : d.uri || `/api/v1/documents/${d.id}/download`,
-                verified: true,
-              }));
-              setIsLiveServer(true);
-            }
-          } catch {}
-        }
-
-        if (fetched.length === 0 && application.accountType === 'seeker') {
-          try {
-            const res = await apiClient.get<any>(`/assistance-requests/${application.id}/documents`);
-            const raw = res?.data || res;
-            if (Array.isArray(raw) && raw.length > 0) {
-              fetched = raw.map((d: any, idx: number) => ({
-                id: d.id || `doc-ast-${idx + 1}`,
-                title: d.document_name || d.title || 'Assistance Need Proof',
-                fileName: d.file_name || d.fileName || 'document.pdf',
-                fileSize: d.file_size ? `${(d.file_size / (1024 * 1024)).toFixed(1)} MB` : d.fileSize || '1.2 MB',
-                uploadDate: d.created_at ? new Date(d.created_at).toLocaleDateString('en-GB') : 'Verified Server Upload',
-                uri: d.storage_path ? (d.storage_path.startsWith('/') ? d.storage_path : `/${d.storage_path}`) : d.uri || `/api/v1/documents/${d.id}/download`,
-                verified: true,
-              }));
-              setIsLiveServer(true);
-            }
-          } catch {}
-        }
-
-        if (fetched.length === 0) {
-          try {
-            const res = await apiClient.get<any>(`/documents?related_entity_id=${application.id}`);
-            const raw = res?.data?.items || res?.items || res?.data;
-            if (Array.isArray(raw) && raw.length > 0) {
-              fetched = raw.map((d: any, idx: number) => ({
+        try {
+          const res = await apiClient.get<any>(`/documents?related_entity_id=${application.id}`);
+          const raw = res?.data?.items || res?.items || res?.data;
+          if (Array.isArray(raw) && raw.length > 0) {
+            fetched = raw
+              .filter((d: any) => {
+                const u = d.storage_path || d.uri || d.fileUri || d.url;
+                return u && !String(u).includes('sample_aadhaar') && !String(u).includes('sample_address') && !String(u).includes('sample_qualification');
+              })
+              .map((d: any, idx: number) => ({
                 id: d.id || `doc-rel-${idx + 1}`,
                 title: d.document_name || d.title || 'Verification Document',
                 fileName: d.file_name || d.fileName || 'document.pdf',
                 fileSize: d.file_size ? `${(d.file_size / (1024 * 1024)).toFixed(1)} MB` : d.fileSize || '1.5 MB',
-                uploadDate: d.created_at ? new Date(d.created_at).toLocaleDateString('en-GB') : 'Verified Server Upload',
-                uri: d.storage_path ? (d.storage_path.startsWith('/') ? d.storage_path : `/${d.storage_path}`) : d.uri || `/api/v1/documents/${d.id}/download`,
+                uploadDate: d.created_at ? new Date(d.created_at).toLocaleDateString('en-GB') : (application.submittedAt || 'Verified Upload'),
+                uri: normalizeDocUri(d.storage_path || d.uri || d.fileUri || d.url || (d.id ? `/api/v1/documents/${d.id}/download` : '')),
                 verified: true,
               }));
+            if (fetched.length > 0) {
               setIsLiveServer(true);
             }
-          } catch {}
-        }
+          }
+        } catch {}
       }
 
       if (fetched.length > 0) {
         setDocList(fetched);
         saveDocsToCache(fetched);
       } else if (application.documents && application.documents.length > 0) {
-        setDocList(application.documents);
-        saveDocsToCache(application.documents);
+        const clean = application.documents.filter(d => d.uri && !d.uri.includes('sample_aadhaar') && !d.uri.includes('sample_address') && !d.uri.includes('sample_qualification'));
+        if (clean.length > 0) {
+          setDocList(clean);
+          saveDocsToCache(clean);
+        } else {
+          setDocList(defaultDocs);
+        }
       } else {
         setDocList(defaultDocs);
       }
     } finally {
       setIsLoading(false);
     }
-  }, [application.id, application.applicationId, application.accountType, application.documents, defaultDocs]);
+  }, [application.id, application.applicationId, application.accountType, application.documents, application.submittedAt, defaultDocs]);
 
-  // Trigger sync only when the application changes, not on every render
+  // Trigger sync when application changes
   useEffect(() => {
     fetchLiveDocuments();
   }, [application.id, application.applicationId]);

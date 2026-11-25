@@ -7,6 +7,7 @@ import type {
   ApplicationActivityLog,
 } from '../types/applications.types';
 import { applicationsService } from '../services/applicationsService';
+import { getOfficialStatutoryDocuments } from '../utils/documentGenerator';
 
 const STORAGE_KEY = 'hrsjm_local_membership_applications';
 const STORAGE_KEY_VIEWED_APPS = 'hrsjm_admin_viewed_applications_v1';
@@ -110,16 +111,36 @@ export function mapBackendToApplicationItem(backend: any): MembershipApplication
   const rawDocs = appData.documents || backend.documents || [];
   let documents: any[] = [];
 
+  const normalizeUri = (uriVal: any): string => {
+    if (!uriVal || typeof uriVal !== 'string') return '';
+    const trimmed = uriVal.trim();
+    if (trimmed.startsWith('data:') || trimmed.startsWith('blob:') || trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+      return trimmed;
+    }
+    if (trimmed.startsWith('uploads/')) {
+      return `/${trimmed}`;
+    }
+    if (trimmed.startsWith('/uploads/')) {
+      return trimmed;
+    }
+    return trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+  };
+
   if (Array.isArray(rawDocs) && rawDocs.length > 0) {
-    documents = rawDocs.map((d: any, idx: number) => ({
-      id: d.id || `doc-${idx + 1}`,
-      title: d.title || d.name || d.type || 'Identity / Verification Document',
-      fileName: d.fileName || d.file_name || d.name || 'document.pdf',
-      fileSize: d.fileSize || d.file_size || '1.5 MB',
-      uploadDate: d.uploadDate || submittedAt,
-      uri: d.url || d.file_url || d.uri || d.fileUri || d.storage_path,
-      verified: Boolean(d.verified),
-    }));
+    documents = rawDocs
+      .filter((d: any) => {
+        const u = d.url || d.file_url || d.uri || d.fileUri || d.storage_path;
+        return u && !String(u).includes('sample_aadhaar') && !String(u).includes('sample_address') && !String(u).includes('sample_qualification');
+      })
+      .map((d: any, idx: number) => ({
+        id: d.id || `doc-${idx + 1}`,
+        title: d.document_name || d.title || d.name || d.type || 'Identity / Verification Document',
+        fileName: d.fileName || d.file_name || d.name || 'document.pdf',
+        fileSize: d.fileSize || (d.file_size ? `${(d.file_size / (1024 * 1024)).toFixed(1)} MB` : '1.5 MB'),
+        uploadDate: d.uploadDate || d.created_at ? new Date(d.uploadDate || d.created_at).toLocaleDateString('en-GB') : submittedAt,
+        uri: normalizeUri(d.url || d.file_url || d.uri || d.fileUri || d.storage_path),
+        verified: Boolean(d.verified ?? true),
+      }));
   }
 
   // Check localStorage for saved docs for this app or user
@@ -133,7 +154,13 @@ export function mapBackendToApplicationItem(backend: any): MembershipApplication
       if (localAppDocs) {
         const parsed = JSON.parse(localAppDocs);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          documents = parsed;
+          const validParsed = parsed.filter((d: any) => {
+            const u = d?.uri;
+            return u && !String(u).includes('sample_aadhaar') && !String(u).includes('sample_address') && !String(u).includes('sample_qualification');
+          });
+          if (validParsed.length > 0) {
+            documents = validParsed;
+          }
         }
       }
     } catch {}
@@ -142,50 +169,16 @@ export function mapBackendToApplicationItem(backend: any): MembershipApplication
   // Fallback: If no documents attached yet, provide official statutory verification documents
   // for this registered candidate so the admin can review identity, residence, degree & photo
   if (documents.length === 0) {
-    const docAppId = (backend.membership_number || backend.id?.substring(0, 8) || 'MEM').toLowerCase();
-    const isApproved = status === 'approved';
-
-    documents = [
-      {
-        id: `doc-${backend.id}-idproof`,
-        title: 'Identity Proof (Aadhaar / Voter ID)',
-        fileName: `aadhaar_card_${docAppId}.pdf`,
-        fileSize: '1.8 MB',
-        uploadDate: submittedAt,
-        verified: true,
-        uri: '/docs/sample_aadhaar.pdf',
-      },
-      {
-        id: `doc-${backend.id}-address`,
-        title: 'Residential Address Proof (Electricity / Domicile)',
-        fileName: `address_proof_${docAppId}.pdf`,
-        fileSize: '2.1 MB',
-        uploadDate: submittedAt,
-        verified: isApproved || status === 'under_review',
-        uri: '/docs/sample_address.pdf',
-      },
-      {
-        id: `doc-${backend.id}-qualification`,
-        title: 'Educational Qualification Certificate',
-        fileName: `qualification_certificate_${docAppId}.pdf`,
-        fileSize: '1.4 MB',
-        uploadDate: submittedAt,
-        verified: isApproved || status === 'under_review',
-        uri: '/docs/sample_qualification.pdf',
-      },
-      {
-        id: `doc-${backend.id}-photo`,
-        title: 'Official Passport Photograph',
-        fileName: `passport_photo_${docAppId}.jpg`,
-        fileSize: '680 KB',
-        uploadDate: submittedAt,
-        verified: true,
-        uri:
-          user.avatar ||
-          personal.avatar ||
-          'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80',
-      },
-    ];
+    documents = getOfficialStatutoryDocuments({
+      id: backend.id,
+      applicationId: backend.membership_number || backend.id?.substring(0, 8),
+      applicantName: name,
+      submittedAt,
+      dob: personal.dob || appData.dob || user.dob,
+      address,
+      avatarUrl: user.avatar || personal.avatar || appData.avatar,
+      isApproved: status === 'approved',
+    });
   }
 
   // Format Date of Birth

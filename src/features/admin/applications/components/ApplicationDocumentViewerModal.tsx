@@ -11,6 +11,7 @@ import {
   Award,
   QrCode,
   Lock,
+  ExternalLink,
 } from 'lucide-react';
 import { useLockBodyScroll } from '@/hooks/useLockBodyScroll';
 
@@ -41,28 +42,50 @@ export const ApplicationDocumentViewerModal: React.FC<ApplicationDocumentViewerM
 
   if (!isOpen || !document) return null;
 
+  const isPdf =
+    Boolean(document.fileName?.match(/\.pdf$/i)) ||
+    Boolean(document.uri?.startsWith('data:application/pdf')) ||
+    Boolean(document.uri?.toLowerCase().includes('.pdf'));
+
   const isImage =
     Boolean(document.fileName?.match(/\.(jpeg|jpg|png|webp|svg|gif)$/i)) ||
-    Boolean(document.uri?.startsWith('data:image'));
+    Boolean(document.uri?.startsWith('data:image')) ||
+    Boolean(document.uri?.startsWith('data:image/svg+xml'));
+
+  const canShowDirectPreview = Boolean(document.uri) && !imageError;
 
   const handlePrint = () => {
     window.print();
   };
 
-  const handleDownload = () => {
-    if (document.uri && !document.uri.startsWith('blob:')) {
-      const link = window.document.createElement('a');
-      link.href = document.uri;
-      link.download = document.fileName || 'document.pdf';
-      link.target = '_blank';
-      link.rel = 'noreferrer';
-      link.click();
+  const handleOpenExternal = () => {
+    if (!document.uri) return;
+    if (document.uri.startsWith('data:')) {
+      const win = window.open();
+      if (win) {
+        if (isPdf) {
+          win.document.write(`<iframe src="${document.uri}" frameborder="0" style="border:0; position:fixed; top:0; left:0; width:100%; height:100%;" allowfullscreen></iframe>`);
+        } else {
+          win.document.write(`<img src="${document.uri}" style="max-width:100%; max-height:100vh; display:block; margin:auto; padding:20px;" />`);
+        }
+        win.document.title = document.title || 'Attachment';
+      }
     } else {
-      window.print();
+      window.open(document.uri, '_blank', 'noopener,noreferrer');
     }
   };
 
-  const canShowImagePreview = isImage && document.uri && !imageError && !document.uri.endsWith('.pdf');
+  const handleDownload = () => {
+    if (!document.uri) return;
+    const link = window.document.createElement('a');
+    link.href = document.uri;
+    link.download = document.fileName || 'attachment.pdf';
+    link.target = '_blank';
+    link.rel = 'noreferrer';
+    window.document.body.appendChild(link);
+    link.click();
+    window.document.body.removeChild(link);
+  };
 
   return (
     <div
@@ -136,6 +159,29 @@ export const ApplicationDocumentViewerModal: React.FC<ApplicationDocumentViewerM
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <button
               type="button"
+              onClick={handleOpenExternal}
+              title="Open attachment in full window"
+              style={{
+                background: 'rgba(255, 255, 255, 0.12)',
+                border: 'none',
+                color: '#FFFFFF',
+                cursor: 'pointer',
+                padding: '6px 12px',
+                borderRadius: '8px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px',
+                fontSize: '12px',
+                fontWeight: 600,
+              }}
+              className="hover:bg-white/20 transition"
+            >
+              <ExternalLink size={14} />
+              <span>Full View</span>
+            </button>
+
+            <button
+              type="button"
               onClick={onClose}
               style={{
                 background: 'rgba(255, 255, 255, 0.1)',
@@ -169,7 +215,7 @@ export const ApplicationDocumentViewerModal: React.FC<ApplicationDocumentViewerM
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            {canShowImagePreview && (
+            {canShowDirectPreview && (
               <button
                 type="button"
                 onClick={() => setActiveView('preview')}
@@ -184,7 +230,7 @@ export const ApplicationDocumentViewerModal: React.FC<ApplicationDocumentViewerM
                   color: activeView === 'preview' ? '#FAD465' : '#64748B',
                 }}
               >
-                Document Scan
+                {isPdf ? 'PDF Attachment Scan' : (isImage ? 'Image Scan' : 'Document Scan')}
               </button>
             )}
             <button
@@ -197,8 +243,8 @@ export const ApplicationDocumentViewerModal: React.FC<ApplicationDocumentViewerM
                 fontSize: '12px',
                 fontWeight: 700,
                 cursor: 'pointer',
-                backgroundColor: activeView === 'certificate' || !canShowImagePreview ? '#06294D' : 'transparent',
-                color: activeView === 'certificate' || !canShowImagePreview ? '#FAD465' : '#64748B',
+                backgroundColor: activeView === 'certificate' || !canShowDirectPreview ? '#06294D' : 'transparent',
+                color: activeView === 'certificate' || !canShowDirectPreview ? '#FAD465' : '#64748B',
               }}
             >
               Statutory Credential Record
@@ -215,39 +261,56 @@ export const ApplicationDocumentViewerModal: React.FC<ApplicationDocumentViewerM
         <div
           style={{
             flex: 1,
-            minHeight: '420px',
-            maxHeight: '560px',
+            minHeight: '440px',
+            maxHeight: '600px',
             overflow: 'auto',
             backgroundColor: '#F1F5F9',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: '24px',
+            padding: '20px',
             position: 'relative',
           }}
         >
-          {canShowImagePreview && activeView === 'preview' ? (
-            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', height: '100%' }}>
-              <img
-                src={document.uri}
-                alt={document.title}
-                onError={() => {
-                  setImageError(true);
-                  setActiveView('certificate');
-                }}
-                style={{
-                  maxWidth: '100%',
-                  maxHeight: '480px',
-                  transform: `scale(${zoom})`,
-                  transition: 'transform 0.2s ease',
-                  objectFit: 'contain',
-                  borderRadius: '12px',
-                  boxShadow: '0 8px 24px rgba(6, 41, 77, 0.15)',
-                  border: '2px solid #FFFFFF',
-                }}
-              />
-            </div>
+          {canShowDirectPreview && activeView === 'preview' ? (
+            isPdf ? (
+              <div style={{ width: '100%', height: '520px', display: 'flex', flexDirection: 'column' }}>
+                <iframe
+                  src={document.uri}
+                  title={document.title}
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    border: 'none',
+                    borderRadius: '12px',
+                    backgroundColor: '#FFFFFF',
+                    boxShadow: '0 8px 24px rgba(6, 41, 77, 0.12)',
+                  }}
+                />
+              </div>
+            ) : (
+              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', height: '100%' }}>
+                <img
+                  src={document.uri}
+                  alt={document.title}
+                  onError={() => {
+                    setImageError(true);
+                    setActiveView('certificate');
+                  }}
+                  style={{
+                    maxWidth: '100%',
+                    maxHeight: '500px',
+                    transform: `scale(${zoom})`,
+                    transition: 'transform 0.2s ease',
+                    objectFit: 'contain',
+                    borderRadius: '12px',
+                    boxShadow: '0 8px 24px rgba(6, 41, 77, 0.15)',
+                    border: '2px solid #FFFFFF',
+                  }}
+                />
+              </div>
+            )
           ) : (
             /* Digital Certificate / Official Credential Sheet */
             <div
@@ -526,7 +589,7 @@ export const ApplicationDocumentViewerModal: React.FC<ApplicationDocumentViewerM
               className="hover:bg-[#011F39] transition"
             >
               <Download size={15} color="#FAD465" />
-              <span>Download Official Copy</span>
+              <span>Download Attachment</span>
             </button>
           </div>
         </div>
