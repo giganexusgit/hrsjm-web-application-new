@@ -18,6 +18,7 @@ export interface Donation {
   source?: DonationSource | string | null;
   donation_type?: 'ONE_TIME' | 'RECURRING' | 'OFFLINE';
   member_code?: string | null;
+  receipt_number?: string | null;
   payment_method?: string;
   transaction_id?: string | null;
   event_id?: string | null;
