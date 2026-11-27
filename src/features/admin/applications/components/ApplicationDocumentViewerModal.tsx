@@ -40,45 +40,60 @@ export const ApplicationDocumentViewerModal: React.FC<ApplicationDocumentViewerM
 
   useLockBodyScroll(Boolean(isOpen && document));
 
+  const rawUri = (document?.uri || '').trim();
+  const resolvedUri = React.useMemo(() => {
+    if (!rawUri) return '';
+    if (
+      rawUri.startsWith('data:') ||
+      rawUri.startsWith('blob:') ||
+      rawUri.startsWith('http://') ||
+      rawUri.startsWith('https://')
+    ) {
+      return rawUri;
+    }
+    return rawUri.startsWith('/') ? rawUri : `/${rawUri}`;
+  }, [rawUri]);
+
   if (!isOpen || !document) return null;
 
   const isPdf =
     Boolean(document.fileName?.match(/\.pdf$/i)) ||
-    Boolean(document.uri?.startsWith('data:application/pdf')) ||
-    Boolean(document.uri?.toLowerCase().includes('.pdf'));
+    Boolean(resolvedUri.startsWith('data:application/pdf')) ||
+    Boolean(resolvedUri.toLowerCase().includes('.pdf'));
 
   const isImage =
     Boolean(document.fileName?.match(/\.(jpeg|jpg|png|webp|svg|gif)$/i)) ||
-    Boolean(document.uri?.startsWith('data:image')) ||
-    Boolean(document.uri?.startsWith('data:image/svg+xml'));
+    Boolean(resolvedUri.startsWith('data:image')) ||
+    Boolean(resolvedUri.startsWith('data:image/svg+xml')) ||
+    Boolean(resolvedUri.match(/\.(jpeg|jpg|png|webp|svg|gif)($|\?)/i));
 
-  const canShowDirectPreview = Boolean(document.uri) && !imageError;
+  const canShowDirectPreview = Boolean(resolvedUri) && !imageError;
 
   const handlePrint = () => {
     window.print();
   };
 
   const handleOpenExternal = () => {
-    if (!document.uri) return;
-    if (document.uri.startsWith('data:')) {
+    if (!resolvedUri) return;
+    if (resolvedUri.startsWith('data:')) {
       const win = window.open();
       if (win) {
         if (isPdf) {
-          win.document.write(`<iframe src="${document.uri}" frameborder="0" style="border:0; position:fixed; top:0; left:0; width:100%; height:100%;" allowfullscreen></iframe>`);
+          win.document.write(`<iframe src="${resolvedUri}" frameborder="0" style="border:0; position:fixed; top:0; left:0; width:100%; height:100%;" allowfullscreen></iframe>`);
         } else {
-          win.document.write(`<img src="${document.uri}" style="max-width:100%; max-height:100vh; display:block; margin:auto; padding:20px;" />`);
+          win.document.write(`<img src="${resolvedUri}" style="max-width:100%; max-height:100vh; display:block; margin:auto; padding:20px;" />`);
         }
         win.document.title = document.title || 'Attachment';
       }
     } else {
-      window.open(document.uri, '_blank', 'noopener,noreferrer');
+      window.open(resolvedUri, '_blank', 'noopener,noreferrer');
     }
   };
 
   const handleDownload = () => {
-    if (!document.uri) return;
+    if (!resolvedUri) return;
     const link = window.document.createElement('a');
-    link.href = document.uri;
+    link.href = resolvedUri;
     link.download = document.fileName || 'attachment.pdf';
     link.target = '_blank';
     link.rel = 'noreferrer';
@@ -277,7 +292,7 @@ export const ApplicationDocumentViewerModal: React.FC<ApplicationDocumentViewerM
             isPdf ? (
               <div style={{ width: '100%', height: '520px', display: 'flex', flexDirection: 'column' }}>
                 <iframe
-                  src={document.uri}
+                  src={resolvedUri}
                   title={document.title}
                   style={{
                     width: '100%',
@@ -292,7 +307,7 @@ export const ApplicationDocumentViewerModal: React.FC<ApplicationDocumentViewerM
             ) : (
               <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', height: '100%' }}>
                 <img
-                  src={document.uri}
+                  src={resolvedUri}
                   alt={document.title}
                   onError={() => {
                     setImageError(true);

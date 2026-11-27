@@ -157,14 +157,23 @@ export const MemberDetailsPage: React.FC = () => {
       })
     : '—';
 
-  const formattedValidTill =
-    member.validTill && !member.validTill.includes('Lifetime')
-      ? new Date(member.validTill).toLocaleDateString('en-GB', {
-          day: '2-digit',
-          month: 'short',
-          year: 'numeric',
-        })
-      : 'Lifetime';
+  const computedValidTillDate = (() => {
+    if (member.validTill && !member.validTill.includes('Lifetime')) {
+      const d = new Date(member.validTill);
+      if (!isNaN(d.getTime())) return d;
+    }
+    if (member.joinedDate) {
+      const jd = new Date(member.joinedDate);
+      if (!isNaN(jd.getTime())) return new Date(jd.getTime() + 365 * 86400000);
+    }
+    return new Date(Date.now() + 365 * 86400000);
+  })();
+
+  const formattedValidTill = computedValidTillDate.toLocaleDateString('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
 
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto' }}>

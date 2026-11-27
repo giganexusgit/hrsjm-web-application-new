@@ -165,7 +165,7 @@ export const seekerService = {
             formData.append('file', item.file);
             formData.append('document_name', item.docTitle || item.name);
             formData.append('description', `Uploaded during seeker registration: ${item.name}`);
-            await apiClient.post(`/assistance-requests/${backendRequestId}/documents`, formData);
+            await apiClient.upload(`/assistance-requests/${backendRequestId}/documents`, formData);
           } catch (uploadErr) {
             console.warn(`Failed to upload ${item.name} to backend:`, uploadErr);
           }

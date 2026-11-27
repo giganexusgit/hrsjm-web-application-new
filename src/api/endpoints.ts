@@ -101,6 +101,7 @@ export const ENDPOINTS = {
     messages: (id: string) => `/support-tickets/${id}/messages`,
     sendMessage: (id: string) => `/support-tickets/${id}/messages`,
     attachments: (id: string) => `/support-tickets/${id}/attachments`,
+    delete: (id: string) => `/support-tickets/${id}`,
     contact: '/contact',
   },
 

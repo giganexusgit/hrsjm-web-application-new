@@ -163,8 +163,8 @@ export const MembersListPage: React.FC = () => {
       result.sort((a, b) => new Date(b.joinedDate || 0).getTime() - new Date(a.joinedDate || 0).getTime());
     } else if (sortOption === 'expiry_asc') {
       result.sort((a, b) => {
-        const timeA = a.validTill && !a.validTill.includes('Lifetime') ? new Date(a.validTill).getTime() : Infinity;
-        const timeB = b.validTill && !b.validTill.includes('Lifetime') ? new Date(b.validTill).getTime() : Infinity;
+        const timeA = a.validTill ? new Date(a.validTill).getTime() : Infinity;
+        const timeB = b.validTill ? new Date(b.validTill).getTime() : Infinity;
         return timeA - timeB;
       });
     }

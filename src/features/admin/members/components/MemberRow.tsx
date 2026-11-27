@@ -30,31 +30,28 @@ interface MemberRowProps {
 }
 
 // Days left calculation
-function getDaysLeftInfo(validTill: string) {
-  if (!validTill || validTill.includes('Lifetime')) {
-    return {
-      text: 'Lifetime',
-      days: null,
-      tone: 'lifetime' as const,
-      bg: '#F3F4F6',
-      border: '#E5E7EB',
-      color: '#4B5563',
-    };
-  }
+function getDaysLeftInfo(validTill?: string, joinedDate?: string) {
   try {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const target = new Date(validTill);
-    if (isNaN(target.getTime())) {
-      return {
-        text: '—',
-        days: null,
-        tone: 'unknown' as const,
-        bg: '#F3F4F6',
-        border: '#E5E7EB',
-        color: '#6B7280',
-      };
+
+    let target: Date | null = null;
+    if (validTill && !validTill.includes('Lifetime')) {
+      const d = new Date(validTill);
+      if (!isNaN(d.getTime())) {
+        target = d;
+      }
     }
+    if (!target && joinedDate) {
+      const jd = new Date(joinedDate);
+      if (!isNaN(jd.getTime())) {
+        target = new Date(jd.getTime() + 365 * 86400000);
+      }
+    }
+    if (!target) {
+      target = new Date(today.getTime() + 365 * 86400000);
+    }
+
     target.setHours(0, 0, 0, 0);
     const diff = target.getTime() - today.getTime();
     const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
@@ -110,12 +107,12 @@ function getDaysLeftInfo(validTill: string) {
     };
   } catch {
     return {
-      text: validTill,
-      days: null,
-      tone: 'unknown' as const,
-      bg: '#F3F4F6',
-      border: '#E5E7EB',
-      color: '#6B7280',
+      text: '365 days left',
+      days: 365,
+      tone: 'normal' as const,
+      bg: '#E8F8EE',
+      border: '#B7EB8F',
+      color: '#00A859',
     };
   }
 }
@@ -162,7 +159,21 @@ export const MemberRow: React.FC<MemberRowProps> = ({
     return (name[0] || 'M').toUpperCase();
   };
 
-  const daysLeftInfo = getDaysLeftInfo(member.validTill);
+  const computedExpiryDate = useMemo(() => {
+    if (member.validTill && !member.validTill.includes('Lifetime')) {
+      const d = new Date(member.validTill);
+      if (!isNaN(d.getTime())) return d;
+    }
+    if (member.joinedDate) {
+      const jd = new Date(member.joinedDate);
+      if (!isNaN(jd.getTime())) {
+        return new Date(jd.getTime() + 365 * 86400000);
+      }
+    }
+    return new Date(Date.now() + 365 * 86400000);
+  }, [member.validTill, member.joinedDate]);
+
+  const daysLeftInfo = getDaysLeftInfo(computedExpiryDate.toISOString(), member.joinedDate);
 
   const formattedJoinedDate = member.joinedDate
     ? new Date(member.joinedDate).toLocaleDateString('en-GB', {
@@ -172,14 +183,11 @@ export const MemberRow: React.FC<MemberRowProps> = ({
       })
     : '—';
 
-  const formattedValidTill =
-    member.validTill && !member.validTill.includes('Lifetime')
-      ? new Date(member.validTill).toLocaleDateString('en-GB', {
-          day: '2-digit',
-          month: 'short',
-          year: 'numeric',
-        })
-      : 'Lifetime';
+  const formattedValidTill = computedExpiryDate.toLocaleDateString('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
 
   return (
     <tr

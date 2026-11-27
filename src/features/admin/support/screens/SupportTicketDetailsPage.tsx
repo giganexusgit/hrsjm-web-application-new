@@ -15,6 +15,7 @@ import {
   FileCheck2,
   Eye,
   ShieldCheck,
+  Trash2,
 } from 'lucide-react';
 import type { TicketStatus, TicketAttachment } from '../types/support.types';
 import {
@@ -35,96 +36,143 @@ export type SupportDetailsTabKey = 'details' | 'documents';
 function parseTicketDescription(rawDescription?: string, ticketDocuments?: TicketAttachment[]) {
   const text = (rawDescription || '').trim();
   const extractedDocs: ApplicationDocument[] = [];
-
-  if (!text) {
-    return {
-      complainantMeta: null,
-      concernDetails: '',
-      hasStructuredSubmission: false,
-      documents: extractedDocs,
-    };
-  }
-
-  const lines = text.split('\n');
   const complainantMeta: Array<{ label: string; value: string }> = [];
   let concernText = '';
-  let readingSection: 'complainant' | 'concern' | 'documents' | 'none' = 'none';
 
-  for (const rawLine of lines) {
-    const line = rawLine.trim();
-    if (/^Complainant Information:/i.test(line)) {
-      readingSection = 'complainant';
-      continue;
-    }
-    if (/^Details of Concern:/i.test(line)) {
-      readingSection = 'concern';
-      continue;
-    }
-    if (
-      /^--- Verified Documents/i.test(line) ||
-      /^Verified Document Attachments:/i.test(line)
-    ) {
-      readingSection = 'documents';
-      continue;
-    }
-
-    if (readingSection === 'complainant') {
-      const match = /^-\s*([^:]+)\s*:\s*(.+)$/.exec(line);
-      if (match) {
-        const key = match[1].trim();
-        const val = match[2].trim();
-        if (key.toLowerCase() !== 'source') {
-          complainantMeta.push({ label: key, value: val });
+  // 1. If formal ticket.documents exist from the API / database, use those real files directly
+  if (Array.isArray(ticketDocuments) && ticketDocuments.length > 0) {
+    for (const doc of ticketDocuments) {
+      if (!doc) continue;
+      const anyDoc = doc as any;
+      const rawName: string =
+        anyDoc.document_name ||
+        anyDoc.name ||
+        anyDoc.original_file_name ||
+        anyDoc.file_name ||
+        'Document';
+      const rawFileName: string =
+        anyDoc.file_name ||
+        anyDoc.original_file_name ||
+        anyDoc.name ||
+        'document.pdf';
+      let rawUri: string =
+        anyDoc.url ||
+        anyDoc.file_url ||
+        anyDoc.storage_path ||
+        anyDoc.file_path ||
+        anyDoc.uri ||
+        '';
+      if (rawUri && typeof rawUri === 'string') {
+        const trimmed = rawUri.trim();
+        if (
+          !trimmed.startsWith('http://') &&
+          !trimmed.startsWith('https://') &&
+          !trimmed.startsWith('data:') &&
+          !trimmed.startsWith('blob:')
+        ) {
+          rawUri = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+        } else {
+          rawUri = trimmed;
         }
       }
-    } else if (readingSection === 'concern') {
-      concernText += rawLine + '\n';
-    } else if (readingSection === 'documents') {
-      const match = /^-\s*([^:]+)\s*:\s*(.+)$/.exec(line);
-      if (match) {
-        const docLabel = match[1].trim();
-        const docVal = match[2].trim();
-        if (docVal && docVal.toLowerCase() !== 'not uploaded' && docVal.toLowerCase() !== 'no') {
-          let title = docLabel;
-          let fileName = docVal;
-          if (/aadhaar/i.test(docLabel)) {
-            title = 'Aadhaar Card (Identity Proof)';
-          } else if (/handwritten/i.test(docLabel)) {
-            title = 'Handwritten Complaint Letter';
-          } else if (/reported to another dept/i.test(docLabel)) {
-            title = 'Previous Department / Police Complaint Copy';
-            const copyMatch = /\(Copy:\s*(.+?)\)/i.exec(docVal);
-            if (copyMatch) {
-              fileName = copyMatch[1].trim();
-            }
-          }
-          extractedDocs.push({
-            id: `doc-${docLabel.toLowerCase().replace(/[^a-z0-9]/g, '-')}`,
-            title,
-            fileName,
-            fileSize: '1.8 MB',
-            uploadDate: 'Submitted with Complaint',
-            verified: true,
-            uri: '/docs/sample_complaint.pdf',
-          });
-        }
+      const cleanTitle = String(rawName || rawFileName || 'Document')
+        .replace(/\.[^/.]+$/, '')
+        .replace(/[-_]/g, ' ');
+
+      if (!extractedDocs.some((d) => d.fileName === rawFileName || (anyDoc.id && d.id === anyDoc.id))) {
+        extractedDocs.push({
+          id: anyDoc.id || `doc-${Math.random().toString(36).slice(2, 9)}`,
+          title: cleanTitle,
+          fileName: rawFileName,
+          fileSize:
+            anyDoc.formattedSize ||
+            (anyDoc.file_size ? `${Math.round(anyDoc.file_size / 1024)} KB` : '1.5 MB'),
+          uploadDate:
+            anyDoc.uploadedAt ||
+            (anyDoc.created_at ? new Date(anyDoc.created_at).toLocaleDateString('en-IN') : 'Uploaded Document'),
+          verified: true,
+          uri: rawUri,
+        });
       }
     }
   }
 
-  // Also include any formal ticket.documents from the API
-  if (ticketDocuments && ticketDocuments.length > 0) {
-    for (const doc of ticketDocuments) {
-      if (!extractedDocs.some((d) => d.fileName === doc.name || d.id === doc.id)) {
-        extractedDocs.push({
-          id: doc.id,
-          title: doc.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' '),
-          fileName: doc.name,
-          fileSize: doc.formattedSize || '1.5 MB',
-          uploadDate: doc.uploadedAt || 'Uploaded Document',
-          verified: true,
-          uri: doc.url || doc.storage_path || '/docs/sample_complaint.pdf',
-        });
+  // 2. Parse text description for complainant details and concern text (and fallback docs only if no API documents exist)
+  if (text) {
+    const lines = text.split('\n');
+    let readingSection: 'complainant' | 'concern' | 'documents' | 'none' = 'none';
+
+    for (const rawLine of lines) {
+      const line = rawLine.trim();
+      if (/^Complainant Information:/i.test(line)) {
+        readingSection = 'complainant';
+        continue;
+      }
+      if (/^Details of Concern:/i.test(line)) {
+        readingSection = 'concern';
+        continue;
+      }
+      if (
+        /^--- Verified Documents/i.test(line) ||
+        /^Verified Document Attachments:/i.test(line)
+      ) {
+        readingSection = 'documents';
+        continue;
+      }
+
+      if (readingSection === 'complainant') {
+        const match = /^-\s*([^:]+)\s*:\s*(.+)$/.exec(line);
+        if (match && match[1] && match[2]) {
+          const key = match[1].trim();
+          const val = match[2].trim();
+          if (key.toLowerCase() !== 'source') {
+            complainantMeta.push({ label: key, value: val });
+          }
+        }
+      } else if (readingSection === 'concern') {
+        concernText += rawLine + '\n';
+      } else if (readingSection === 'documents' && extractedDocs.length === 0) {
+        // Fallback for legacy text-only tickets when no DB documents exist
+        const match = /^-\s*([^:]+)\s*:\s*(.+)$/.exec(line);
+        if (match && match[1] && match[2]) {
+          const docLabel = (match[1] || '').trim();
+          const docVal = (match[2] || '').trim();
+          const isNegative =
+            !docVal ||
+            docVal.toLowerCase() === 'not uploaded' ||
+            docVal.toLowerCase().startsWith('no') ||
+            docVal.toLowerCase() === 'n/a';
+
+          // Ensure it looks like an actual file (has extension) and isn't a negative answer
+          if (!isNegative && /\.[a-z0-9]{2,5}$/i.test(docVal)) {
+            let title = docLabel;
+            let fileName = docVal;
+            if (/aadhaar/i.test(docLabel)) {
+              title = 'Aadhaar Card (Identity Proof)';
+            } else if (/handwritten/i.test(docLabel)) {
+              title = 'Handwritten Complaint Letter';
+            } else if (/reported to another dept/i.test(docLabel)) {
+              title = 'Previous Department / Police Complaint Copy';
+              const copyMatch = /\(Copy:\s*(.+?)\)/i.exec(docVal);
+              if (copyMatch && copyMatch[1]) {
+                fileName = copyMatch[1].trim();
+              }
+            }
+
+            const docId = `doc-${String(docLabel || 'doc').toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
+            if (!extractedDocs.some((d) => d.id === docId || d.fileName === fileName)) {
+              extractedDocs.push({
+                id: docId,
+                title,
+                fileName,
+                fileSize: '1.8 MB',
+                uploadDate: 'Submitted with Complaint',
+                verified: true,
+                uri: `/uploads/${fileName}`,
+              });
+            }
+          }
+        }
       }
     }
   }
@@ -158,6 +206,21 @@ export const SupportTicketDetailsPage: React.FC = () => {
   const [statusModalTarget, setStatusModalTarget] = useState<TicketStatus | null>(null);
   const [successBanner, setSuccessBanner] = useState<string | null>(null);
   const [selectedDoc, setSelectedDoc] = useState<ApplicationDocument | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleConfirmDelete = async () => {
+    if (!ticket) return;
+    setIsDeleting(true);
+    try {
+      await supportStore.deleteTicket(ticket.id);
+      navigate('/admin/support');
+    } catch {
+      // ignore
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const parsedDesc = useMemo(
     () => parseTicketDescription(ticket?.description, ticket?.documents),
@@ -193,7 +256,7 @@ export const SupportTicketDetailsPage: React.FC = () => {
   const complainantEmail = ticket.user?.email || '—';
   const complainantPhone = ticket.user?.mobile_number || '—';
 
-  const cleanSubject = ticket.subject.replace(/\[.*?\]\s*/g, '');
+  const cleanSubject = (ticket.subject || 'Support Ticket').replace(/\[.*?\]\s*/g, '');
 
   // If no uploaded files were parsed, generate standard statutory case dossier documents
   const allDocs = useMemo<ApplicationDocument[]>(() => {
@@ -235,7 +298,11 @@ export const SupportTicketDetailsPage: React.FC = () => {
   const handleDownloadDoc = (doc: ApplicationDocument) => {
     if (doc.uri && !doc.uri.startsWith('blob:')) {
       const link = document.createElement('a');
-      link.href = doc.uri;
+      const targetUri =
+        doc.uri.startsWith('http') || doc.uri.startsWith('/') || doc.uri.startsWith('data:')
+          ? doc.uri
+          : `/${doc.uri}`;
+      link.href = targetUri;
       link.download = doc.fileName || 'document.pdf';
       link.target = '_blank';
       link.click();
@@ -389,6 +456,29 @@ export const SupportTicketDetailsPage: React.FC = () => {
                   Ticket is in terminal state ({ticket.status}).
                 </span>
               )}
+
+            <button
+              type="button"
+              onClick={() => setShowDeleteModal(true)}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '7px 14px',
+                borderRadius: '8px',
+                border: '1px solid #FECACA',
+                backgroundColor: '#FEF2F2',
+                color: '#DC2626',
+                fontSize: '13px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                marginLeft: 'auto',
+              }}
+              title="Delete support ticket"
+            >
+              <Trash2 size={14} />
+              <span>Delete Ticket</span>
+            </button>
           </div>
         </div>
       </div>
@@ -647,6 +737,109 @@ export const SupportTicketDetailsPage: React.FC = () => {
           onClose={() => setStatusModalTarget(null)}
           onConfirm={handleConfirmStatus}
         />
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 1100,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: 'rgba(6, 41, 77, 0.7)',
+            backdropFilter: 'blur(4px)',
+            padding: '20px',
+          }}
+          onClick={() => !isDeleting && setShowDeleteModal(false)}
+        >
+          <div
+            style={{
+              width: '100%',
+              maxWidth: '480px',
+              backgroundColor: '#FFFFFF',
+              borderRadius: '16px',
+              padding: '24px',
+              boxShadow: '0 20px 40px rgba(0, 0, 0, 0.25)',
+              border: '1px solid #E2E8F0',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '16px' }}>
+              <div
+                style={{
+                  width: '44px',
+                  height: '44px',
+                  borderRadius: '12px',
+                  backgroundColor: '#FEF2F2',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  border: '1px solid #FECACA',
+                  flexShrink: 0,
+                }}
+              >
+                <Trash2 size={22} color="#DC2626" />
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: '#0F172A' }}>
+                  Delete Support Ticket?
+                </h3>
+                <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#64748B' }}>
+                  #{shortId} · {cleanSubject}
+                </p>
+              </div>
+            </div>
+
+            <p style={{ fontSize: '14px', color: '#475569', lineHeight: 1.6, margin: '0 0 24px 0' }}>
+              Are you sure you want to permanently delete this complaint ticket and all its verified documents? This action cannot be undone.
+            </p>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <button
+                type="button"
+                onClick={() => setShowDeleteModal(false)}
+                disabled={isDeleting}
+                style={{
+                  padding: '9px 18px',
+                  borderRadius: '8px',
+                  border: '1px solid #CBD5E1',
+                  backgroundColor: '#FFFFFF',
+                  color: '#475569',
+                  fontSize: '13.5px',
+                  fontWeight: 600,
+                  cursor: isDeleting ? 'not-allowed' : 'pointer',
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDelete}
+                disabled={isDeleting}
+                style={{
+                  padding: '9px 20px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  backgroundColor: '#DC2626',
+                  color: '#FFFFFF',
+                  fontSize: '13.5px',
+                  fontWeight: 700,
+                  cursor: isDeleting ? 'not-allowed' : 'pointer',
+                  opacity: isDeleting ? 0.7 : 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                }}
+              >
+                <Trash2 size={15} />
+                <span>{isDeleting ? 'Deleting...' : 'Delete Permanently'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -459,15 +459,12 @@ export const MemberRegistrationPage: React.FC = () => {
   const validateStep3 = (): boolean => {
     const errors: Record<string, string> = {};
 
-    // 1, 2, and 4 are strictly mandatory as required
+    // 1 and 2 are strictly mandatory as required
     if (!documents.identityProof) {
       errors.identity = 'Aadhaar Card / Identity Proof (1) is required';
     }
     if (!documents.addressProof) {
       errors.address = 'Address Proof (2) is required';
-    }
-    if (!documents.photograph && !personal.profilePhotoUri) {
-      errors.photo = 'Passport Size Photograph (4) is required';
     }
 
     if (!agreeTerms) {
@@ -1947,44 +1944,43 @@ export const MemberRegistrationPage: React.FC = () => {
                   {documentErrors.qualification && <p className="text-[11px] text-rose-600 mt-1 font-medium">{documentErrors.qualification}</p>}
                 </div>
 
-                {/* 4. Photograph */}
-                <div className={`p-4 rounded-2xl border transition ${documents.photograph || personal.profilePhotoUri ? 'bg-emerald-50/40 border-emerald-200' : documentErrors.photo ? 'bg-rose-50/30 border-rose-200' : 'bg-slate-50 border-slate-200'}`}>
+                {/* 4. Applicant Profile Photo (Captured in Step 1) */}
+                <div className={`p-4 rounded-2xl border transition ${personal.profilePhotoUri || documents.photograph ? 'bg-emerald-50/40 border-emerald-200' : 'bg-slate-50 border-slate-200'}`}>
                   <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center gap-2">
-                      <User size={18} className={documents.photograph || personal.profilePhotoUri ? 'text-emerald-600' : 'text-slate-400'} />
+                      <User size={18} className={personal.profilePhotoUri || documents.photograph ? 'text-emerald-600' : 'text-slate-400'} />
                       <span className="text-xs font-bold text-[#011F39]">
-                        4. Photograph <span className="text-rose-500 font-bold text-[10px]">*</span>
+                        4. Profile Photo <span className="text-emerald-600 font-semibold text-[10px]">(From Step 1)</span>
                       </span>
                     </div>
                     <span className="text-[10px] text-slate-400">Passport Size Photograph</span>
                   </div>
 
-                  {documents.photograph || personal.profilePhotoUri ? (
+                  {personal.profilePhotoUri || documents.photograph ? (
                     <div className="flex items-center justify-between bg-white p-2.5 rounded-xl border border-emerald-200 mt-2">
-                      <span className="text-xs font-medium text-emerald-800 truncate max-w-[240px]">
-                        {documents.photograph?.fileName || personal.profilePhotoName || 'profile_photograph.jpg'}
+                      <div className="flex items-center gap-2.5">
+                        <img
+                          src={personal.profilePhotoUri || documents.photograph?.fileUri}
+                          alt="Profile Preview"
+                          className="w-8 h-8 rounded-full object-cover border border-emerald-300"
+                        />
+                        <span className="text-xs font-medium text-emerald-800 truncate max-w-[200px]">
+                          {personal.profilePhotoName || documents.photograph?.fileName || 'applicant_photograph.jpg'}
+                        </span>
+                      </div>
+                      <span className="text-[11px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                        Added
                       </span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          removeDocument('photo');
-                          setPersonal(p => ({ ...p, profilePhotoUri: undefined }));
-                        }}
-                        className="p-1 text-slate-400 hover:text-rose-600 transition cursor-pointer"
-                      >
-                        <X size={15} />
-                      </button>
                     </div>
                   ) : (
                     <div className="mt-2">
                       <label htmlFor={photoUploadId} className="w-full py-2 px-3 border border-dashed border-slate-300 rounded-xl text-center block text-xs font-semibold text-slate-600 hover:border-[#011F39] hover:bg-white transition cursor-pointer">
                         <Upload size={14} className="inline mr-1.5" />
-                        <span>Select Photograph File</span>
+                        <span>Upload Photograph</span>
                       </label>
                       <input id={photoUploadId} type="file" accept="image/*" onChange={e => handleDocumentUpload('photo', 'Passport Photograph', e)} className="hidden" />
                     </div>
                   )}
-                  {documentErrors.photo && <p className="text-[11px] text-rose-600 mt-1 font-medium">{documentErrors.photo}</p>}
                 </div>
               </div>
 
