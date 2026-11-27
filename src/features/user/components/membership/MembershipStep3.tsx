@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import {
   FileText,
   Upload,
-  CheckCircle2,
   AlertCircle,
   Lock,
 } from 'lucide-react';

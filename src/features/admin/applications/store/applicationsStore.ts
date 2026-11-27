@@ -840,7 +840,7 @@ class ApplicationsStore {
         ...this.applications[idx],
         documents: cleanDocs,
       };
-      this.saveToStorage();
+      this.persist();
       this.notify();
     }
   }

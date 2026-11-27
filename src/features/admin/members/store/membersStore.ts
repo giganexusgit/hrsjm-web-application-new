@@ -2,10 +2,12 @@ import type {
   Member,
   MemberStats,
   MemberStatus,
+  MembershipCategoryItem,
   KitFulfillmentData,
   CreateMemberPayload,
   UpdateMemberPayload,
 } from '../types/members.types';
+import { STANDARD_MEMBERSHIP_CATEGORIES } from '../data/membersFixtures';
 import { apiClient } from '@/api';
 import { membersService } from '../services/membersService';
 import { getValidAvatarUrl } from '@/utils/avatar';
@@ -38,14 +40,14 @@ export function mapBackendMembershipToMember(
 
   const matchedCat =
     categories?.find(
-      (c) =>
+      (c: MembershipCategoryItem) =>
         c.id === backend.category_id ||
         c.id === category.id ||
         (c.name && category.name && c.name.toLowerCase() === category.name.toLowerCase()) ||
         (c.code && category.code && c.code.toLowerCase() === category.code.toLowerCase())
     ) ||
     STANDARD_MEMBERSHIP_CATEGORIES.find(
-      (c) =>
+      (c: MembershipCategoryItem) =>
         c.id === backend.category_id ||
         (c.name && category.name && c.name.toLowerCase() === category.name.toLowerCase())
     ) ||

@@ -32,11 +32,22 @@ interface MemberRowProps {
 // Days left calculation
 function getDaysLeftInfo(validTill?: string, joinedDate?: string) {
   try {
+    if (validTill && validTill.toLowerCase().includes('lifetime')) {
+      return {
+        text: 'Lifetime',
+        days: 9999,
+        tone: 'lifetime' as const,
+        bg: '#F3F4F6',
+        border: '#E5E7EB',
+        color: '#374151',
+      };
+    }
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
     let target: Date | null = null;
-    if (validTill && !validTill.includes('Lifetime')) {
+    if (validTill) {
       const d = new Date(validTill);
       if (!isNaN(d.getTime())) {
         target = d;
