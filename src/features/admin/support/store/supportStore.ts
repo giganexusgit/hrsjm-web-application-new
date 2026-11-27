@@ -370,6 +370,17 @@ class SupportStore {
     return undefined;
   }
 
+  public updateTicketInStore(ticket: SupportTicket): void {
+    if (!ticket?.id) return;
+    const index = this.tickets.findIndex((t) => t.id === ticket.id);
+    if (index !== -1) {
+      this.tickets[index] = { ...this.tickets[index], ...ticket };
+    } else {
+      this.tickets.unshift(ticket);
+    }
+    this.notify();
+  }
+
   public async deleteTicket(id: string): Promise<boolean> {
     try {
       await supportService.delete(id);

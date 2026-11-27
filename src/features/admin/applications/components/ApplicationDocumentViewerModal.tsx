@@ -12,6 +12,7 @@ import {
   QrCode,
   Lock,
   ExternalLink,
+  AlertCircle,
 } from 'lucide-react';
 import { useLockBodyScroll } from '@/hooks/useLockBodyScroll';
 
@@ -42,7 +43,12 @@ export const ApplicationDocumentViewerModal: React.FC<ApplicationDocumentViewerM
 
   const rawUri = (document?.uri || '').trim();
   const resolvedUri = React.useMemo(() => {
-    if (!rawUri) return '';
+    if (!rawUri) {
+      if (document?.fileName) {
+        return `/api/v1/uploads/${document.fileName}`;
+      }
+      return '';
+    }
     if (
       rawUri.startsWith('data:') ||
       rawUri.startsWith('blob:') ||
@@ -51,8 +57,15 @@ export const ApplicationDocumentViewerModal: React.FC<ApplicationDocumentViewerM
     ) {
       return rawUri;
     }
-    return rawUri.startsWith('/') ? rawUri : `/${rawUri}`;
-  }, [rawUri]);
+    const clean = rawUri.replace(/^\/+/, '');
+    if (clean.startsWith('api/v1/')) {
+      return `/${clean}`;
+    }
+    if (clean.startsWith('uploads/')) {
+      return `/api/v1/${clean}`;
+    }
+    return `/api/v1/uploads/${clean}`;
+  }, [rawUri, document?.fileName]);
 
   if (!isOpen || !document) return null;
 
@@ -230,24 +243,22 @@ export const ApplicationDocumentViewerModal: React.FC<ApplicationDocumentViewerM
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            {canShowDirectPreview && (
-              <button
-                type="button"
-                onClick={() => setActiveView('preview')}
-                style={{
-                  padding: '5px 12px',
-                  borderRadius: '6px',
-                  border: 'none',
-                  fontSize: '12px',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  backgroundColor: activeView === 'preview' ? '#06294D' : 'transparent',
-                  color: activeView === 'preview' ? '#FAD465' : '#64748B',
-                }}
-              >
-                {isPdf ? 'PDF Attachment Scan' : (isImage ? 'Image Scan' : 'Document Scan')}
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={() => setActiveView('preview')}
+              style={{
+                padding: '5px 12px',
+                borderRadius: '6px',
+                border: 'none',
+                fontSize: '12px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                backgroundColor: activeView === 'preview' ? '#06294D' : 'transparent',
+                color: activeView === 'preview' ? '#FAD465' : '#64748B',
+              }}
+            >
+              {isPdf ? 'PDF Attachment Scan' : (isImage ? 'Image Scan' : 'Document Scan')}
+            </button>
             <button
               type="button"
               onClick={() => setActiveView('certificate')}
@@ -258,8 +269,8 @@ export const ApplicationDocumentViewerModal: React.FC<ApplicationDocumentViewerM
                 fontSize: '12px',
                 fontWeight: 700,
                 cursor: 'pointer',
-                backgroundColor: activeView === 'certificate' || !canShowDirectPreview ? '#06294D' : 'transparent',
-                color: activeView === 'certificate' || !canShowDirectPreview ? '#FAD465' : '#64748B',
+                backgroundColor: activeView === 'certificate' ? '#06294D' : 'transparent',
+                color: activeView === 'certificate' ? '#FAD465' : '#64748B',
               }}
             >
               Statutory Credential Record
@@ -305,13 +316,41 @@ export const ApplicationDocumentViewerModal: React.FC<ApplicationDocumentViewerM
                 />
               </div>
             ) : (
+            imageError ? (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '36px 24px', backgroundColor: '#FFFFFF', borderRadius: '16px', border: '1px solid #E2E8F0', maxWidth: '520px', width: '100%', boxShadow: '0 8px 24px rgba(6, 41, 77, 0.08)' }}>
+                <div style={{ width: '48px', height: '48px', borderRadius: '50%', backgroundColor: '#FEF2F2', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}>
+                  <AlertCircle size={26} color="#DC2626" />
+                </div>
+                <div style={{ fontSize: '16px', fontWeight: 700, color: '#1E293B' }}>
+                  Document Scan Not Available on Server
+                </div>
+                <p style={{ fontSize: '13px', color: '#64748B', marginTop: '8px', lineHeight: '1.5' }}>
+                  The file <code style={{ backgroundColor: '#F1F5F9', padding: '2px 6px', borderRadius: '4px', fontWeight: 600 }}>{document.fileName}</code> is registered with this ticket, but its physical scan was not found in server disk storage.
+                </p>
+                <div style={{ marginTop: '20px', display: 'flex', gap: '10px' }}>
+                  <button
+                    type="button"
+                    onClick={() => setImageError(false)}
+                    style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid #CBD5E1', backgroundColor: '#FFFFFF', fontSize: '12px', fontWeight: 600, color: '#334155', cursor: 'pointer' }}
+                  >
+                    Retry Loading
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveView('certificate')}
+                    style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', backgroundColor: '#06294D', color: '#FFFFFF', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}
+                  >
+                    View Statutory Record
+                  </button>
+                </div>
+              </div>
+            ) : (
               <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', height: '100%' }}>
                 <img
                   src={resolvedUri}
                   alt={document.title}
                   onError={() => {
                     setImageError(true);
-                    setActiveView('certificate');
                   }}
                   style={{
                     maxWidth: '100%',
@@ -325,6 +364,7 @@ export const ApplicationDocumentViewerModal: React.FC<ApplicationDocumentViewerM
                   }}
                 />
               </div>
+            )
             )
           ) : (
             /* Digital Certificate / Official Credential Sheet */

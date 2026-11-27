@@ -27,6 +27,7 @@ import {
   canTransition,
 } from '../types/support.types';
 import { supportStore } from '../store/supportStore';
+import { supportService } from '../services/supportService';
 import { UpdateStatusModal } from '../components/UpdateStatusModal';
 import { ApplicationDocumentViewerModal } from '@/features/admin/applications/components/ApplicationDocumentViewerModal';
 import type { ApplicationDocument } from '@/features/admin/applications/types/applications.types';
@@ -70,7 +71,14 @@ function parseTicketDescription(rawDescription?: string, ticketDocuments?: Ticke
           !trimmed.startsWith('data:') &&
           !trimmed.startsWith('blob:')
         ) {
-          rawUri = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+          const clean = trimmed.replace(/^\/+/, '');
+          if (clean.startsWith('uploads/')) {
+            rawUri = `/api/v1/${clean}`;
+          } else if (clean.startsWith('api/v1/')) {
+            rawUri = `/${clean}`;
+          } else {
+            rawUri = `/api/v1/uploads/${clean}`;
+          }
         } else {
           rawUri = trimmed;
         }
@@ -168,7 +176,7 @@ function parseTicketDescription(rawDescription?: string, ticketDocuments?: Ticke
                 fileSize: '1.8 MB',
                 uploadDate: 'Submitted with Complaint',
                 verified: true,
-                uri: `/uploads/${fileName}`,
+                uri: `/api/v1/uploads/${fileName}`,
               });
             }
           }
@@ -199,6 +207,13 @@ export const SupportTicketDetailsPage: React.FC = () => {
   useEffect(() => {
     if (id) {
       supportStore.markTicketViewed(id);
+      supportService.getById(id).then((freshTicket: any) => {
+        if (freshTicket) {
+          supportStore.updateTicketInStore(freshTicket);
+        }
+      }).catch((err: any) => {
+        console.warn('[SupportTicketDetailsPage] Could not fetch fresh ticket details:', err);
+      });
     }
   }, [id]);
 
