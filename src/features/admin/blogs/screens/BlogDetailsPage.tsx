@@ -14,11 +14,11 @@ import {
   Trash2,
   Tag,
   Sparkles,
-  Check,
 } from 'lucide-react';
 import { blogsStore } from '../store/blogsStore';
 import { STATUS_META, formatViews } from '../types/blog.types';
 import { BlogDeleteModal } from '../components/BlogDeleteModal';
+import { ShareModal } from '@/components/common/ShareModal';
 
 export const BlogDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -27,8 +27,8 @@ export const BlogDetailsPage: React.FC = () => {
 
   const blog = id ? blogsStore.getBlogById(id) : undefined;
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [copiedLink, setCopiedLink] = useState(false);
 
   if (!blog) {
     return (
@@ -46,12 +46,6 @@ export const BlogDetailsPage: React.FC = () => {
   }
 
   const statusInfo = STATUS_META[blog.status] || STATUS_META.PUBLISHED;
-
-  const handleCopyLink = () => {
-    navigator.clipboard?.writeText(window.location.href);
-    setCopiedLink(true);
-    setTimeout(() => setCopiedLink(false), 2000);
-  };
 
   const handleStatusUpdate = async (newStatus: any) => {
     await blogsStore.updateStatus(blog.id, newStatus);
@@ -78,11 +72,17 @@ export const BlogDetailsPage: React.FC = () => {
         </button>
 
         <div style={styles.topActions}>
-          <button onClick={handleCopyLink} style={styles.shareBtn} title="Copy shareable link">
-            {copiedLink ? <Check size={16} color="#166534" /> : <Share2 size={16} />}
-            <span>{copiedLink ? 'Link Copied!' : 'Share'}</span>
+          <button
+            type="button"
+            onClick={() => setShareModalOpen(true)}
+            style={styles.shareBtn}
+            title="Share article"
+          >
+            <Share2 size={16} />
+            <span>Share</span>
           </button>
           <button
+            type="button"
             onClick={() => navigate(`/admin/blogs/${blog.id}/edit`)}
             style={styles.editBtn}
           >
@@ -273,6 +273,16 @@ export const BlogDetailsPage: React.FC = () => {
         onClose={() => setDeleteModalOpen(false)}
         onConfirm={handleDelete}
         isDeleting={isDeleting}
+      />
+
+      {/* Share Options Modal */}
+      <ShareModal
+        isOpen={shareModalOpen}
+        onClose={() => setShareModalOpen(false)}
+        title={blog.title}
+        summary={blog.excerpt}
+        thumbnailUrl={blog.thumbnailUrl}
+        category={blog.category}
       />
     </div>
   );

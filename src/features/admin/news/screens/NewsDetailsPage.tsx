@@ -16,11 +16,11 @@ import {
   Tag,
   CheckCircle2,
   Image as ImageIcon,
-  Check,
 } from 'lucide-react';
 import { newsStore } from '../store/newsStore';
 import { STATUS_META, formatViews } from '../types/news.types';
 import { NewsDeleteModal } from '../components/NewsDeleteModal';
+import { ShareModal } from '@/components/common/ShareModal';
 
 export const NewsDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -29,8 +29,8 @@ export const NewsDetailsPage: React.FC = () => {
 
   const news = id ? newsStore.getNewsById(id) : undefined;
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [copiedLink, setCopiedLink] = useState(false);
 
   if (!news) {
     return (
@@ -48,12 +48,6 @@ export const NewsDetailsPage: React.FC = () => {
   }
 
   const statusInfo = STATUS_META[news.status] || STATUS_META.PUBLISHED;
-
-  const handleCopyLink = () => {
-    navigator.clipboard?.writeText(window.location.href);
-    setCopiedLink(true);
-    setTimeout(() => setCopiedLink(false), 2000);
-  };
 
   const handleStatusUpdate = async (newStatus: any) => {
     await newsStore.updateStatus(news.id, newStatus);
@@ -80,11 +74,17 @@ export const NewsDetailsPage: React.FC = () => {
         </button>
 
         <div style={styles.topActions}>
-          <button onClick={handleCopyLink} style={styles.shareBtn} title="Copy shareable link">
-            {copiedLink ? <Check size={16} color="#166534" /> : <Share2 size={16} />}
-            <span>{copiedLink ? 'Link Copied!' : 'Share'}</span>
+          <button
+            type="button"
+            onClick={() => setShareModalOpen(true)}
+            style={styles.shareBtn}
+            title="Share article"
+          >
+            <Share2 size={16} />
+            <span>Share</span>
           </button>
           <button
+            type="button"
             onClick={() => navigate(`/admin/news/${news.id}/edit`)}
             style={styles.editBtn}
           >
@@ -305,6 +305,16 @@ export const NewsDetailsPage: React.FC = () => {
         onClose={() => setDeleteModalOpen(false)}
         onConfirm={handleDelete}
         isDeleting={isDeleting}
+      />
+
+      {/* Share Options Modal */}
+      <ShareModal
+        isOpen={shareModalOpen}
+        onClose={() => setShareModalOpen(false)}
+        title={news.title}
+        summary={news.summary}
+        thumbnailUrl={news.thumbnailUrl}
+        category={news.category}
       />
     </div>
   );
