@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /member/dashboard
+Disallow: /donor/dashboard
+Disallow: /volunteer/dashboard
+Disallow: /seeker/dashboard
+
+Sitemap: https://webapp.hrsjm.org/sitemap.xml
