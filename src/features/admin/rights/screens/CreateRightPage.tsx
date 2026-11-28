@@ -21,20 +21,11 @@ import {
   type RightsArticleFormState,
 } from '../types/rights.types';
 
-const SAMPLE_COVERS = [
-  'https://picsum.photos/seed/hrsjm-rights-01/600/400',
-  'https://picsum.photos/seed/hrsjm-rights-02/600/400',
-  'https://picsum.photos/seed/hrsjm-rights-03/600/400',
-  'https://picsum.photos/seed/hrsjm-rights-04/600/400',
-  'https://picsum.photos/seed/hrsjm-rights-05/600/400',
-  'https://picsum.photos/seed/hrsjm-rights-06/600/400',
-];
-
 export const CreateRightPage: React.FC = () => {
   const navigate = useNavigate();
 
   const [form, setForm] = useState<RightsArticleFormState>({
-    coverImageUri: SAMPLE_COVERS[0],
+    coverImageUri: null,
     title: '',
     category: 'Constitution',
     shortDescription: '',
@@ -364,7 +355,7 @@ export const CreateRightPage: React.FC = () => {
             </h2>
             <p style={styles.helpText}>Recommended aspect ratio 1200×630px.</p>
 
-            {form.coverImageUri && (
+            {form.coverImageUri ? (
               <div style={styles.coverPreview}>
                 <img
                   src={form.coverImageUri}
@@ -372,25 +363,30 @@ export const CreateRightPage: React.FC = () => {
                   style={styles.coverPreviewImg}
                 />
               </div>
+            ) : (
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                style={{
+                  height: '180px',
+                  borderRadius: '12px',
+                  border: '2px dashed #CBD5E1',
+                  backgroundColor: '#F8FAFC',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  cursor: 'pointer',
+                  color: '#64748B',
+                  marginBottom: '12px',
+                  transition: 'border-color 0.2s',
+                }}
+              >
+                <ImageIcon size={32} color="#94A3B8" />
+                <span style={{ fontSize: '13px', fontWeight: 600 }}>No cover image uploaded</span>
+                <span style={{ fontSize: '11px', color: '#94A3B8' }}>Click Add Image below to select file</span>
+              </div>
             )}
-
-            <label style={styles.smallLabel}>Choose Preset Image</label>
-            <div style={styles.coverChoicesGrid}>
-              {SAMPLE_COVERS.map((url, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  onClick={() => setForm((p) => ({ ...p, coverImageUri: url }))}
-                  style={{
-                    ...styles.coverThumbnailBtn,
-                    borderColor: form.coverImageUri === url ? '#06294D' : '#E2E8F0',
-                    borderWidth: form.coverImageUri === url ? '2px' : '1px',
-                  }}
-                >
-                  <img src={url} alt={`Option ${i + 1}`} style={styles.thumbnailImg} />
-                </button>
-              ))}
-            </div>
 
             {/* Hidden File Input */}
             <input
