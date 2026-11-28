@@ -8,17 +8,20 @@ import {
   X,
   Printer,
   Sparkles,
+  Heart,
 } from 'lucide-react';
 import { useCurrentMember } from '../store/memberStore';
 import type { MemberPassbookEntry, TransactionType } from '../types/member.types';
 import { generate80GReceiptPdf } from '../utils/memberDocumentGenerator';
+import { GlobalPaymentModal } from '../../payments';
 
 export const MemberPassbookPage: React.FC = () => {
-  const { member, passbook } = useCurrentMember();
+  const { member, passbook, processDonation } = useCurrentMember();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<'ALL' | TransactionType>('ALL');
   const [selectedReceipt, setSelectedReceipt] = useState<MemberPassbookEntry | null>(null);
+  const [isContributeModalOpen, setIsContributeModalOpen] = useState(false);
 
   // Filtered transactions
   const filteredEntries = useMemo(() => {
@@ -86,11 +89,20 @@ export const MemberPassbookPage: React.FC = () => {
               </p>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <div className="bg-white/10 backdrop-blur-sm border border-white/20 px-4 py-2.5 rounded-xl text-right">
                 <span className="text-[11px] text-slate-300 block">Registered Donor PAN</span>
                 <span className="text-sm font-mono font-bold text-[#FAD465]">ABCDE1234F</span>
               </div>
+
+              <button
+                type="button"
+                onClick={() => setIsContributeModalOpen(true)}
+                className="bg-[#FAD465] hover:bg-[#E9B82E] text-[#06294D] font-bold text-xs px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
+              >
+                <Heart className="w-3.5 h-3.5 fill-[#06294D]" />
+                <span>Contribute via Cashfree (80G)</span>
+              </button>
             </div>
           </div>
 
@@ -418,6 +430,36 @@ export const MemberPassbookPage: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Cashfree Contribution Modal */}
+      {isContributeModalOpen && (
+        <GlobalPaymentModal
+          isOpen={isContributeModalOpen}
+          onClose={() => setIsContributeModalOpen(false)}
+          payload={{
+            purpose: 'donation',
+            amount: 1000,
+            title: 'Humanitarian & Human Rights Legal Aid',
+            subtitle: 'Tax-Exempt Contribution with 80G Deductions',
+            userId: member.id,
+            donorName: member.fullName,
+            donorMobile: member.phone,
+            donorEmail: member.email,
+            panNumber: 'ABCDE1234F',
+            need80GReceipt: true,
+          }}
+          onSuccess={(receipt) => {
+            processDonation(
+              receipt.purposeTitle || 'Humanitarian Legal Aid Contribution',
+              receipt.amount,
+              'CASHFREE',
+              receipt.panNumber,
+              receipt.transactionId
+            );
+            setIsContributeModalOpen(false);
+          }}
+        />
       )}
     </div>
   );

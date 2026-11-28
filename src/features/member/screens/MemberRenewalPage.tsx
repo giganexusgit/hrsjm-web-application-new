@@ -24,9 +24,10 @@ export const MemberRenewalPage: React.FC = () => {
   const { member, processRenewal, setDevMemberState } = useCurrentMember();
 
   const [selectedPackageId, setSelectedPackageId] = useState<string>('standard_1yr');
-  const [paymentMethod, setPaymentMethod] = useState<'UPI' | 'NET_BANKING' | 'CREDIT_CARD' | 'CASHFREE'>('UPI');
+  const [paymentMethod, setPaymentMethod] = useState<'UPI' | 'NET_BANKING' | 'CREDIT_CARD' | 'CASHFREE'>('CASHFREE');
   const [copiedVpa, setCopiedVpa] = useState(false);
-  const [isProcessing] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
   const [isCashfreeModalOpen, setIsCashfreeModalOpen] = useState(false);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
   const [latestReceipt, setLatestReceipt] = useState<MemberPassbookEntry | null>(null);
@@ -58,8 +59,53 @@ export const MemberRenewalPage: React.FC = () => {
     setTimeout(() => setCopiedVpa(false), 2000);
   };
 
-  const handleExecutePayment = () => {
-    setIsCashfreeModalOpen(true);
+  const handleExecutePayment = async () => {
+    setIsProcessing(true);
+    setPaymentError(null);
+
+    try {
+      const cleanPhone = (member.phone || '').replace(/\D/g, '').slice(-10) || '7021057853';
+      const cleanEmail = member.email || 'member@hrsjm.org';
+      const cleanName = member.fullName || 'HRSJM Member';
+
+      // 1. Create official membership renewal order on Cashfree PG
+      const session = await cashfreeService.createMembershipOrder({
+        applicationId: member.id,
+        membershipPaymentId: `REN-${member.id.slice(-6)}-${selectedPackage.id}`,
+        amount: selectedPackage.fee,
+        customerName: cleanName,
+        customerMobile: cleanPhone,
+        customerEmail: cleanEmail,
+        membershipType: `Membership Renewal: ${selectedPackage.name}`,
+        userId: member.id,
+      });
+
+      // 2. Launch Cashfree native drop-in checkout overlay
+      await cashfreeService.launchCashfreeCheckout(
+        session,
+        async (verifyRes) => {
+          const txnId = verifyRes.transaction_id || `CF_REN_${Date.now()}`;
+          const res = await processRenewal(selectedPackage.id, 'CASHFREE', txnId);
+          if (res.success) {
+            setLatestReceipt({
+              ...res.receipt,
+              transactionId: txnId,
+              orderId: session.order_id,
+            } as any);
+            setIsSuccessModalOpen(true);
+          }
+          setIsProcessing(false);
+        },
+        () => {
+          setIsProcessing(false);
+        }
+      );
+    } catch (err: any) {
+      console.warn('Direct Cashfree launch fallback:', err);
+      // Fallback: If direct SDK drop-in throws, open the robust GlobalPaymentModal
+      setIsCashfreeModalOpen(true);
+      setIsProcessing(false);
+    }
   };
 
   return (
@@ -457,6 +503,13 @@ export const MemberRenewalPage: React.FC = () => {
               )}
             </div>
 
+            {/* Payment Error Banner */}
+            {paymentError && (
+              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold text-center">
+                {paymentError}
+              </div>
+            )}
+
             {/* Execute Payment Button */}
             <button
               type="button"
@@ -476,7 +529,7 @@ export const MemberRenewalPage: React.FC = () => {
               ) : (
                 <>
                   <Lock className="w-4 h-4" />
-                  Pay ₹{selectedPackage.fee.toLocaleString('en-IN')} & Renew Instantly
+                  Pay ₹{selectedPackage.fee.toLocaleString('en-IN')} & Renew via Cashfree
                 </>
               )}
             </button>

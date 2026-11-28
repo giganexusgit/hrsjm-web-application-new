@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Calendar,
@@ -11,6 +11,7 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import { useCurrentMember } from '../store/memberStore';
+import { GlobalPaymentModal } from '../../payments';
 import memberHeroRally from '../../../assets/images/member-hero-rally.jpg';
 import eventLegalAwareness from '../../../assets/images/event-legal-awareness.jpg';
 
@@ -31,7 +32,8 @@ function formatCardDate(dateVal?: string | Date | null, fallback = '15 Sep 2026'
 
 export const MemberDashboardPage: React.FC = () => {
   const navigate = useNavigate();
-  const { member, fetchMember } = useCurrentMember();
+  const { member, fetchMember, processDonation } = useCurrentMember();
+  const [isDonateModalOpen, setIsDonateModalOpen] = useState(false);
 
   useEffect(() => {
     fetchMember();
@@ -301,7 +303,7 @@ export const MemberDashboardPage: React.FC = () => {
 
           {/* Promo Card 2: Make a Difference */}
           <div
-            onClick={() => navigate('/donations')}
+            onClick={() => setIsDonateModalOpen(true)}
             className="bg-white rounded-2xl border border-[#DCE4EC] p-4 shadow-sm flex flex-col justify-between hover:shadow-md transition cursor-pointer min-h-[110px]"
           >
             <div>
@@ -312,16 +314,45 @@ export const MemberDashboardPage: React.FC = () => {
                 <h4 className="font-bold text-[#06294D] text-sm">Make a Difference</h4>
               </div>
               <p className="text-xs text-slate-500 mt-2">
-                3 tickets tracked. Keep supporting.
+                Contribute to human rights & legal aid causes via Cashfree with 80G tax benefits.
               </p>
             </div>
             <div className="text-xs font-bold text-sky-600 hover:text-sky-700 flex items-center gap-1 mt-3">
-              <span>Donate Now</span>
+              <span>Donate via Cashfree</span>
               <ArrowRight size={12} />
             </div>
           </div>
         </div>
       </main>
+
+      {/* Cashfree Donation Modal for Member */}
+      {isDonateModalOpen && (
+        <GlobalPaymentModal
+          isOpen={isDonateModalOpen}
+          onClose={() => setIsDonateModalOpen(false)}
+          payload={{
+            purpose: 'donation',
+            amount: 1000,
+            title: 'Human Rights Defense & Legal Aid Fund',
+            subtitle: 'Direct Tax-Deductible Contribution under Sec 80G',
+            userId: member.id,
+            donorName: member.fullName,
+            donorMobile: member.phone,
+            donorEmail: member.email,
+            need80GReceipt: true,
+          }}
+          onSuccess={(receipt) => {
+            processDonation(
+              receipt.purposeTitle || 'Human Rights Defense Contribution',
+              receipt.amount,
+              'CASHFREE',
+              receipt.panNumber,
+              receipt.transactionId
+            );
+            setIsDonateModalOpen(false);
+          }}
+        />
+      )}
     </div>
   );
 };

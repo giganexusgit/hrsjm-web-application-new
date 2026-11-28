@@ -606,7 +606,7 @@ export const MemberMembershipDetailsPage: React.FC = () => {
             className="w-full py-4 px-6 rounded-2xl bg-[#EAA224] hover:bg-[#DA931B] text-[#011F39] font-black text-sm sm:text-base shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-3 cursor-pointer"
           >
             <RefreshCw size={20} className="stroke-[2.5]" />
-            <span>Renew Membership</span>
+            <span>Renew Membership via Cashfree</span>
             <ArrowRight size={18} className="stroke-[2.5]" />
           </button>
         </section>
