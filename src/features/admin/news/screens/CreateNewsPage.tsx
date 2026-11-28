@@ -682,8 +682,7 @@ const styles: Record<string, React.CSSProperties> = {
   container: {
     display: 'flex',
     flexDirection: 'column',
-    maxWidth: '860px',
-    margin: '0 auto',
+    width: '100%',
   },
   topBar: {
     display: 'flex',
