@@ -78,7 +78,7 @@ export const MemberPassbookPage: React.FC = () => {
                 <FileText className="w-3.5 h-3.5" />
                 Statutory Financial Ledger & Tax Exemption Vault
               </div>
-              <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">
+              <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white !text-white" style={{ color: '#FFFFFF' }}>
                 Member Passbook & Receipts
               </h1>
               <p className="text-xs md:text-sm text-slate-200 max-w-xl mt-1">
