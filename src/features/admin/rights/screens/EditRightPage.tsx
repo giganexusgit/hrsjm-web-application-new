@@ -1,5 +1,4 @@
-import type React from 'react';
-import { useState, useMemo, useSyncExternalStore } from 'react';
+import React, { useState, useMemo, useRef, useSyncExternalStore } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -12,6 +11,7 @@ import {
   AlertCircle,
   CheckCircle,
   Trash2,
+  Upload,
 } from 'lucide-react';
 import { rightsStore } from '../store/rightsStore';
 import { RightsPreviewModal } from '../components/RightsPreviewModal';
@@ -79,6 +79,37 @@ export const EditRightPage: React.FC = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [confirmUpdateOpen, setConfirmUpdateOpen] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [selectedFileName, setSelectedFileName] = useState('');
+  const [imageError, setImageError] = useState<string | null>(null);
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setImageError('Please select a valid image file (PNG, JPG, WEBP).');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setImageError('Image size must be 5 MB or less.');
+      return;
+    }
+
+    setImageError(null);
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        setForm((prev) => ({ ...prev, coverImageUri: reader.result as string }));
+        setSelectedFileName(file.name);
+        if (errors.coverImageUri) {
+          setErrors((err) => ({ ...err, coverImageUri: undefined }));
+        }
+      }
+    };
+    reader.readAsDataURL(file);
+  };
 
   if (!article) {
     return (
@@ -413,14 +444,72 @@ export const EditRightPage: React.FC = () => {
               ))}
             </div>
 
-            <div style={{ marginTop: '12px' }}>
-              <label style={styles.smallLabel}>Image URL</label>
-              <input
-                type="text"
-                value={form.coverImageUri || ''}
-                onChange={(e) => setForm((p) => ({ ...p, coverImageUri: e.target.value }))}
-                style={styles.input}
-              />
+            {/* Hidden File Input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleImageUpload}
+              style={{ display: 'none' }}
+            />
+
+            {/* Add / Upload Image Button */}
+            <div style={{ marginTop: '14px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  padding: '10px 16px',
+                  borderRadius: '10px',
+                  backgroundColor: '#06294D',
+                  color: '#FFFFFF',
+                  fontWeight: 600,
+                  fontSize: '13px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                  transition: 'background-color 0.2s',
+                }}
+              >
+                <Upload size={16} />
+                <span>{form.coverImageUri ? 'Add / Change Image' : 'Add Image'}</span>
+              </button>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '12px', color: '#64748B' }}>
+                  {selectedFileName ? selectedFileName : 'Supports PNG, JPG, WEBP (Max 5MB)'}
+                </span>
+                {form.coverImageUri && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setForm((p) => ({ ...p, coverImageUri: null }));
+                      setSelectedFileName('');
+                      if (fileInputRef.current) fileInputRef.current.value = '';
+                    }}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: '#EF4444',
+                      fontSize: '12px',
+                      cursor: 'pointer',
+                      fontWeight: 500,
+                    }}
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
+
+              {imageError && (
+                <span style={{ fontSize: '12px', color: '#DC2626', fontWeight: 500 }}>
+                  {imageError}
+                </span>
+              )}
             </div>
           </div>
 
