@@ -15,7 +15,6 @@ import {
   XCircle,
   AlertCircle,
   FileEdit,
-  Check,
   HeartHandshake,
   Eye,
   Star,
@@ -24,6 +23,7 @@ import { eventsStore } from '../store/eventsStore';
 import { type EventUiStatus, type CreateEventFormState, isEventFeatured } from '../types/events.types';
 import { EditEventModal } from '../components/CreateEventModal';
 import { EventDetailsView } from '../components/EventDetailsView';
+import { ShareModal } from '@/components/common/ShareModal';
 
 export const EventDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -31,7 +31,7 @@ export const EventDetailsPage: React.FC = () => {
   useSyncExternalStore(eventsStore.subscribe, eventsStore.getSnapshot);
 
   const event = id ? eventsStore.getEventById(id) : undefined;
-  const [copied, setCopied] = useState(false);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
   const [statusUpdating, setStatusUpdating] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -57,12 +57,6 @@ export const EventDetailsPage: React.FC = () => {
       </div>
     );
   }
-
-  const handleCopyLink = () => {
-    navigator.clipboard?.writeText(window.location.href);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
 
   const handleStatusChange = async (newStatus: EventUiStatus) => {
     setStatusUpdating(true);
@@ -261,11 +255,12 @@ export const EventDetailsPage: React.FC = () => {
           </button>
 
           <button
-            onClick={handleCopyLink}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition shadow-sm"
+            type="button"
+            onClick={() => setShareModalOpen(true)}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition shadow-sm cursor-pointer"
           >
-            {copied ? <Check size={14} className="text-emerald-600" /> : <Share2 size={14} />}
-            {copied ? 'Link Copied' : 'Share'}
+            <Share2 size={14} />
+            <span>Share</span>
           </button>
 
           <button
@@ -590,6 +585,15 @@ export const EventDetailsPage: React.FC = () => {
           </div>
         </div>
       )}
+      {/* Share Modal */}
+      <ShareModal
+        isOpen={shareModalOpen}
+        onClose={() => setShareModalOpen(false)}
+        title={event.title}
+        summary={event.description}
+        thumbnailUrl={event.coverImageUrl || undefined}
+        category={event.category}
+      />
     </div>
   );
 };

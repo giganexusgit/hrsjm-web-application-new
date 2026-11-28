@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { rightsStore } from '../store/rightsStore';
 import { RightsDeleteModal } from '../components/RightsDeleteModal';
+import { ShareModal } from '@/components/common/ShareModal';
 import {
   RIGHTS_STATUS_TONES,
   RIGHTS_STATUS_LABELS,
@@ -32,8 +33,8 @@ export const RightDetailsPage: React.FC = () => {
   const article = snapshot.articles.find((a) => a.id === id);
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [copied, setCopied] = useState(false);
 
   // Increment views once on mount
   useEffect(() => {
@@ -85,12 +86,6 @@ export const RightDetailsPage: React.FC = () => {
     }
   };
 
-  const handleCopyLink = () => {
-    navigator.clipboard.writeText(window.location.href);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
   return (
     <div style={styles.page}>
       {/* Top Header / Nav Bar */}
@@ -107,12 +102,12 @@ export const RightDetailsPage: React.FC = () => {
         <div style={styles.actionsBar}>
           <button
             type="button"
-            onClick={handleCopyLink}
+            onClick={() => setShareModalOpen(true)}
             style={styles.secondaryBtn}
-            title="Share article URL"
+            title="Share article"
           >
             <Share2 size={15} />
-            <span>{copied ? 'Link Copied!' : 'Share'}</span>
+            <span>Share</span>
           </button>
 
           <button
@@ -300,6 +295,16 @@ export const RightDetailsPage: React.FC = () => {
         onConfirm={handleDeleteConfirm}
         article={article}
         isDeleting={isDeleting}
+      />
+
+      {/* Share Modal */}
+      <ShareModal
+        isOpen={shareModalOpen}
+        onClose={() => setShareModalOpen(false)}
+        title={article.title}
+        summary={article.description}
+        thumbnailUrl={article.thumbnailUrl || undefined}
+        category={article.category}
       />
     </div>
   );
