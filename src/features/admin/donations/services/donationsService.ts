@@ -18,12 +18,26 @@ import {
 
 const STORAGE_KEY = 'hrsjm_local_donations_v1';
 
+function isMockOrTestDonation(d: { id?: string; donor_name?: string; donor_email?: string }): boolean {
+  const idStr = String(d.id || '').toLowerCase();
+  const name = String(d.donor_name || '').toLowerCase();
+  const email = String(d.donor_email || '').toLowerCase();
+  if (idStr.startsWith('11111111-') || idStr.startsWith('mock-') || idStr.startsWith('seed-')) return true;
+  if (name.includes('test donor') || name === 'test' || name.includes('cashfree verification')) return true;
+  if (email.includes('test.donor') || email.includes('test@example')) return true;
+  return false;
+}
+
 function getStoredDonations(): Donation[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed
+          .filter(d => !isMockOrTestDonation(d))
+          .filter(d => String(d.status || '').toUpperCase() !== 'PENDING');
+      }
     }
   } catch (e) {
     console.warn('Failed to parse cached donations:', e);
@@ -111,28 +125,31 @@ export const donationsService = {
         : null;
 
       if (Array.isArray(items)) {
-        return items.map((p: any) => ({
-          id: p.id,
-          donor_name: p.donor_name || 'Anonymous Donor',
-          donor_mobile: p.donor_mobile || '',
-          donor_email: p.donor_email || null,
-          amount: Number(p.amount) || 0,
-          donation_type: (p.donation_type || (p.source?.toUpperCase() === 'OFFLINE' ? 'OFFLINE' : 'ONE_TIME')) as 'ONE_TIME' | 'RECURRING' | 'OFFLINE',
-          status: (p.status || 'SUCCESS') as DonationStatus,
-          cause: p.cause || 'General Relief Fund',
-          source: p.source || 'Website',
-          is_80g_claimed: Boolean(p.is_80g_claimed ?? p.is_80g_eligible ?? true),
-          pan_number: p.pan_number || undefined,
-          receipt_number: p.receipt_number || (p.id ? `REC-${String(p.id).slice(0, 8).toUpperCase()}` : undefined),
-          remark: p.remark || null,
-          member_code: p.member_code || null,
-          payment_method: p.payment_method || p.source || 'Online Payment',
-          created_at: p.created_at || new Date().toISOString(),
-          updated_at: p.updated_at || p.created_at || new Date().toISOString(),
-        }));
+        return items
+          .filter((p: any) => !isMockOrTestDonation(p))
+          .filter((p: any) => String(p.status || '').toUpperCase() !== 'PENDING')
+          .map((p: any) => ({
+            id: p.id,
+            donor_name: p.donor_name || 'Anonymous Donor',
+            donor_mobile: p.donor_mobile || '',
+            donor_email: p.donor_email || null,
+            amount: Number(p.amount) || 0,
+            donation_type: (p.donation_type || (p.source?.toUpperCase() === 'OFFLINE' ? 'OFFLINE' : 'ONE_TIME')) as 'ONE_TIME' | 'RECURRING' | 'OFFLINE',
+            status: (p.status || 'SUCCESS') as DonationStatus,
+            cause: p.cause || 'General Relief Fund',
+            source: p.source || 'Website',
+            is_80g_claimed: Boolean(p.is_80g_claimed ?? p.is_80g_eligible ?? true),
+            pan_number: p.pan_number || undefined,
+            receipt_number: p.receipt_number || (p.id ? `REC-${String(p.id).slice(0, 8).toUpperCase()}` : undefined),
+            remark: p.remark || null,
+            member_code: p.member_code || null,
+            payment_method: p.payment_method || p.source || 'Online Payment',
+            created_at: p.created_at || new Date().toISOString(),
+            updated_at: p.updated_at || p.created_at || new Date().toISOString(),
+          }));
       }
     } catch (e) {
-      console.warn('Backend /donations unavailable, using local mock store:', e);
+      console.warn('Backend /donations unavailable:', e);
     }
 
     // Local in-memory / localStorage fallback
@@ -283,7 +300,7 @@ export const donationsService = {
     return makeReceipt(donation);
   },
 
-  exportDonationsCsv(donations: Donation[]): void {
+  exportDonationsCsv(donations: Donation[], customFileName?: string): void {
     const headers = [
       'Donation ID',
       'Donor Name',
@@ -319,7 +336,7 @@ export const donationsService = {
     ]);
 
     const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
-    triggerCsvDownload(csv, `HRSJM_Donations_Export_${new Date().toISOString().slice(0, 10)}.csv`);
+    triggerCsvDownload(csv, customFileName || `HRSJM_Donations_Export_${new Date().toISOString().slice(0, 10)}.csv`);
   },
 
   printDonationReceipt(receipt: DonationReceiptModel): void {

@@ -26,6 +26,8 @@ import {
   MemberConfirmationModal,
   type ConfirmationType,
 } from '../components/MemberConfirmationModal';
+import { ApplicationPrintModal } from '@/features/admin/applications/components/ApplicationPrintModal';
+import { resolveApplicationForMember } from '@/features/admin/applications/utils/resolveApplication';
 import { STANDARD_MEMBERSHIP_CATEGORIES } from '../data/membersFixtures';
 
 type DetailsTab = 'overview' | 'idcard' | 'documents' | 'fulfilment';
@@ -45,6 +47,7 @@ export const MemberDetailsPage: React.FC = () => {
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [showIdCardModal, setShowIdCardModal] = useState(false);
   const [editModalVisible, setEditModalVisible] = useState(false);
+  const [printModalOpen, setPrintModalOpen] = useState(false);
   const [confirmationModal, setConfirmationModal] = useState<{
     visible: boolean;
     type: ConfirmationType;
@@ -154,14 +157,23 @@ export const MemberDetailsPage: React.FC = () => {
       })
     : '—';
 
-  const formattedValidTill =
-    member.validTill && !member.validTill.includes('Lifetime')
-      ? new Date(member.validTill).toLocaleDateString('en-GB', {
-          day: '2-digit',
-          month: 'short',
-          year: 'numeric',
-        })
-      : 'Lifetime';
+  const computedValidTillDate = (() => {
+    if (member.validTill && !member.validTill.includes('Lifetime')) {
+      const d = new Date(member.validTill);
+      if (!isNaN(d.getTime())) return d;
+    }
+    if (member.joinedDate) {
+      const jd = new Date(member.joinedDate);
+      if (!isNaN(jd.getTime())) return new Date(jd.getTime() + 365 * 86400000);
+    }
+    return new Date(Date.now() + 365 * 86400000);
+  })();
+
+  const formattedValidTill = computedValidTillDate.toLocaleDateString('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
 
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
@@ -253,6 +265,27 @@ export const MemberDetailsPage: React.FC = () => {
 
         {/* Header Right Actions */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <button
+            type="button"
+            onClick={() => setPrintModalOpen(true)}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '9px 16px',
+              borderRadius: '8px',
+              backgroundColor: 'rgba(255,255,255,0.12)',
+              border: '1px solid rgba(255,255,255,0.25)',
+              color: '#FFFFFF',
+              fontSize: '13.5px',
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            <Printer size={16} color="#FAD465" />
+            <span>Print Application</span>
+          </button>
+
           <button
             type="button"
             onClick={() => setShowIdCardModal(true)}
@@ -808,6 +841,13 @@ export const MemberDetailsPage: React.FC = () => {
         type={confirmationModal.type}
         member={member}
         onConfirm={handleConfirmAction}
+      />
+
+      {/* Official Printable Application Modal */}
+      <ApplicationPrintModal
+        isOpen={printModalOpen}
+        application={resolveApplicationForMember(member)}
+        onClose={() => setPrintModalOpen(false)}
       />
     </div>
   );

@@ -32,12 +32,28 @@ export default defineConfig(async ({ mode }) => {
     ? 'http://127.0.0.1:3000'
     : hasLocalBackend5000
       ? 'http://127.0.0.1:5000'
-      : null;
-  const proxyTarget =
-    env.VITE_BACKEND_PROXY_TARGET ||
-    env.BACKEND_PROXY_TARGET ||
-    localTarget ||
-    'https://hrsjm.org';
+      : 'http://127.0.0.1:3000';
+
+  const appEnv = (
+    env.VITE_APP_ENV ||
+    env.APP_ENV ||
+    ''
+  ).toLowerCase().trim();
+
+  let proxyTarget: string;
+  if (appEnv === 'local' || appEnv === 'development' || appEnv === 'dev') {
+    proxyTarget = env.VITE_LOCAL_BACKEND_URL || localTarget;
+  } else if (appEnv === 'production' || appEnv === 'prod') {
+    proxyTarget = env.VITE_PROD_BACKEND_URL || 'https://webapp.hrsjm.org';
+  } else {
+    // If not explicitly set, prioritize explicit override, then auto-detect local, then production
+    proxyTarget =
+      env.VITE_BACKEND_PROXY_TARGET ||
+      env.BACKEND_PROXY_TARGET ||
+      (hasLocalBackend3000 || hasLocalBackend5000 ? localTarget : 'https://webapp.hrsjm.org');
+  }
+
+  console.log(`\n🚀 [HRSJM Admin Web App] Environment: ${appEnv || 'auto'} | API Proxy Target: ${proxyTarget}\n`);
 
   return {
     plugins: [react(), tailwindcss()],
@@ -47,7 +63,7 @@ export default defineConfig(async ({ mode }) => {
       },
     },
     server: {
-      port: 5173,
+      port: process.env.PORT ? parseInt(process.env.PORT, 10) : 5173,
       host: true,
       proxy: {
         '/api/v1': {

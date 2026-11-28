@@ -1,4 +1,4 @@
-import type React from 'react';
+import React, { useEffect } from 'react';
 import { X, Calendar, User, Eye, Tag, Sparkles } from 'lucide-react';
 import type { CreateBlogFormState } from '../types/blog.types';
 import { STATUS_META } from '../types/blog.types';
@@ -14,6 +14,16 @@ export const BlogPreviewModal: React.FC<BlogPreviewModalProps> = ({
   onClose,
   form,
 }) => {
+  useEffect(() => {
+    if (isOpen) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = originalOverflow;
+      };
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const statusInfo = STATUS_META[form.status] || STATUS_META.DRAFT;

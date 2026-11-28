@@ -3,6 +3,7 @@ import type { MembershipApplicationItem, ApplicationDocument } from '../types/ap
 import { ApplicationDocumentViewerModal } from './ApplicationDocumentViewerModal';
 import { getOfficialStatutoryDocuments } from '../utils/documentGenerator';
 import { apiClient } from '@/api/client';
+import { applicationsStore, deduplicateAppDocuments } from '../store/applicationsStore';
 import {
   FileText,
   Eye,
@@ -57,7 +58,7 @@ export const ApplicationDocumentsTab: React.FC<ApplicationDocumentsTabProps> = (
   const [docList, setDocList] = useState<ApplicationDocument[]>(() => {
     if (Array.isArray(application.documents) && application.documents.length > 0) {
       const clean = application.documents.filter(d => d.uri && !d.uri.includes('sample_aadhaar') && !d.uri.includes('sample_address') && !d.uri.includes('sample_qualification'));
-      if (clean.length > 0) return clean;
+      if (clean.length > 0) return deduplicateAppDocuments(clean);
     }
     return defaultDocs;
   });
@@ -165,13 +166,18 @@ export const ApplicationDocumentsTab: React.FC<ApplicationDocumentsTabProps> = (
       }
 
       if (fetched.length > 0) {
-        setDocList(fetched);
-        saveDocsToCache(fetched);
+        const clean = deduplicateAppDocuments(fetched);
+        setDocList(clean);
+        saveDocsToCache(clean);
+        applicationsStore.updateApplicationDocuments(application.id, clean);
       } else if (application.documents && application.documents.length > 0) {
-        const clean = application.documents.filter(d => d.uri && !d.uri.includes('sample_aadhaar') && !d.uri.includes('sample_address') && !d.uri.includes('sample_qualification'));
+        const clean = deduplicateAppDocuments(
+          application.documents.filter(d => d.uri && !d.uri.includes('sample_aadhaar') && !d.uri.includes('sample_address') && !d.uri.includes('sample_qualification'))
+        );
         if (clean.length > 0) {
           setDocList(clean);
           saveDocsToCache(clean);
+          applicationsStore.updateApplicationDocuments(application.id, clean);
         } else {
           setDocList(defaultDocs);
         }

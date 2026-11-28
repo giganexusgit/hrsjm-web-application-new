@@ -12,6 +12,7 @@ import {
   Phone,
   Calendar,
   Archive,
+  Trash2,
 } from 'lucide-react';
 import type { SupportTicket, TicketStatus } from '../types/support.types';
 import {
@@ -29,6 +30,7 @@ interface SupportTicketRowProps {
   onView: (ticket: SupportTicket) => void;
   onOpenChat?: (ticket: SupportTicket) => void;
   onUpdateStatus: (ticket: SupportTicket, targetStatus: TicketStatus) => void;
+  onDelete?: (ticket: SupportTicket) => void;
 }
 
 const STATUS_LEFT_BORDER: Record<TicketStatus, string> = {
@@ -49,6 +51,7 @@ export const SupportTicketRow: React.FC<SupportTicketRowProps> = ({
   ticket,
   onView,
   onUpdateStatus,
+  onDelete,
 }) => {
   const shortId = shortTicketId(ticket.id);
   const statusMeta = STATUS_META[ticket.status] || STATUS_META.SUBMITTED;
@@ -60,7 +63,7 @@ export const SupportTicketRow: React.FC<SupportTicketRowProps> = ({
   const complainantEmail = ticket.user?.email || '';
   const complainantPhone = ticket.user?.mobile_number || '';
 
-  const cleanSubject = ticket.subject.replace(/\[.*?\]\s*/g, '');
+  const cleanSubject = (ticket.subject || 'Support Ticket').replace(/\[.*?\]\s*/g, '');
   const docCount = (ticket.documents || []).length;
 
   const dateFormatted = new Date(ticket.created_at).toLocaleDateString('en-IN', {
@@ -228,6 +231,18 @@ export const SupportTicketRow: React.FC<SupportTicketRowProps> = ({
             >
               <Archive size={13} />
               <span>Close</span>
+            </button>
+          )}
+
+          {onDelete && (
+            <button
+              type="button"
+              onClick={() => onDelete(ticket)}
+              style={styles.transitionBtnDanger}
+              title="Permanently delete ticket"
+            >
+              <Trash2 size={13} />
+              <span>Delete</span>
             </button>
           )}
         </div>
@@ -471,6 +486,20 @@ const styles: Record<string, React.CSSProperties> = {
     border: '1px solid #CBD5E1',
     backgroundColor: '#F1F5F9',
     color: '#475569',
+    fontSize: '12px',
+    fontWeight: 600,
+    cursor: 'pointer',
+    transition: 'all 0.15s ease',
+  },
+  transitionBtnDanger: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '5px',
+    padding: '6px 12px',
+    borderRadius: '8px',
+    border: '1px solid #FECACA',
+    backgroundColor: '#FEF2F2',
+    color: '#DC2626',
     fontSize: '12px',
     fontWeight: 600,
     cursor: 'pointer',

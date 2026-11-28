@@ -1,14 +1,17 @@
 import type React from 'react';
-import { Clock, MapPin, Users, Globe, ExternalLink, Trash2, Calendar, HeartHandshake } from 'lucide-react';
-import type { EventListItem } from '../types/events.types';
+import { Clock, MapPin, Globe, ExternalLink, Trash2, Calendar, Edit, Star } from 'lucide-react';
+import { type EventListItem, isEventFeatured } from '../types/events.types';
 
 interface EventCardProps {
   event: EventListItem;
   onPress: (id: string) => void;
+  onEdit?: (event: EventListItem) => void;
   onDelete?: (id: string) => void;
+  onToggleFeatured?: (event: EventListItem) => void;
 }
 
-export const EventCard: React.FC<EventCardProps> = ({ event, onPress, onDelete }) => {
+export const EventCard: React.FC<EventCardProps> = ({ event, onPress, onEdit, onDelete, onToggleFeatured }) => {
+  const isFeatured = isEventFeatured(event.tags);
   const formatDate = (isoStr: string): string => {
     try {
       const d = new Date(isoStr);
@@ -73,8 +76,6 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onPress, onDelete }
   };
 
   const statusCfg = getStatusConfig();
-  const capacity = event.capacity || 200;
-  const registrationPct = Math.min(100, Math.round((event.registrations / capacity) * 100));
 
   return (
     <div
@@ -118,30 +119,38 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onPress, onDelete }
             )}
           </div>
 
-          {/* Right Tags */}
+          {/* Right Tags & Featured Toggle */}
           <div className="flex items-center gap-1.5">
-            {event.targetAudience &&
-              event.targetAudience !== 'ALL' &&
-              event.targetAudience !== 'Open to All' && (
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-[#FAD465] text-[#011F39] shadow-2xs">
-                  {event.targetAudience === 'MEMBERS'
-                    ? 'Members'
-                    : event.targetAudience === 'SEEKERS'
-                    ? 'Seekers'
-                    : event.targetAudience}
-                </span>
-              )}
+            {onToggleFeatured && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleFeatured(event);
+                }}
+                className={`pointer-events-auto inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold transition-all shadow-xs cursor-pointer ${
+                  isFeatured
+                    ? 'bg-[#FAD465] hover:bg-[#f5c738] text-[#011F39] border border-amber-400'
+                    : 'bg-black/40 hover:bg-black/60 text-white/90 hover:text-white backdrop-blur-xs border border-white/25'
+                }`}
+                title={
+                  isFeatured
+                    ? 'Currently Featured on Website Banner (Click to turn off)'
+                    : 'Click to set as sole Featured Event on Website'
+                }
+              >
+                <Star
+                  size={10}
+                  fill={isFeatured ? '#011F39' : 'none'}
+                  className={isFeatured ? 'text-[#011F39]' : 'text-amber-300'}
+                />
+                <span>{isFeatured ? 'FEATURED' : 'Feature'}</span>
+              </button>
+            )}
 
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-[#011F39]/90 text-white shadow-2xs">
+            <span className="text-[10px] font-bold px-2 py-1 rounded-md bg-[#011F39]/90 text-white shadow-2xs">
               {event.category}
             </span>
-
-            {event.isDonationEnabled && (
-              <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-[#FFF9E6] text-[#B45309] border border-[#FDE68A] shadow-2xs">
-                <HeartHandshake size={11} className="text-[#D97706]" />
-                <span>Donation</span>
-              </span>
-            )}
           </div>
         </div>
       </div>
@@ -173,40 +182,15 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onPress, onDelete }
             )}
             <span className="truncate">{event.location}</span>
           </div>
-
-          <div className="flex items-center justify-between text-[11px] pt-1">
-            <div className="flex items-center gap-1.5 text-slate-600">
-              <Users size={13} className="text-slate-400 shrink-0" />
-              <span>
-                <strong className="text-slate-900">{event.registrations}</strong> / {capacity}{' '}
-                registered
-              </span>
-            </div>
-            <span className="text-slate-400 font-semibold">{registrationPct}%</span>
-          </div>
-
-          {/* Registration Progress Bar */}
-          <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
-            <div
-              className={`h-full rounded-full ${
-                registrationPct >= 90
-                  ? 'bg-rose-500'
-                  : registrationPct >= 60
-                  ? 'bg-amber-500'
-                  : 'bg-[#011F39]'
-              }`}
-              style={{ width: `${registrationPct}%` }}
-            />
-          </div>
         </div>
 
         {/* Card Footer Actions */}
         <div className="pt-3 border-t border-slate-100 mt-auto flex items-center justify-between gap-2">
-          <span className="text-[11px] text-slate-500 truncate">
+          <span className="text-[11px] text-slate-500 truncate max-w-[120px]" title={event.organizer || 'HRSJM Central'}>
             By: <strong className="text-slate-700">{event.organizer || 'HRSJM Central'}</strong>
           </span>
 
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-1.5 shrink-0">
             {onDelete && (
               <button
                 type="button"
@@ -214,10 +198,25 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onPress, onDelete }
                   e.stopPropagation();
                   onDelete(event.id);
                 }}
-                className="p-1.5 text-slate-400 hover:text-rose-600 rounded-md hover:bg-rose-50 transition-colors"
+                className="p-1.5 text-slate-400 hover:text-rose-600 rounded-md hover:bg-rose-50 transition-colors cursor-pointer"
                 title="Delete event"
               >
                 <Trash2 size={14} />
+              </button>
+            )}
+
+            {onEdit && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEdit(event);
+                }}
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-[#FFF9E6] hover:bg-[#FDE68A] text-[#011F39] border border-[#FDE68A] shadow-2xs transition-colors cursor-pointer"
+                title="Edit event"
+              >
+                <Edit size={12} className="text-[#011F39]" />
+                <span>Edit</span>
               </button>
             )}
 
@@ -227,7 +226,7 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onPress, onDelete }
                 e.stopPropagation();
                 onPress(event.id);
               }}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#011F39] hover:bg-[#06294D] text-white shadow-2xs transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#011F39] hover:bg-[#06294D] text-white shadow-2xs transition-colors cursor-pointer whitespace-nowrap"
             >
               <span>View Details</span>
               <ExternalLink size={12} />

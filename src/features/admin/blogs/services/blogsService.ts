@@ -98,7 +98,10 @@ export const blogsService = {
         },
       });
 
-      const items = data?.items || [];
+      const rawData = data as any;
+      const items: BackendBlogItem[] = Array.isArray(data)
+        ? data
+        : (rawData?.items || rawData?.blogs || rawData?.data || []);
       return {
         blogs: items.map(mapBackendBlogToUi),
         stats: data?.stats || {

@@ -13,6 +13,7 @@ import {
   Hourglass,
   AlertCircle,
   Infinity as InfinityIcon,
+  Printer,
 } from 'lucide-react';
 import type { Member } from '../types/members.types';
 import { MemberStatusBadge } from './MemberStatusBadge';
@@ -22,37 +23,46 @@ interface MemberRowProps {
   member: Member;
   onView: (member: Member) => void;
   onViewIdCard: (member: Member) => void;
+  onPrintApplication?: (member: Member) => void;
   onEdit: (member: Member) => void;
   onResetPassword: (member: Member) => void;
   onToggleStatus: (member: Member) => void;
 }
 
 // Days left calculation
-function getDaysLeftInfo(validTill: string) {
-  if (!validTill || validTill.includes('Lifetime')) {
-    return {
-      text: 'Lifetime',
-      days: null,
-      tone: 'lifetime' as const,
-      bg: '#F3F4F6',
-      border: '#E5E7EB',
-      color: '#4B5563',
-    };
-  }
+function getDaysLeftInfo(validTill?: string, joinedDate?: string) {
   try {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const target = new Date(validTill);
-    if (isNaN(target.getTime())) {
+    if (validTill && validTill.toLowerCase().includes('lifetime')) {
       return {
-        text: '—',
-        days: null,
-        tone: 'unknown' as const,
+        text: 'Lifetime',
+        days: 9999,
+        tone: 'lifetime' as const,
         bg: '#F3F4F6',
         border: '#E5E7EB',
-        color: '#6B7280',
+        color: '#374151',
       };
     }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    let target: Date | null = null;
+    if (validTill) {
+      const d = new Date(validTill);
+      if (!isNaN(d.getTime())) {
+        target = d;
+      }
+    }
+    if (!target && joinedDate) {
+      const jd = new Date(joinedDate);
+      if (!isNaN(jd.getTime())) {
+        target = new Date(jd.getTime() + 365 * 86400000);
+      }
+    }
+    if (!target) {
+      target = new Date(today.getTime() + 365 * 86400000);
+    }
+
     target.setHours(0, 0, 0, 0);
     const diff = target.getTime() - today.getTime();
     const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
@@ -108,12 +118,12 @@ function getDaysLeftInfo(validTill: string) {
     };
   } catch {
     return {
-      text: validTill,
-      days: null,
-      tone: 'unknown' as const,
-      bg: '#F3F4F6',
-      border: '#E5E7EB',
-      color: '#6B7280',
+      text: '365 days left',
+      days: 365,
+      tone: 'normal' as const,
+      bg: '#E8F8EE',
+      border: '#B7EB8F',
+      color: '#00A859',
     };
   }
 }
@@ -122,6 +132,7 @@ export const MemberRow: React.FC<MemberRowProps> = ({
   member,
   onView,
   onViewIdCard,
+  onPrintApplication,
   onEdit,
   onResetPassword,
   onToggleStatus,
@@ -159,7 +170,21 @@ export const MemberRow: React.FC<MemberRowProps> = ({
     return (name[0] || 'M').toUpperCase();
   };
 
-  const daysLeftInfo = getDaysLeftInfo(member.validTill);
+  const computedExpiryDate = useMemo(() => {
+    if (member.validTill && !member.validTill.includes('Lifetime')) {
+      const d = new Date(member.validTill);
+      if (!isNaN(d.getTime())) return d;
+    }
+    if (member.joinedDate) {
+      const jd = new Date(member.joinedDate);
+      if (!isNaN(jd.getTime())) {
+        return new Date(jd.getTime() + 365 * 86400000);
+      }
+    }
+    return new Date(Date.now() + 365 * 86400000);
+  }, [member.validTill, member.joinedDate]);
+
+  const daysLeftInfo = getDaysLeftInfo(computedExpiryDate.toISOString(), member.joinedDate);
 
   const formattedJoinedDate = member.joinedDate
     ? new Date(member.joinedDate).toLocaleDateString('en-GB', {
@@ -169,14 +194,11 @@ export const MemberRow: React.FC<MemberRowProps> = ({
       })
     : '—';
 
-  const formattedValidTill =
-    member.validTill && !member.validTill.includes('Lifetime')
-      ? new Date(member.validTill).toLocaleDateString('en-GB', {
-          day: '2-digit',
-          month: 'short',
-          year: 'numeric',
-        })
-      : 'Lifetime';
+  const formattedValidTill = computedExpiryDate.toLocaleDateString('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
 
   return (
     <tr
@@ -344,77 +366,115 @@ export const MemberRow: React.FC<MemberRowProps> = ({
 
       {/* Row Context Actions Menu */}
       <td style={{ padding: '14px 16px', verticalAlign: 'middle', textAlign: 'right' }}>
-        <div style={{ position: 'relative', display: 'inline-block' }} ref={menuRef}>
-          <button
-            type="button"
-            onClick={() => setMenuOpen(!menuOpen)}
-            style={{
-              padding: '6px',
-              borderRadius: '6px',
-              border: '1px solid #E5E7EB',
-              backgroundColor: '#FFFFFF',
-              color: '#4B5563',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-            aria-label="Actions"
-          >
-            <MoreVertical size={16} />
-          </button>
-
-          {menuOpen && (
-            <div
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+          {onPrintApplication && (
+            <button
+              type="button"
+              onClick={() => onPrintApplication(member)}
+              title="Print Official Application Form"
               style={{
-                position: 'absolute',
-                right: 0,
-                top: '100%',
-                marginTop: '4px',
-                width: '190px',
-                backgroundColor: '#FFFFFF',
-                borderRadius: '8px',
-                boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+                padding: '6px',
+                borderRadius: '6px',
                 border: '1px solid #E5E7EB',
-                zIndex: 50,
-                padding: '4px 0',
+                backgroundColor: '#FFFFFF',
+                color: '#06294D',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'all 0.15s ease',
               }}
+              className="hover:bg-amber-50 hover:border-amber-200 hover:scale-105 active:scale-95"
             >
-              <button
-                type="button"
-                onClick={() => {
-                  setMenuOpen(false);
-                  onView(member);
-                }}
-                style={menuItemStyle}
-              >
-                <Eye size={15} color="#011F39" />
-                <span>View Profile</span>
-              </button>
+              <Printer size={15} color="#06294D" />
+            </button>
+          )}
 
-              <button
-                type="button"
-                onClick={() => {
-                  setMenuOpen(false);
-                  onViewIdCard(member);
-                }}
-                style={menuItemStyle}
-              >
-                <IdCard size={15} color="#00A859" />
-                <span>Digital ID Card</span>
-              </button>
+          <div style={{ position: 'relative', display: 'inline-block' }} ref={menuRef}>
+            <button
+              type="button"
+              onClick={() => setMenuOpen(!menuOpen)}
+              style={{
+                padding: '6px',
+                borderRadius: '6px',
+                border: '1px solid #E5E7EB',
+                backgroundColor: '#FFFFFF',
+                color: '#4B5563',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+              aria-label="Actions"
+            >
+              <MoreVertical size={16} />
+            </button>
 
-              <button
-                type="button"
-                onClick={() => {
-                  setMenuOpen(false);
-                  onEdit(member);
+            {menuOpen && (
+              <div
+                style={{
+                  position: 'absolute',
+                  right: 0,
+                  top: '100%',
+                  marginTop: '4px',
+                  width: '190px',
+                  backgroundColor: '#FFFFFF',
+                  borderRadius: '8px',
+                  boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+                  border: '1px solid #E5E7EB',
+                  zIndex: 50,
+                  padding: '4px 0',
                 }}
-                style={menuItemStyle}
               >
-                <Edit size={15} color="#2563EB" />
-                <span>Edit Details</span>
-              </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    onView(member);
+                  }}
+                  style={menuItemStyle}
+                >
+                  <Eye size={15} color="#011F39" />
+                  <span>View Profile</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    onViewIdCard(member);
+                  }}
+                  style={menuItemStyle}
+                >
+                  <IdCard size={15} color="#00A859" />
+                  <span>Digital ID Card</span>
+                </button>
+
+                {onPrintApplication && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      onPrintApplication(member);
+                    }}
+                    style={menuItemStyle}
+                  >
+                    <Printer size={15} color="#06294D" />
+                    <span>Print Application</span>
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    onEdit(member);
+                  }}
+                  style={menuItemStyle}
+                >
+                  <Edit size={15} color="#2563EB" />
+                  <span>Edit Details</span>
+                </button>
 
               <button
                 type="button"
@@ -455,6 +515,7 @@ export const MemberRow: React.FC<MemberRowProps> = ({
               </button>
             </div>
           )}
+          </div>
         </div>
       </td>
     </tr>

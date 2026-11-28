@@ -9,6 +9,7 @@ import {
   RotateCcw,
   ChevronLeft,
   ChevronRight,
+  Trash2,
 } from 'lucide-react';
 import type {
   SupportTicket,
@@ -17,6 +18,7 @@ import type {
   SupportFilterState,
   CreateTicketBody,
 } from '../types/support.types';
+import { shortTicketId } from '../types/support.types';
 import { supportStore } from '../store/supportStore';
 import { SupportStatsCards } from '../components/SupportStatsCards';
 import { SupportStatusTabs } from '../components/SupportStatusTabs';
@@ -229,6 +231,30 @@ export const SupportTicketsListPage: React.FC = () => {
 
   const handleUpdateStatusTrigger = (ticket: SupportTicket, targetStatus: TicketStatus) => {
     setStatusModalTicket({ ticket, targetStatus });
+  };
+
+  const [ticketToDelete, setTicketToDelete] = useState<SupportTicket | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDeleteTrigger = (ticket: SupportTicket) => {
+    setTicketToDelete(ticket);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!ticketToDelete) return;
+    setIsDeleting(true);
+    try {
+      await supportStore.deleteTicket(ticketToDelete.id);
+      setSuccessBanner(
+        `Ticket #${shortTicketId(ticketToDelete.id)} and all associated records deleted successfully.`
+      );
+      setTimeout(() => setSuccessBanner(null), 4000);
+      setTicketToDelete(null);
+    } catch {
+      // ignore
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const handleConfirmStatus = async (note?: string): Promise<boolean> => {
@@ -448,6 +474,7 @@ export const SupportTicketsListPage: React.FC = () => {
               onView={handleView}
               onOpenChat={handleOpenChat}
               onUpdateStatus={handleUpdateStatusTrigger}
+              onDelete={handleDeleteTrigger}
             />
           ))}
 
@@ -533,6 +560,109 @@ export const SupportTicketsListPage: React.FC = () => {
         onClose={() => setStatusModalTicket(null)}
         onConfirm={handleConfirmStatus}
       />
+
+      {/* Delete Confirmation Modal */}
+      {ticketToDelete && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 1100,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: 'rgba(6, 41, 77, 0.7)',
+            backdropFilter: 'blur(4px)',
+            padding: '20px',
+          }}
+          onClick={() => !isDeleting && setTicketToDelete(null)}
+        >
+          <div
+            style={{
+              width: '100%',
+              maxWidth: '480px',
+              backgroundColor: '#FFFFFF',
+              borderRadius: '16px',
+              padding: '24px',
+              boxShadow: '0 20px 40px rgba(0, 0, 0, 0.25)',
+              border: '1px solid #E2E8F0',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '16px' }}>
+              <div
+                style={{
+                  width: '44px',
+                  height: '44px',
+                  borderRadius: '12px',
+                  backgroundColor: '#FEF2F2',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  border: '1px solid #FECACA',
+                  flexShrink: 0,
+                }}
+              >
+                <Trash2 size={22} color="#DC2626" />
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: '#0F172A' }}>
+                  Delete Support Ticket?
+                </h3>
+                <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#64748B' }}>
+                  #{shortTicketId(ticketToDelete.id)} · {ticketToDelete.subject}
+                </p>
+              </div>
+            </div>
+
+            <p style={{ fontSize: '14px', color: '#475569', lineHeight: 1.6, margin: '0 0 24px 0' }}>
+              Are you sure you want to permanently delete this complaint and all associated documents and correspondence? This action cannot be undone.
+            </p>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <button
+                type="button"
+                onClick={() => setTicketToDelete(null)}
+                disabled={isDeleting}
+                style={{
+                  padding: '9px 18px',
+                  borderRadius: '8px',
+                  border: '1px solid #CBD5E1',
+                  backgroundColor: '#FFFFFF',
+                  color: '#475569',
+                  fontSize: '13.5px',
+                  fontWeight: 600,
+                  cursor: isDeleting ? 'not-allowed' : 'pointer',
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDelete}
+                disabled={isDeleting}
+                style={{
+                  padding: '9px 20px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  backgroundColor: '#DC2626',
+                  color: '#FFFFFF',
+                  fontSize: '13.5px',
+                  fontWeight: 700,
+                  cursor: isDeleting ? 'not-allowed' : 'pointer',
+                  opacity: isDeleting ? 0.7 : 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                }}
+              >
+                <Trash2 size={15} />
+                <span>{isDeleting ? 'Deleting...' : 'Delete Permanently'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

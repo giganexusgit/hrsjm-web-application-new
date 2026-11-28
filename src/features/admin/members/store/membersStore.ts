@@ -2,10 +2,12 @@ import type {
   Member,
   MemberStats,
   MemberStatus,
+  MembershipCategoryItem,
   KitFulfillmentData,
   CreateMemberPayload,
   UpdateMemberPayload,
 } from '../types/members.types';
+import { STANDARD_MEMBERSHIP_CATEGORIES } from '../data/membersFixtures';
 import { apiClient } from '@/api';
 import { membersService } from '../services/membersService';
 import { getValidAvatarUrl } from '@/utils/avatar';
@@ -27,25 +29,48 @@ export function isExpiringSoon(validTill: string): boolean {
 
 const STORAGE_KEY = 'hrsjm_local_members_v1';
 
-export function mapBackendMembershipToMember(backend: any): Member {
+export function mapBackendMembershipToMember(
+  backend: any,
+  categories?: MembershipCategoryItem[]
+): Member {
   const appData = backend.application_data || {};
   const personal = appData.personal_details || {};
   const user = backend.user || {};
   const category = backend.category || {};
 
+  const matchedCat =
+    categories?.find(
+      (c: MembershipCategoryItem) =>
+        c.id === backend.category_id ||
+        c.id === category.id ||
+        (c.name && category.name && c.name.toLowerCase() === category.name.toLowerCase()) ||
+        (c.code && category.code && c.code.toLowerCase() === category.code.toLowerCase())
+    ) ||
+    STANDARD_MEMBERSHIP_CATEGORIES.find(
+      (c: MembershipCategoryItem) =>
+        c.id === backend.category_id ||
+        (c.name && category.name && c.name.toLowerCase() === category.name.toLowerCase())
+    ) ||
+    categories?.[0] ||
+    STANDARD_MEMBERSHIP_CATEGORIES[0];
+
   const name =
+    backend.full_name?.trim() ||
     user.full_name?.trim() ||
     appData.full_name?.trim() ||
     personal.full_name?.trim() ||
+    user.name?.trim() ||
     'Member';
 
   const phone =
+    backend.phone?.trim() ||
     user.mobile_number?.trim() ||
     appData.mobile_number?.trim() ||
     personal.mobile_number?.trim() ||
     '—';
 
   const email =
+    backend.email?.trim() ||
     user.email?.trim() ||
     appData.email?.trim() ||
     personal.email?.trim() ||
@@ -66,7 +91,16 @@ export function mapBackendMembershipToMember(backend: any): Member {
     backend.created_at ||
     new Date().toISOString();
 
-  const validTill = backend.expiry_date || 'Lifetime';
+  const validityDays =
+    matchedCat?.validity_days ||
+    category.validity_days ||
+    365;
+
+  let validTill = backend.expiry_date;
+  if (!validTill || validTill.includes('Lifetime')) {
+    const joinedTime = new Date(joinedDate).getTime();
+    validTill = new Date(joinedTime + validityDays * 86400000).toISOString();
+  }
 
   let status: MemberStatus = 'ACTIVE';
   const rawStatus = (backend.status || '').toUpperCase();
@@ -78,8 +112,8 @@ export function mapBackendMembershipToMember(backend: any): Member {
   ) {
     status = 'INACTIVE';
   } else if (rawStatus === 'ACTIVE' || rawStatus === 'APPROVED') {
-    if (backend.expiry_date) {
-      const expiry = new Date(backend.expiry_date).getTime();
+    if (validTill) {
+      const expiry = new Date(validTill).getTime();
       const now = Date.now();
       const daysLeft = (expiry - now) / (1000 * 60 * 60 * 24);
       if (daysLeft < 0) {
@@ -140,9 +174,9 @@ export function mapBackendMembershipToMember(backend: any): Member {
     validTill,
     status,
     photo: getValidAvatarUrl(user.avatar || appData.avatar || personal.avatar || personal.avatar_url) || undefined,
-    categoryName: category.name || appData.category_name || 'District Unit',
-    categoryId: backend.category_id || category.id,
-    amount: category.fee || backend.amount || undefined,
+    categoryName: category.name || matchedCat?.name || appData.category_name || 'District Active Member',
+    categoryId: backend.category_id || category.id || matchedCat?.id,
+    amount: Number(category.fee || backend.amount || matchedCat?.fee || 800),
     gender: personal.gender,
     dob: personal.dob,
     qualification: personal.qualification || personal.other_qualification,
@@ -252,13 +286,20 @@ class MembersStore {
 
   public async fetchMembers(): Promise<void> {
     try {
+      let categories: MembershipCategoryItem[] = [];
+      try {
+        categories = await membersService.getCategories();
+      } catch {
+        categories = STANDARD_MEMBERSHIP_CATEGORIES;
+      }
+
       let mappedMembers: Member[] = [];
       try {
         const res = await membersService.list({ limit: 100 });
         const items = res?.items || (Array.isArray(res) ? res : []);
         if (Array.isArray(items) && items.length > 0) {
           mappedMembers = items
-            .map(mapBackendMembershipToMember)
+            .map((item: any) => mapBackendMembershipToMember(item, categories))
             .filter((m) => m.status === 'ACTIVE' || m.status === 'EXPIRING_SOON');
         }
       } catch (err) {
@@ -275,8 +316,12 @@ class MembersStore {
               u.roles?.some((r: any) => (r.name || r.code || r)?.toUpperCase() === 'MEMBER') ||
               u.user_roles?.some((ur: any) => (ur.role?.name || ur.role?.code)?.toUpperCase() === 'MEMBER')
             );
+            const defaultCat = categories[0] || STANDARD_MEMBERSHIP_CATEGORIES[0];
+            const validityDays = defaultCat?.validity_days || 365;
+
             mappedMembers = memberUsers.map((u: any, idx: number) => {
               const rawDate = u.created_at || new Date().toISOString();
+              const computedExpiry = new Date(new Date(rawDate).getTime() + validityDays * 86400000).toISOString();
               return {
                 id: u.id,
                 userId: u.id,
@@ -285,12 +330,12 @@ class MembersStore {
                 email: u.email || '—',
                 membershipId: u.membership_number || `HRSJM-${String(idx + 1).padStart(5, '0')}`,
                 joinedDate: rawDate,
-                validTill: 'Lifetime',
+                validTill: computedExpiry,
                 status: (u.status || 'ACTIVE').toUpperCase() === 'ACTIVE' ? 'ACTIVE' : 'INACTIVE',
                 photo: u.avatar || undefined,
-                categoryName: 'General Member',
-                categoryId: undefined,
-                amount: 800,
+                categoryName: defaultCat?.name || 'District Active Member',
+                categoryId: defaultCat?.id,
+                amount: Number(defaultCat?.fee || 800),
                 gender: u.gender,
                 dob: u.dob,
                 qualification: u.qualification,

@@ -79,7 +79,6 @@ export const DonationFilterBar: React.FC<DonationFilterBarProps> = ({
             >
               <option value="">All Statuses</option>
               <option value="SUCCESS">Completed</option>
-              <option value="PENDING">Pending</option>
               <option value="REFUNDED">Refunded</option>
               <option value="FAILED">Failed</option>
             </select>

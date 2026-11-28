@@ -82,7 +82,7 @@ export const CreateReceiptPage: React.FC = () => {
   };
 
   return (
-    <div style={{ maxWidth: '1100px', margin: '0 auto', paddingBottom: '40px' }}>
+    <div className="w-full max-w-[1100px] mx-auto pb-10 px-3.5 sm:px-6 box-border overflow-x-hidden">
       {/* Back button */}
       <div style={{ marginBottom: '16px' }}>
         <button
@@ -161,14 +161,7 @@ export const CreateReceiptPage: React.FC = () => {
       )}
 
       {/* 2-Column Grid: Left Form, Right Live Preview */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))',
-          gap: '24px',
-          alignItems: 'start',
-        }}
-      >
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start w-full">
         {/* Left: Input Form Card */}
         <div
           style={{

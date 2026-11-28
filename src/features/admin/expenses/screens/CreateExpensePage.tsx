@@ -164,9 +164,9 @@ export const CreateExpensePage: React.FC = () => {
   };
 
   return (
-    <div style={styles.page}>
+    <div className="w-full max-w-[1240px] mx-auto p-3.5 sm:p-6 lg:p-8 box-border overflow-x-hidden">
       {/* Top Header */}
-      <div style={styles.topBar}>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
           <button
             type="button"
@@ -174,19 +174,21 @@ export const CreateExpensePage: React.FC = () => {
             style={styles.backBtn}
           >
             <ArrowLeft size={16} />
-            <span>Back to Expenses</span>
+            <span>Back to Payments</span>
           </button>
-          <h1 style={styles.pageTitle}>Record Expense Voucher</h1>
-          <p style={styles.subtitle}>
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#011F39] font-serif m-0">
+            Record Payment Voucher
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-500 mt-1 mb-0">
             Create an official outgoing expenditure voucher with automatic double-entry journal posting.
           </p>
         </div>
 
-        <div style={styles.topActions}>
+        <div className="flex items-center gap-3 w-full sm:w-auto">
           <button
             type="button"
             onClick={() => navigate('/admin/expenses')}
-            style={styles.cancelBtn}
+            className="flex-1 sm:flex-initial text-center justify-center py-2.5 px-4 rounded-lg border border-slate-300 bg-white text-slate-700 text-sm font-semibold hover:bg-slate-50 transition"
           >
             Cancel
           </button>
@@ -196,9 +198,9 @@ export const CreateExpensePage: React.FC = () => {
               if (validate()) setConfirmOpen(true);
             }}
             disabled={isSubmitting}
-            style={styles.recordBtn}
+            className="flex-1 sm:flex-initial text-center justify-center py-2.5 px-5 rounded-lg border-none bg-[#06294D] text-white text-sm font-semibold shadow hover:bg-[#011F39] transition disabled:opacity-60"
           >
-            <span>Record Expense</span>
+            <span>Record Payment</span>
           </button>
         </div>
       </div>
@@ -221,19 +223,19 @@ export const CreateExpensePage: React.FC = () => {
         </div>
       )}
 
-      <div style={styles.formGrid}>
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_380px] gap-6 items-start w-full">
         {/* Main Column */}
-        <div style={styles.mainCol}>
+        <div className="flex flex-col gap-5 w-full min-w-0">
           {/* Section 1: Basic Transaction Information */}
-          <div style={styles.card}>
+          <div className="bg-white rounded-xl border border-slate-200 p-4 sm:p-6 shadow-sm w-full box-border">
             <h2 style={styles.cardTitle}>Voucher Information</h2>
 
-            <div style={styles.row}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Expense Date */}
               <div style={styles.fieldGroup}>
                 <label style={styles.label}>
                   <Calendar size={13} color="#64748B" />
-                  <span>Expense Date <span style={styles.required}>*</span></span>
+                  <span>Payment Date <span style={styles.required}>*</span></span>
                 </label>
                 <input
                   type="date"
@@ -304,14 +306,14 @@ export const CreateExpensePage: React.FC = () => {
           </div>
 
           {/* Section 2: Payment Details */}
-          <div style={styles.card}>
+          <div className="bg-white rounded-xl border border-slate-200 p-4 sm:p-6 shadow-sm w-full box-border">
             <h2 style={styles.cardTitle}>Payment Method</h2>
 
             <div style={styles.fieldGroup}>
               <label style={styles.label}>
                 Payment Method <span style={styles.required}>*</span>
               </label>
-              <div style={styles.methodButtonsGrid}>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 w-full">
                 {ALLOWED_PAYMENT_METHODS.map((m) => {
                   const active = paymentMethod === m;
                   return (
@@ -336,8 +338,8 @@ export const CreateExpensePage: React.FC = () => {
         </div>
 
         {/* Sidebar Column: Account Classification */}
-        <div style={styles.sideCol}>
-          <div style={styles.card}>
+        <div className="flex flex-col gap-5 w-full min-w-0">
+          <div className="bg-white rounded-xl border border-slate-200 p-4 sm:p-6 shadow-sm w-full box-border">
             <h2 style={styles.cardTitle}>
               <Building2 size={16} color="#06294D" />
               <span>Accounting Classification</span>
@@ -348,12 +350,13 @@ export const CreateExpensePage: React.FC = () => {
 
             <div style={styles.fieldGroup}>
               <label style={styles.label}>
-                Expense Account (Head) <span style={styles.required}>*</span>
+                Payment Account (Head) <span style={styles.required}>*</span>
               </label>
               <select
                 value={selectedAccountId}
                 onChange={(e) => setSelectedAccountId(e.target.value)}
                 style={styles.select}
+                className="truncate"
               >
                 {(expenseAccounts.length > 0 ? expenseAccounts : OFFICIAL_EXPENSE_TYPES).map((t) => (
                   <option key={t.id || t.code} value={t.id || t.code} style={{ fontSize: '15px', fontWeight: 600, color: '#06294D' }}>
@@ -378,7 +381,7 @@ export const CreateExpensePage: React.FC = () => {
             <div style={styles.accountingPreviewBox}>
               <span style={styles.acctPreviewLabel}>Automated Journal Entry Preview</span>
               <div style={styles.acctLine}>
-                <span style={styles.acctDr}>Dr. {selectedCategory?.name || 'Expense'}</span>
+                <span style={styles.acctDr}>Dr. {selectedCategory?.name || 'Payment'}</span>
                 <span style={styles.acctAmt}>₹ {amount ? Number(amount).toLocaleString('en-IN') : '0.00'}</span>
               </div>
               <div style={styles.acctLine}>

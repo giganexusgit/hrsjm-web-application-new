@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import {
   FileText,
   Upload,
-  CheckCircle2,
   AlertCircle,
   Lock,
 } from 'lucide-react';
@@ -205,32 +204,6 @@ export const MembershipStep3: React.FC<MembershipStep3Props> = ({
                 type="file"
                 accept=".pdf,image/*"
                 onChange={e => handleFileUpload('qualificationProof', 'qualificationProofName', e)}
-                className="hidden"
-              />
-            </label>
-          </div>
-
-          {/* 4. Passport Photo */}
-          <div className="p-3.5 rounded-2xl border border-slate-200 bg-slate-50/70 hover:bg-slate-50 transition-colors">
-            <div className="flex items-start justify-between gap-2 mb-2">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-amber-700 shrink-0" />
-                <span className="text-xs font-bold text-[#06294D]">Passport Photograph</span>
-              </div>
-              <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold">
-                Applicant Photo
-              </span>
-            </div>
-            <p className="text-[11px] text-slate-500 mb-2 truncate">
-              {documents.photoProofName || (step1Data.photoUrl ? 'Attached from Step 1' : 'Clear face photo')}
-            </p>
-            <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-slate-300 text-[11px] font-bold text-slate-700 hover:bg-slate-100 cursor-pointer shadow-2xs">
-              <Upload className="w-3 h-3" />
-              <span>Upload / Replace Photo</span>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={e => handleFileUpload('photoProof', 'photoProofName', e)}
                 className="hidden"
               />
             </label>

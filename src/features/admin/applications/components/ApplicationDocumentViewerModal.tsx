@@ -12,6 +12,7 @@ import {
   QrCode,
   Lock,
   ExternalLink,
+  AlertCircle,
 } from 'lucide-react';
 import { useLockBodyScroll } from '@/hooks/useLockBodyScroll';
 
@@ -40,45 +41,72 @@ export const ApplicationDocumentViewerModal: React.FC<ApplicationDocumentViewerM
 
   useLockBodyScroll(Boolean(isOpen && document));
 
+  const rawUri = (document?.uri || '').trim();
+  const resolvedUri = React.useMemo(() => {
+    if (!rawUri) {
+      if (document?.fileName) {
+        return `/api/v1/uploads/${document.fileName}`;
+      }
+      return '';
+    }
+    if (
+      rawUri.startsWith('data:') ||
+      rawUri.startsWith('blob:') ||
+      rawUri.startsWith('http://') ||
+      rawUri.startsWith('https://')
+    ) {
+      return rawUri;
+    }
+    const clean = rawUri.replace(/^\/+/, '');
+    if (clean.startsWith('api/v1/')) {
+      return `/${clean}`;
+    }
+    if (clean.startsWith('uploads/')) {
+      return `/api/v1/${clean}`;
+    }
+    return `/api/v1/uploads/${clean}`;
+  }, [rawUri, document?.fileName]);
+
   if (!isOpen || !document) return null;
 
   const isPdf =
     Boolean(document.fileName?.match(/\.pdf$/i)) ||
-    Boolean(document.uri?.startsWith('data:application/pdf')) ||
-    Boolean(document.uri?.toLowerCase().includes('.pdf'));
+    Boolean(resolvedUri.startsWith('data:application/pdf')) ||
+    Boolean(resolvedUri.toLowerCase().includes('.pdf'));
 
   const isImage =
     Boolean(document.fileName?.match(/\.(jpeg|jpg|png|webp|svg|gif)$/i)) ||
-    Boolean(document.uri?.startsWith('data:image')) ||
-    Boolean(document.uri?.startsWith('data:image/svg+xml'));
+    Boolean(resolvedUri.startsWith('data:image')) ||
+    Boolean(resolvedUri.startsWith('data:image/svg+xml')) ||
+    Boolean(resolvedUri.match(/\.(jpeg|jpg|png|webp|svg|gif)($|\?)/i));
 
-  const canShowDirectPreview = Boolean(document.uri) && !imageError;
+  const canShowDirectPreview = Boolean(resolvedUri) && !imageError;
 
   const handlePrint = () => {
     window.print();
   };
 
   const handleOpenExternal = () => {
-    if (!document.uri) return;
-    if (document.uri.startsWith('data:')) {
+    if (!resolvedUri) return;
+    if (resolvedUri.startsWith('data:')) {
       const win = window.open();
       if (win) {
         if (isPdf) {
-          win.document.write(`<iframe src="${document.uri}" frameborder="0" style="border:0; position:fixed; top:0; left:0; width:100%; height:100%;" allowfullscreen></iframe>`);
+          win.document.write(`<iframe src="${resolvedUri}" frameborder="0" style="border:0; position:fixed; top:0; left:0; width:100%; height:100%;" allowfullscreen></iframe>`);
         } else {
-          win.document.write(`<img src="${document.uri}" style="max-width:100%; max-height:100vh; display:block; margin:auto; padding:20px;" />`);
+          win.document.write(`<img src="${resolvedUri}" style="max-width:100%; max-height:100vh; display:block; margin:auto; padding:20px;" />`);
         }
         win.document.title = document.title || 'Attachment';
       }
     } else {
-      window.open(document.uri, '_blank', 'noopener,noreferrer');
+      window.open(resolvedUri, '_blank', 'noopener,noreferrer');
     }
   };
 
   const handleDownload = () => {
-    if (!document.uri) return;
+    if (!resolvedUri) return;
     const link = window.document.createElement('a');
-    link.href = document.uri;
+    link.href = resolvedUri;
     link.download = document.fileName || 'attachment.pdf';
     link.target = '_blank';
     link.rel = 'noreferrer';
@@ -215,24 +243,22 @@ export const ApplicationDocumentViewerModal: React.FC<ApplicationDocumentViewerM
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            {canShowDirectPreview && (
-              <button
-                type="button"
-                onClick={() => setActiveView('preview')}
-                style={{
-                  padding: '5px 12px',
-                  borderRadius: '6px',
-                  border: 'none',
-                  fontSize: '12px',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  backgroundColor: activeView === 'preview' ? '#06294D' : 'transparent',
-                  color: activeView === 'preview' ? '#FAD465' : '#64748B',
-                }}
-              >
-                {isPdf ? 'PDF Attachment Scan' : (isImage ? 'Image Scan' : 'Document Scan')}
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={() => setActiveView('preview')}
+              style={{
+                padding: '5px 12px',
+                borderRadius: '6px',
+                border: 'none',
+                fontSize: '12px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                backgroundColor: activeView === 'preview' ? '#06294D' : 'transparent',
+                color: activeView === 'preview' ? '#FAD465' : '#64748B',
+              }}
+            >
+              {isPdf ? 'PDF Attachment Scan' : (isImage ? 'Image Scan' : 'Document Scan')}
+            </button>
             <button
               type="button"
               onClick={() => setActiveView('certificate')}
@@ -243,8 +269,8 @@ export const ApplicationDocumentViewerModal: React.FC<ApplicationDocumentViewerM
                 fontSize: '12px',
                 fontWeight: 700,
                 cursor: 'pointer',
-                backgroundColor: activeView === 'certificate' || !canShowDirectPreview ? '#06294D' : 'transparent',
-                color: activeView === 'certificate' || !canShowDirectPreview ? '#FAD465' : '#64748B',
+                backgroundColor: activeView === 'certificate' ? '#06294D' : 'transparent',
+                color: activeView === 'certificate' ? '#FAD465' : '#64748B',
               }}
             >
               Statutory Credential Record
@@ -277,7 +303,7 @@ export const ApplicationDocumentViewerModal: React.FC<ApplicationDocumentViewerM
             isPdf ? (
               <div style={{ width: '100%', height: '520px', display: 'flex', flexDirection: 'column' }}>
                 <iframe
-                  src={document.uri}
+                  src={resolvedUri}
                   title={document.title}
                   style={{
                     width: '100%',
@@ -290,13 +316,41 @@ export const ApplicationDocumentViewerModal: React.FC<ApplicationDocumentViewerM
                 />
               </div>
             ) : (
+            imageError ? (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '36px 24px', backgroundColor: '#FFFFFF', borderRadius: '16px', border: '1px solid #E2E8F0', maxWidth: '520px', width: '100%', boxShadow: '0 8px 24px rgba(6, 41, 77, 0.08)' }}>
+                <div style={{ width: '48px', height: '48px', borderRadius: '50%', backgroundColor: '#FEF2F2', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}>
+                  <AlertCircle size={26} color="#DC2626" />
+                </div>
+                <div style={{ fontSize: '16px', fontWeight: 700, color: '#1E293B' }}>
+                  Document Scan Not Available on Server
+                </div>
+                <p style={{ fontSize: '13px', color: '#64748B', marginTop: '8px', lineHeight: '1.5' }}>
+                  The file <code style={{ backgroundColor: '#F1F5F9', padding: '2px 6px', borderRadius: '4px', fontWeight: 600 }}>{document.fileName}</code> is registered with this ticket, but its physical scan was not found in server disk storage.
+                </p>
+                <div style={{ marginTop: '20px', display: 'flex', gap: '10px' }}>
+                  <button
+                    type="button"
+                    onClick={() => setImageError(false)}
+                    style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid #CBD5E1', backgroundColor: '#FFFFFF', fontSize: '12px', fontWeight: 600, color: '#334155', cursor: 'pointer' }}
+                  >
+                    Retry Loading
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveView('certificate')}
+                    style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', backgroundColor: '#06294D', color: '#FFFFFF', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}
+                  >
+                    View Statutory Record
+                  </button>
+                </div>
+              </div>
+            ) : (
               <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', height: '100%' }}>
                 <img
-                  src={document.uri}
+                  src={resolvedUri}
                   alt={document.title}
                   onError={() => {
                     setImageError(true);
-                    setActiveView('certificate');
                   }}
                   style={{
                     maxWidth: '100%',
@@ -310,6 +364,7 @@ export const ApplicationDocumentViewerModal: React.FC<ApplicationDocumentViewerM
                   }}
                 />
               </div>
+            )
             )
           ) : (
             /* Digital Certificate / Official Credential Sheet */

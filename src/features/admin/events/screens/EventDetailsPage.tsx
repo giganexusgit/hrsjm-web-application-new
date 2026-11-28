@@ -18,10 +18,10 @@ import {
   Check,
   HeartHandshake,
   Eye,
-  Power,
+  Star,
 } from 'lucide-react';
 import { eventsStore } from '../store/eventsStore';
-import type { EventUiStatus, CreateEventFormState } from '../types/events.types';
+import { type EventUiStatus, type CreateEventFormState, isEventFeatured } from '../types/events.types';
 import { EditEventModal } from '../components/CreateEventModal';
 import { EventDetailsView } from '../components/EventDetailsView';
 
@@ -183,6 +183,12 @@ export const EventDetailsPage: React.FC = () => {
             <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
               {event.category}
             </span>
+            {isEventFeatured(event.tags) && (
+              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-amber-400 text-slate-950 border border-amber-300 shadow-2xs font-sans">
+                <Star size={11} fill="currentColor" />
+                Featured Event
+              </span>
+            )}
             {event.eventType && (
               <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#011F39]/10 text-[#011F39]">
                 {event.eventType === 'IN_PERSON' ? '📍 In-Person' : event.eventType === 'ONLINE' ? '🌐 Online' : '🔄 Hybrid'}
@@ -221,21 +227,20 @@ export const EventDetailsPage: React.FC = () => {
           </div>
 
           <button
-            type="button"
-            disabled={statusUpdating}
-            onClick={async () => {
-              const nextVal = event.isEnabled === false ? true : false;
-              await eventsStore.updateEvent(event.id, { isEnabled: nextVal } as any);
-            }}
-            className={`inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-lg border transition shadow-sm cursor-pointer ${
-              event.isEnabled !== false
-                ? 'bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100'
-                : 'bg-rose-50 text-rose-800 border-rose-300 hover:bg-rose-100'
+            onClick={() => eventsStore.setFeaturedEvent(event.id, !isEventFeatured(event.tags))}
+            className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold shadow-xs transition border cursor-pointer ${
+              isEventFeatured(event.tags)
+                ? 'bg-amber-100 hover:bg-amber-200 text-amber-900 border-amber-300'
+                : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-300'
             }`}
-            title={event.isEnabled !== false ? 'Click to Disable event' : 'Click to Enable event'}
+            title={isEventFeatured(event.tags) ? 'Currently featured on website top banner. Click to turn off.' : 'Set as sole Featured Event on website'}
           >
-            <Power size={13} className={event.isEnabled !== false ? 'text-emerald-600' : 'text-rose-600'} />
-            <span>{event.isEnabled !== false ? 'Event: Enabled' : 'Event: Disabled'}</span>
+            <Star
+              size={13}
+              fill={isEventFeatured(event.tags) ? 'currentColor' : 'none'}
+              className={isEventFeatured(event.tags) ? 'text-amber-600' : 'text-slate-400'}
+            />
+            <span>{isEventFeatured(event.tags) ? 'Featured' : 'Set as Featured'}</span>
           </button>
 
           <button

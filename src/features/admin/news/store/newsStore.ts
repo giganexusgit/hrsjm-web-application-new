@@ -8,7 +8,7 @@ import type {
   NewsStatus,
   CreateNewsFormState,
 } from '../types/news.types';
-import { newsService, isAdminCreatedNews } from '../services/newsService';
+import { newsService } from '../services/newsService';
 
 const STORAGE_KEY = 'hrsjm_local_news_v1';
 
@@ -112,7 +112,7 @@ class NewsStore {
     try {
       const { news } = await newsService.list();
       if (Array.isArray(news)) {
-        this.news = news.filter(isAdminCreatedNews);
+        this.news = news;
         this.sortInternal();
         this.notify();
       }

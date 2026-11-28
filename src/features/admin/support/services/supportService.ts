@@ -55,6 +55,10 @@ export const supportService = {
     return apiClient.post<SupportTicketMessage>(ENDPOINTS.support.sendMessage(ticketId), body);
   },
 
+  async delete(id: string): Promise<{ success: boolean; id: string }> {
+    return apiClient.delete<{ success: boolean; id: string }>(ENDPOINTS.support.delete(id));
+  },
+
   async create(body: CreateTicketBody): Promise<SupportTicket> {
     // Strip properties that are not part of the standard CreateTicketDto to prevent forbidden property validation errors
     const { category, priority, ...cleanBody } = body;

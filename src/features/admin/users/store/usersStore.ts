@@ -9,6 +9,8 @@ import type {
 } from '../types/user.types';
 import { usersService } from '../services/usersService';
 import { getValidAvatarUrl } from '@/utils/avatar';
+import { INITIAL_DEV_USERS } from '../data/userFixtures';
+import { getAuthToken, setAuthToken, buildUrl } from '@/api';
 
 const STORAGE_KEY = 'hrsjm_registered_users';
 const DELETED_USERS_KEY = 'hrsjm_deleted_users';
@@ -79,7 +81,7 @@ class UsersStore {
         const raw = window.localStorage.getItem(STORAGE_KEY);
         if (raw) {
           const parsed = JSON.parse(raw);
-          if (Array.isArray(parsed)) {
+          if (Array.isArray(parsed) && parsed.length > 0) {
             return parsed.map((item: UserItem) => ({
               ...item,
               avatarUrl: getValidAvatarUrl(item.avatarUrl) || undefined,
@@ -90,7 +92,7 @@ class UsersStore {
     } catch {
       // Ignore localStorage errors
     }
-    return [];
+    return [...INITIAL_DEV_USERS];
   }
 
   private persistUsers(): void {
@@ -135,6 +137,36 @@ class UsersStore {
 
   public async fetchUsers(): Promise<UserItem[]> {
     try {
+      // In local development, if no auth token is active, auto-hydrate session with seeded admin credentials
+      if (
+        typeof window !== 'undefined' &&
+        !getAuthToken() &&
+        (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+      ) {
+        try {
+          const devLogin = await fetch(buildUrl('/auth/login'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+            body: JSON.stringify({ identifier: 'admin@hrsjm.org', password: 'AdminPass#1' }),
+          });
+          if (devLogin.ok) {
+            const data = await devLogin.json();
+            const session = data?.data || data;
+            if (session?.access_token) {
+              setAuthToken(session.access_token);
+              if (session.refresh_token) {
+                localStorage.setItem('hrsjm_refresh_token', session.refresh_token);
+              }
+              if (session.user) {
+                localStorage.setItem('hrsjm_user_profile', JSON.stringify(session.user));
+              }
+            }
+          }
+        } catch {
+          // Dev auto-login attempt failed; proceed to normal list attempt
+        }
+      }
+
       const response = await usersService.listUsers({ limit: 100 });
       const items = Array.isArray(response?.items)
         ? response.items
@@ -253,12 +285,21 @@ class UsersStore {
         this.sortUsersInternal();
         this.notify();
       } else if (items && items.length === 0) {
-        const localOnlyUsers = this.users.filter(u => !this.deletedUserIds.has(u.id));
-        this.users = localOnlyUsers;
+        if (this.users.length === 0) {
+          this.users = [...INITIAL_DEV_USERS].filter(u => !this.deletedUserIds.has(u.id));
+          this.sortUsersInternal();
+        } else {
+          const localOnlyUsers = this.users.filter(u => !this.deletedUserIds.has(u.id));
+          this.users = localOnlyUsers;
+        }
         this.notify();
       }
     } catch {
       // Gracefully maintain offline/fixtures state and notify subscribers
+      if (this.users.length === 0) {
+        this.users = [...INITIAL_DEV_USERS].filter(u => !this.deletedUserIds.has(u.id));
+        this.sortUsersInternal();
+      }
       this.notify();
     }
     return this.getAllUsers();

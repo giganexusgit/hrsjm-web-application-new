@@ -1,4 +1,4 @@
-import React, { useState, useSyncExternalStore } from 'react';
+import React, { useRef, useState, useSyncExternalStore } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -6,6 +6,7 @@ import {
   Send,
   FileEdit,
   X,
+  Upload,
 } from 'lucide-react';
 import { blogsStore } from '../store/blogsStore';
 import {
@@ -45,6 +46,38 @@ export const EditBlogPage: React.FC = () => {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
+
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [selectedFileName, setSelectedFileName] = useState<string>('');
+  const [isDragging, setIsDragging] = useState(false);
+
+  const handleImageFile = (file: File) => {
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      setErrors((err) => ({ ...err, coverImageUri: 'Please select a valid image file (PNG, JPG, WEBP).' }));
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setErrors((err) => ({ ...err, coverImageUri: 'Image size must be 5 MB or less.' }));
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        setForm((prev) => ({ ...prev, coverImageUri: reader.result as string }));
+        setSelectedFileName(file.name);
+        if (errors.coverImageUri) {
+          setErrors((err) => ({ ...err, coverImageUri: undefined }));
+        }
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) handleImageFile(file);
+  };
 
   if (!existing) {
     return (
@@ -148,54 +181,91 @@ export const EditBlogPage: React.FC = () => {
 
           <div style={styles.fieldGroup}>
             <label style={styles.label}>
-              Cover Image URL <span style={styles.requiredStar}>*</span>
+              Cover Image <span style={styles.requiredStar}>*</span>
             </label>
-            <div style={styles.imageInputRow}>
-              <input
-                type="text"
-                placeholder="https://example.com/cover.jpg"
-                value={form.coverImageUri || ''}
-                onChange={(e) => {
-                  setForm((prev) => ({ ...prev, coverImageUri: e.target.value }));
-                  if (errors.coverImageUri) {
-                    setErrors((err) => ({ ...err, coverImageUri: undefined }));
-                  }
-                }}
-                style={styles.input}
-              />
-              <button
-                type="button"
-                onClick={() =>
-                  setForm((prev) => ({
-                    ...prev,
-                    coverImageUri: `https://picsum.photos/seed/blog-${Date.now()}/800/450`,
-                  }))
-                }
-                style={styles.randomThumbBtn}
-              >
-                Sample Image
-              </button>
-            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleImageSelect}
+              style={{ display: 'none' }}
+            />
 
-            {form.coverImageUri && (
-              <div style={styles.previewImageContainer}>
-                <img
-                  src={form.coverImageUri}
-                  alt="Cover preview"
-                  style={styles.previewImage}
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src =
-                      'https://images.unsplash.com/photo-1544717305-2782549b5136?w=800&q=80';
-                  }}
-                />
-                <button
-                  type="button"
-                  onClick={() => setForm((prev) => ({ ...prev, coverImageUri: null }))}
-                  style={styles.removeImageBtn}
-                  title="Remove image"
-                >
-                  <X size={14} color="#FFFFFF" />
-                </button>
+            {!form.coverImageUri ? (
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setIsDragging(true);
+                }}
+                onDragLeave={(e) => {
+                  e.preventDefault();
+                  setIsDragging(false);
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setIsDragging(false);
+                  const file = e.dataTransfer.files?.[0];
+                  if (file) handleImageFile(file);
+                }}
+                style={{
+                  ...styles.uploadDropzone,
+                  borderColor: isDragging
+                    ? '#011F39'
+                    : errors.coverImageUri
+                    ? '#DC2626'
+                    : '#CBD5E1',
+                  backgroundColor: isDragging ? '#F1F5F9' : '#F8FAFC',
+                }}
+              >
+                <div style={styles.uploadIconCircle}>
+                  <Upload size={22} color="#011F39" />
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <p style={styles.uploadMainText}>
+                    <span style={{ fontWeight: 600, color: '#011F39' }}>Click to upload</span> or drag and drop
+                  </p>
+                  <p style={styles.uploadSubText}>PNG, JPG, or WEBP (max 5 MB)</p>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <div style={styles.previewImageContainer}>
+                  <img
+                    src={form.coverImageUri}
+                    alt="Cover preview"
+                    style={styles.previewImage}
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src =
+                        'https://images.unsplash.com/photo-1544717305-2782549b5136?w=800&q=80';
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setForm((prev) => ({ ...prev, coverImageUri: null }));
+                      setSelectedFileName('');
+                      if (fileInputRef.current) fileInputRef.current.value = '';
+                    }}
+                    style={styles.removeImageBtn}
+                    title="Remove image"
+                  >
+                    <X size={14} color="#FFFFFF" />
+                  </button>
+                </div>
+                <div style={styles.imageActionRow}>
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    style={styles.changeImageBtn}
+                  >
+                    <Upload size={14} />
+                    <span>Change Image</span>
+                  </button>
+                  <span style={styles.imageMetaText}>
+                    {selectedFileName || 'Cover image selected'}
+                  </span>
+                </div>
               </div>
             )}
             {errors.coverImageUri && (
@@ -421,7 +491,7 @@ export const EditBlogPage: React.FC = () => {
                 onChange={() => setForm((prev) => ({ ...prev, status: 'PUBLISHED' }))}
               />
               <div>
-                <strong style={{ color: '#166534' }}>Published Live</strong>
+                <strong style={{ color: '#166534' }}>Publish</strong>
                 <div style={styles.statusOptionDesc}>Publicly accessible to all users</div>
               </div>
             </label>
@@ -441,28 +511,8 @@ export const EditBlogPage: React.FC = () => {
                 onChange={() => setForm((prev) => ({ ...prev, status: 'DRAFT' }))}
               />
               <div>
-                <strong style={{ color: '#92400E' }}>Draft Only</strong>
+                <strong style={{ color: '#92400E' }}>Draft</strong>
                 <div style={styles.statusOptionDesc}>Private editorial draft for revision</div>
-              </div>
-            </label>
-
-            <label
-              style={{
-                ...styles.statusOptionLabel,
-                backgroundColor: form.status === 'ARCHIVED' ? '#F1F5F9' : '#FFFFFF',
-                borderColor: form.status === 'ARCHIVED' ? '#64748B' : '#DCE4EC',
-              }}
-            >
-              <input
-                type="radio"
-                name="status"
-                value="ARCHIVED"
-                checked={form.status === 'ARCHIVED'}
-                onChange={() => setForm((prev) => ({ ...prev, status: 'ARCHIVED' }))}
-              />
-              <div>
-                <strong style={{ color: '#475569' }}>Archived</strong>
-                <div style={styles.statusOptionDesc}>Retracted from public catalogs, stored in archive</div>
               </div>
             </label>
           </div>
@@ -762,6 +812,61 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'grid',
     gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
     gap: '16px',
+  },
+  uploadDropzone: {
+    border: '2px dashed #CBD5E1',
+    borderRadius: '12px',
+    padding: '28px 16px',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '12px',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+    backgroundColor: '#F8FAFC',
+  },
+  uploadIconCircle: {
+    width: '44px',
+    height: '44px',
+    borderRadius: '50%',
+    backgroundColor: '#E2E8F0',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  uploadMainText: {
+    margin: 0,
+    fontSize: '14px',
+    color: '#334155',
+  },
+  uploadSubText: {
+    margin: '4px 0 0 0',
+    fontSize: '12px',
+    color: '#64748B',
+  },
+  imageActionRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    marginTop: '10px',
+  },
+  changeImageBtn: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '6px',
+    padding: '8px 14px',
+    borderRadius: '8px',
+    border: '1px solid #011F39',
+    backgroundColor: '#011F39',
+    color: '#FFFFFF',
+    fontSize: '13px',
+    fontWeight: 600,
+    cursor: 'pointer',
+  },
+  imageMetaText: {
+    fontSize: '13px',
+    color: '#64748B',
   },
   imageInputRow: {
     display: 'flex',

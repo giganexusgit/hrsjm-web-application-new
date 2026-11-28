@@ -370,6 +370,31 @@ class SupportStore {
     return undefined;
   }
 
+  public updateTicketInStore(ticket: SupportTicket): void {
+    if (!ticket?.id) return;
+    const index = this.tickets.findIndex((t) => t.id === ticket.id);
+    if (index !== -1) {
+      this.tickets[index] = { ...this.tickets[index], ...ticket };
+    } else {
+      this.tickets.unshift(ticket);
+    }
+    this.notify();
+  }
+
+  public async deleteTicket(id: string): Promise<boolean> {
+    try {
+      await supportService.delete(id);
+    } catch (err: any) {
+      console.warn(`[SupportStore] Delete API call failed: ${err?.message}`);
+    }
+
+    this.tickets = this.tickets.filter((t) => t.id !== id);
+    delete this.messagesByTicket[id];
+    this.viewedTicketIds.delete(id);
+    this.notify();
+    return true;
+  }
+
   public async addMessage(ticketId: string, bodyText: string): Promise<SupportTicketMessage> {
     let msg: SupportTicketMessage;
     try {

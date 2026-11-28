@@ -5,6 +5,7 @@ import { authService } from '@/features/auth/services/authService';
 import { AdminSidebar } from './AdminSidebar';
 import { AdminHeader } from './AdminHeader';
 import { AppErrorBoundary } from '../common/AppErrorBoundary';
+import { pushNotificationService, type PushPermissionState } from '@/features/admin/notifications/services/pushNotificationService';
 
 export const AdminLayout: React.FC = () => {
   const { isAuthenticated, isAdmin, user } = useAuth();
@@ -16,6 +17,30 @@ export const AdminLayout: React.FC = () => {
   const [isMobile, setIsMobile] = useState(
     typeof window !== 'undefined' ? window.innerWidth <= 1024 : false
   );
+  const [pushPermission, setPushPermission] = useState<PushPermissionState>(() =>
+    pushNotificationService.getPermission()
+  );
+  const [dismissedPush, setDismissedPush] = useState<boolean>(() => {
+    try {
+      return sessionStorage.getItem('hrsjm_push_prompt_dismissed') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const handleRequestPush = async () => {
+    const res = await pushNotificationService.requestPermission();
+    setPushPermission(res);
+  };
+
+  const handleDismissPush = () => {
+    setDismissedPush(true);
+    try {
+      sessionStorage.setItem('hrsjm_push_prompt_dismissed', 'true');
+    } catch {
+      // ignore
+    }
+  };
 
   // Auto-collapse sidebar on smaller screens & track isMobile
   useEffect(() => {
@@ -64,6 +89,34 @@ export const AdminLayout: React.FC = () => {
           transition: 'margin-left 0.22s cubic-bezier(0.4, 0, 0.2, 1), width 0.22s cubic-bezier(0.4, 0, 0.2, 1)',
         }}
       >
+        {/* Browser Push Notification Permission Prompt */}
+        {pushPermission === 'default' && !dismissedPush && (
+          <div className="bg-[#011F39] text-white px-4 py-2.5 text-xs flex flex-wrap items-center justify-between gap-2 shadow-sm border-b border-[#FAD465]/30 sticky top-0 z-40 animate-fadeIn">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="p-1 rounded bg-[#FAD465]/20 text-[#FAD465] text-sm shrink-0">🔔</span>
+              <span className="truncate sm:whitespace-normal">
+                <strong>Enable Desktop Push Notifications:</strong> Receive real-time alerts for incoming donations, membership applications, and urgent grievances directly on your device.
+              </span>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={handleRequestPush}
+                className="px-3 py-1 bg-[#FAD465] text-[#011F39] font-bold rounded-md hover:bg-[#ffe58f] transition-colors cursor-pointer shadow-xs"
+              >
+                Allow Notifications
+              </button>
+              <button
+                type="button"
+                onClick={handleDismissPush}
+                className="px-2 py-1 text-slate-300 hover:text-white transition-colors cursor-pointer"
+              >
+                Later
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Top Header */}
         <AdminHeader
           onToggleMobileSidebar={() => setMobileOpen((o) => !o)}

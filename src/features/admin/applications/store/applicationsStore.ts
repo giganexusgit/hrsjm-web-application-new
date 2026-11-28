@@ -12,6 +12,39 @@ import { getOfficialStatutoryDocuments } from '../utils/documentGenerator';
 const STORAGE_KEY = 'hrsjm_local_membership_applications';
 const STORAGE_KEY_VIEWED_APPS = 'hrsjm_admin_viewed_applications_v1';
 
+export function deduplicateAppDocuments(docs: any[]): any[] {
+  if (!Array.isArray(docs)) return [];
+  const seenCats = new Set<string>();
+  const seenPaths = new Set<string>();
+  const result: any[] = [];
+
+  for (const d of docs) {
+    const name = d.document_name || d.title || d.name || '';
+    const uri = d.storage_path || d.uri || d.fileUri || d.url || '';
+    const fileName = d.file_name || d.fileName || '';
+    const s = `${name} ${fileName} ${uri}`.toLowerCase();
+
+    let cat = name.toLowerCase().trim();
+    if (s.includes('photograph') || s.includes('photo') || s.includes('avatar') || s.includes('profile')) {
+      cat = 'PHOTOGRAPH';
+    } else if (s.includes('aadhar') || s.includes('aadhaar') || s.includes('identity') || s.includes('id_proof') || s.includes('id-proof')) {
+      cat = 'ID_PROOF';
+    } else if (s.includes('address') || s.includes('electricity') || s.includes('bill') || s.includes('rent')) {
+      cat = 'ADDRESS_PROOF';
+    } else if (s.includes('qualification') || s.includes('degree') || s.includes('marksheet') || s.includes('certificate')) {
+      cat = 'QUALIFICATION';
+    }
+
+    const pathKey = (uri || fileName).toLowerCase().replace(/\\/g, '/').split('/').pop() || '';
+    if (!seenCats.has(cat) && (!pathKey || !seenPaths.has(pathKey))) {
+      seenCats.add(cat);
+      if (pathKey) seenPaths.add(pathKey);
+      result.push(d);
+    }
+  }
+  return result;
+}
+
 export function mapBackendToApplicationItem(backend: any): MembershipApplicationItem {
   const appData = backend.application_data || {};
   const personal = appData.personal_details || {};
@@ -165,6 +198,8 @@ export function mapBackendToApplicationItem(backend: any): MembershipApplication
       }
     } catch {}
   }
+
+  documents = deduplicateAppDocuments(documents);
 
   // Fallback: If no documents attached yet, provide official statutory verification documents
   // for this registered candidate so the admin can review identity, residence, degree & photo
@@ -484,6 +519,7 @@ class ApplicationsStore {
     this.applications = this.loadPersisted();
     this.viewedApplicationIds = this.loadViewedApplications();
     this.sortInternal();
+    this.persist();
   }
 
   private loadViewedApplications(): Set<string> {
@@ -493,7 +529,10 @@ class ApplicationsStore {
         if (raw) {
           const parsed = JSON.parse(raw);
           if (Array.isArray(parsed)) {
-            return new Set(parsed);
+            const cleaned = parsed.filter(
+              (id: string) => !id.startsWith('app-mbr-') && !id.startsWith('app-sek-')
+            );
+            return new Set(cleaned);
           }
         }
         // Baseline: mark existing applications as viewed so no fake badges appear on first load
@@ -556,8 +595,22 @@ class ApplicationsStore {
         const raw = window.localStorage.getItem(STORAGE_KEY);
         if (raw) {
           const parsed = JSON.parse(raw);
-          if (Array.isArray(parsed)) {
-            return parsed;
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            // Strip out any mock fixture entries
+            return parsed.filter(
+              item =>
+                !item.id?.startsWith('app-mbr-') &&
+                !item.id?.startsWith('app-sek-') &&
+                item.applicationId !== 'HRSJM-SEK-00014' &&
+                item.applicationId !== 'HRSJM-MBR-00002' &&
+                item.applicationId !== 'HRSJM-MBR-00006' &&
+                item.applicationId !== 'HRSJM-SEK-3B856C' &&
+                item.applicationId !== 'HRSJM-SEK-3E19D7' &&
+                item.applicationId !== 'HRSJM-SEK-C5AC70' &&
+                item.applicantName !== 'khan' &&
+                item.applicantName !== 'KS,bs' &&
+                item.applicantName !== '87349'
+            );
           }
         }
       }
@@ -610,19 +663,20 @@ class ApplicationsStore {
     );
   }
 
-  public getStats(): ApplicationStatsData {
+  public getStats(pool?: MembershipApplicationItem[]): ApplicationStatsData {
+    const target = pool || this.applications;
     let underReview = 0;
     let approved = 0;
     let rejected = 0;
 
-    for (const app of this.applications) {
+    for (const app of target) {
       if (app.status === 'under_review' || app.status === 'submitted') underReview++;
       else if (app.status === 'approved') approved++;
       else if (app.status === 'rejected') rejected++;
     }
 
     return {
-      total: this.applications.length,
+      total: target.length,
       underReview,
       approved,
       rejected,
@@ -718,15 +772,77 @@ class ApplicationsStore {
         mapped.push(...aItems.map(mapAssistanceRequestToApplicationItem));
       }
 
-      if (membershipsRes.status === 'fulfilled' || assistanceRes.status === 'fulfilled') {
-        this.applications = mapped;
+      if (mapped.length > 0) {
+        // Merge with existing real local applications without duplicating by ID or Application ID (ignoring any mock fixtures)
+        const nonDuplicateExisting = this.applications.filter(
+          existing =>
+            !existing.id?.startsWith('app-mbr-') &&
+            !existing.id?.startsWith('app-sek-') &&
+            existing.applicationId !== 'HRSJM-SEK-00014' &&
+            existing.applicationId !== 'HRSJM-MBR-00002' &&
+            existing.applicationId !== 'HRSJM-MBR-00006' &&
+            existing.applicationId !== 'HRSJM-SEK-3B856C' &&
+            existing.applicationId !== 'HRSJM-SEK-3E19D7' &&
+            existing.applicationId !== 'HRSJM-SEK-C5AC70' &&
+            existing.applicantName !== 'khan' &&
+            existing.applicantName !== 'KS,bs' &&
+            existing.applicantName !== '87349' &&
+            !mapped.some(m => m.id === existing.id || m.applicationId === existing.applicationId)
+        );
+        this.applications = [...nonDuplicateExisting, ...mapped];
+        this.sortInternal();
+        this.notify();
+      } else {
+        // Backend returned empty list - purge any mock items
+        this.applications = this.applications.filter(
+          existing =>
+            !existing.id?.startsWith('app-mbr-') &&
+            !existing.id?.startsWith('app-sek-') &&
+            existing.applicationId !== 'HRSJM-SEK-00014' &&
+            existing.applicationId !== 'HRSJM-MBR-00002' &&
+            existing.applicationId !== 'HRSJM-MBR-00006' &&
+            existing.applicationId !== 'HRSJM-SEK-3B856C' &&
+            existing.applicationId !== 'HRSJM-SEK-3E19D7' &&
+            existing.applicationId !== 'HRSJM-SEK-C5AC70' &&
+            existing.applicantName !== 'khan' &&
+            existing.applicantName !== 'KS,bs' &&
+            existing.applicantName !== '87349'
+        );
         this.sortInternal();
         this.notify();
       }
     } catch {
-      // Gracefully maintain offline/fixtures state
+      // Gracefully maintain state without mock data
+      this.applications = this.applications.filter(
+        existing =>
+          !existing.id?.startsWith('app-mbr-') &&
+          !existing.id?.startsWith('app-sek-') &&
+          existing.applicationId !== 'HRSJM-SEK-00014' &&
+          existing.applicationId !== 'HRSJM-MBR-00002' &&
+          existing.applicationId !== 'HRSJM-MBR-00006' &&
+          existing.applicationId !== 'HRSJM-SEK-3B856C' &&
+          existing.applicationId !== 'HRSJM-SEK-3E19D7' &&
+          existing.applicationId !== 'HRSJM-SEK-C5AC70' &&
+          existing.applicantName !== 'khan' &&
+          existing.applicantName !== 'KS,bs' &&
+          existing.applicantName !== '87349'
+      );
+      this.notify();
     }
     return this.getAllApplications();
+  }
+
+  public updateApplicationDocuments(id: string, documents: any[]): void {
+    const idx = this.applications.findIndex(a => a.id === id || a.applicationId === id);
+    if (idx !== -1) {
+      const cleanDocs = deduplicateAppDocuments(documents);
+      this.applications[idx] = {
+        ...this.applications[idx],
+        documents: cleanDocs,
+      };
+      this.persist();
+      this.notify();
+    }
   }
 
   public async updateStatus(

@@ -1,5 +1,5 @@
 import type React from 'react';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   X,
   Calendar,
@@ -13,10 +13,8 @@ import {
   Plus,
   Check,
   CheckCircle,
-  CheckCircle2,
-  XCircle,
-  Power,
   Upload,
+  Star,
 } from 'lucide-react';
 import {
   EVENT_CATEGORIES,
@@ -25,6 +23,7 @@ import {
   type CreateEventFormState,
   type EventFormat,
   type EventListItem,
+  isEventFeatured,
 } from '../types/events.types';
 
 export interface CreateEventModalProps {
@@ -67,6 +66,7 @@ const getInitialFormData = (initialEvent?: EventListItem | null): CreateEventFor
       shortInformation: initialEvent.shortInformation || '',
       tags: initialEvent.tags && initialEvent.tags.length > 0 ? initialEvent.tags : [],
       status: initialEvent.status === 'DRAFT' ? 'DRAFT' : 'PUBLISH',
+      isFeatured: isEventFeatured(initialEvent.tags),
       isEnabled: initialEvent.isEnabled !== undefined ? Boolean(initialEvent.isEnabled) : true,
       isDonationEnabled: Boolean(initialEvent.isDonationEnabled),
       donationMessage: initialEvent.donationMessage || '',
@@ -95,6 +95,7 @@ const getInitialFormData = (initialEvent?: EventListItem | null): CreateEventFor
     shortInformation: '',
     tags: ['Community Engagement', 'Legal Awareness'],
     status: 'PUBLISH',
+    isFeatured: false,
     isEnabled: true,
     isDonationEnabled: false,
     donationMessage: '',
@@ -107,6 +108,14 @@ const CreateEventModalContent: React.FC<{
   onSubmit: (form: CreateEventFormState, eventId?: string) => void;
   isLoading?: boolean;
 }> = ({ initialEvent, onClose, onSubmit, isLoading = false }) => {
+  useEffect(() => {
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, []);
+
   const [formData, setFormData] = useState<CreateEventFormState>(() =>
     getInitialFormData(initialEvent),
   );
@@ -202,7 +211,15 @@ const CreateEventModalContent: React.FC<{
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate() || isLoading) return;
-    onSubmit(formData, initialEvent?.id);
+
+    const cleanedTags = (formData.tags || []).filter(
+      (t) => t.trim().toLowerCase() !== 'featured' && t.trim().toLowerCase() !== 'featured event'
+    );
+    if (formData.isFeatured) {
+      cleanedTags.unshift('Featured');
+    }
+
+    onSubmit({ ...formData, tags: cleanedTags }, initialEvent?.id);
     onClose();
   };
 
@@ -490,101 +507,68 @@ const CreateEventModalContent: React.FC<{
                 </div>
               </div>
 
-              <div style={styles.row}>
-                <div style={styles.formGroup}>
-                  <label style={styles.label}>Publication Status</label>
-                  <select
-                    value={formData.status}
-                    onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
-                    style={styles.select}
-                  >
-                    <option value="PUBLISH">Publish Immediately (Upcoming)</option>
-                    <option value="DRAFT">Save as Draft (Admin Only)</option>
-                  </select>
-                </div>
-
-                <div style={styles.formGroup}>
-                  <label style={styles.label}>Event Active Status (Enable / Disable)</label>
-                  <div style={styles.enableDisableBtnGroup}>
-                    <button
-                      type="button"
-                      onClick={() => setFormData({ ...formData, isEnabled: true })}
-                      style={{
-                        ...styles.statusToggleBtn,
-                        backgroundColor: formData.isEnabled ? '#ECFDF5' : '#FFFFFF',
-                        borderColor: formData.isEnabled ? '#10B981' : '#CBD5E1',
-                        color: formData.isEnabled ? '#047857' : '#64748B',
-                        fontWeight: formData.isEnabled ? 700 : 500,
-                      }}
-                    >
-                      <CheckCircle2 size={13} color={formData.isEnabled ? '#10B981' : '#94A3B8'} />
-                      <span>Enable Event</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setFormData({ ...formData, isEnabled: false })}
-                      style={{
-                        ...styles.statusToggleBtn,
-                        backgroundColor: !formData.isEnabled ? '#FEF2F2' : '#FFFFFF',
-                        borderColor: !formData.isEnabled ? '#EF4444' : '#CBD5E1',
-                        color: !formData.isEnabled ? '#B91C1C' : '#64748B',
-                        fontWeight: !formData.isEnabled ? 700 : 500,
-                      }}
-                    >
-                      <XCircle size={13} color={!formData.isEnabled ? '#EF4444' : '#94A3B8'} />
-                      <span>Disable Event</span>
-                    </button>
-                  </div>
-                </div>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Publication Status</label>
+                <select
+                  value={formData.status}
+                  onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
+                  style={styles.select}
+                >
+                  <option value="PUBLISH">Publish</option>
+                  <option value="DRAFT">Draft</option>
+                </select>
               </div>
+            </div>
 
-              {/* Status Explanation Banner */}
-              <div
-                style={{
-                  ...styles.statusBanner,
-                  backgroundColor: formData.isEnabled
-                    ? formData.status === 'PUBLISH'
-                      ? '#F0FDF4'
-                      : '#FFFBEB'
-                    : '#FEF2F2',
-                  borderColor: formData.isEnabled
-                    ? formData.status === 'PUBLISH'
-                      ? '#BBF7D0'
-                      : '#FDE68A'
-                    : '#FECACA',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Power
-                    size={13}
-                    color={
-                      formData.isEnabled
-                        ? formData.status === 'PUBLISH'
-                          ? '#16A34A'
-                          : '#D97706'
-                        : '#DC2626'
-                    }
-                  />
+            {/* Featured Event Toggle Card */}
+            <div
+              style={{
+                ...styles.toggleCard,
+                borderColor: formData.isFeatured ? '#F59E0B' : '#E2E8F0',
+                backgroundColor: formData.isFeatured ? '#FFFDF5' : '#FFFFFF',
+              }}
+            >
+              <div style={styles.toggleRow}>
+                <div style={{ flex: 1, paddingRight: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Star
+                      size={16}
+                      color={formData.isFeatured ? '#D97706' : '#64748B'}
+                      fill={formData.isFeatured ? '#F59E0B' : 'none'}
+                    />
+                    <h4 style={{ ...styles.toggleTitle, color: formData.isFeatured ? '#92400E' : '#011F39' }}>
+                      Featured Event (Website Banner)
+                    </h4>
+                  </div>
+                  <p style={styles.toggleSubtitle}>
+                    {formData.isFeatured
+                      ? '⭐ Active: This event will be displayed in the Featured Event banner on the website. (Any previously featured event will be automatically turned off).'
+                      : 'Only 1 event can be featured on the website at a time. Turn this ON to make this the featured event.'}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={formData.isFeatured}
+                  aria-label="Featured Event Toggle"
+                  onClick={() =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      isFeatured: !prev.isFeatured,
+                    }))
+                  }
+                  style={{
+                    ...styles.toggleBtn,
+                    backgroundColor: formData.isFeatured ? '#D97706' : '#CBD5E1',
+                  }}
+                >
                   <span
                     style={{
-                      fontSize: '11px',
-                      fontWeight: 600,
-                      color: formData.isEnabled
-                        ? formData.status === 'PUBLISH'
-                          ? '#166534'
-                          : '#92400E'
-                        : '#991B1B',
+                      ...styles.toggleThumb,
+                      transform: formData.isFeatured ? 'translateX(20px)' : 'translateX(2px)',
                     }}
-                  >
-                    {formData.isEnabled
-                      ? formData.status === 'PUBLISH'
-                        ? 'Active & Published: Visible across all authorized user sections.'
-                        : 'Enabled Draft: Saved as Draft in Admin Panel (Not visible to users until published).'
-                      : formData.status === 'PUBLISH'
-                      ? 'Disabled (Deactivated): Published but strictly hidden from General Users, Members, and Seekers.'
-                      : 'Disabled Draft: Stored in Admin Panel only.'}
-                  </span>
-                </div>
+                  />
+                </button>
               </div>
             </div>
 
@@ -651,83 +635,7 @@ const CreateEventModalContent: React.FC<{
               )}
             </div>
 
-            {/* CARD 6: Registration Required (Toggle Section) */}
-            <div style={styles.toggleCard}>
-              <div style={styles.toggleRow}>
-                <div style={{ flex: 1, paddingRight: '12px' }}>
-                  <h4 style={styles.toggleTitle}>Registration Required</h4>
-                  <p style={styles.toggleSubtitle}>
-                    {formData.registrationRequired
-                      ? 'Attendees must register to attend this event'
-                      : 'Free Entry — Open to all attendees without prior registration'}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  role="switch"
-                  aria-checked={formData.registrationRequired}
-                  aria-label="Registration Required Toggle"
-                  onClick={() =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      registrationRequired: !prev.registrationRequired,
-                    }))
-                  }
-                  style={{
-                    ...styles.toggleBtn,
-                    backgroundColor: formData.registrationRequired ? '#06294D' : '#CBD5E1',
-                  }}
-                >
-                  <span
-                    style={{
-                      ...styles.toggleThumb,
-                      transform: formData.registrationRequired ? 'translateX(20px)' : 'translateX(2px)',
-                    }}
-                  />
-                </button>
-              </div>
 
-              {formData.registrationRequired && (
-                <div style={styles.toggleCardContent}>
-                  <div style={styles.row}>
-                    <div style={styles.formGroup}>
-                      <label style={styles.label}>Total Seating Capacity</label>
-                      <div style={styles.selectWrap}>
-                        <Users size={15} color="#94A3B8" style={styles.selectIcon} />
-                        <input
-                          type="number"
-                          value={formData.totalSeats}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              totalSeats: e.target.value.replace(/[^0-9]/g, ''),
-                            })
-                          }
-                          placeholder="e.g. 100"
-                          style={styles.selectWithIcon}
-                        />
-                      </div>
-                    </div>
-
-                    <div style={styles.formGroup}>
-                      <label style={styles.label}>Per-Person Ticket Limit</label>
-                      <input
-                        type="number"
-                        value={formData.perPersonLimit}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            perPersonLimit: e.target.value.replace(/[^0-9]/g, ''),
-                          })
-                        }
-                        placeholder="e.g. 2"
-                        style={styles.input}
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
 
               {/* CARD 8: Event Image */}
             <div style={styles.card}>

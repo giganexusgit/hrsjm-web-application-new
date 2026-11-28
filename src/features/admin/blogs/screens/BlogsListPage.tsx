@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useSyncExternalStore } from 'react';
+import React, { useState, useEffect, useMemo, useSyncExternalStore } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Inbox, RefreshCw } from 'lucide-react';
 import { blogsStore } from '../store/blogsStore';
@@ -31,6 +31,10 @@ export const BlogsListPage: React.FC = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [page, setPage] = useState(1);
   const pageSize = 6;
+
+  useEffect(() => {
+    blogsStore.fetchBlogs().catch(() => {});
+  }, []);
 
   // Filter tabs with live counts
   const tabs = useMemo<BlogFilterTab[]>(

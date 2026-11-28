@@ -10,6 +10,7 @@ import { DonationDetailsModal } from '../components/DonationDetailsModal';
 import { DonationReceiptModal } from '../components/DonationReceiptModal';
 import { AddDonationModal } from '../components/AddDonationModal';
 import { RefundConfirmModal } from '../components/RefundConfirmModal';
+import { DonationExportModal } from '../components/DonationExportModal';
 import { donationsService } from '../services/donationsService';
 import type {
   CreateDonationInput,
@@ -33,6 +34,7 @@ export const DonationsListPage: React.FC = () => {
   const [selectedReceipt, setSelectedReceipt] = useState<DonationReceiptModel | null>(null);
   const [refundModalOpen, setRefundModalOpen] = useState(false);
   const [selectedRefundRow, setSelectedRefundRow] = useState<DonationRowModel | null>(null);
+  const [exportModalOpen, setExportModalOpen] = useState(false);
   const [isSubmittingDonation, setIsSubmittingDonation] = useState(false);
   const [isProcessingRefund, setIsProcessingRefund] = useState(false);
 
@@ -168,7 +170,7 @@ export const DonationsListPage: React.FC = () => {
   };
 
   const handleExportCsv = () => {
-    donationsService.exportDonationsCsv(filteredDonations);
+    setExportModalOpen(true);
   };
 
   const handleViewDetails = (row: DonationRowModel) => {
@@ -248,10 +250,10 @@ export const DonationsListPage: React.FC = () => {
           <button
             type="button"
             onClick={handleExportCsv}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-slate-200 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 shadow-sm transition-colors"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-slate-200 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 shadow-sm transition-colors cursor-pointer"
           >
             <Download className="h-4 w-4 text-slate-500" />
-            Export CSV
+            Export
           </button>
           <button
             type="button"
@@ -366,6 +368,12 @@ export const DonationsListPage: React.FC = () => {
         onClose={() => setRefundModalOpen(false)}
         onConfirm={handleConfirmRefund}
         isProcessing={isProcessingRefund}
+      />
+
+      <DonationExportModal
+        isOpen={exportModalOpen}
+        onClose={() => setExportModalOpen(false)}
+        donations={store.donations}
       />
     </div>
   );
