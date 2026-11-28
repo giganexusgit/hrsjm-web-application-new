@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import type { AboutVideoData } from '../types/userHome.types';
 import { X, Check, Share2, ExternalLink, Heart, ArrowRight } from 'lucide-react';
 import { useLockBodyScroll } from '@/hooks/useLockBodyScroll';
+import { ShareModal } from '@/components/common/ShareModal';
 
 export interface AboutVideoModalProps {
   visible: boolean;
@@ -18,33 +19,12 @@ export const AboutVideoModal: React.FC<AboutVideoModalProps> = ({
   onOpenAbout,
   onOpenDonate,
 }) => {
-  const [copiedToast, setCopiedToast] = useState(false);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
   const [playerMode, setPlayerMode] = useState<'youtube' | 'direct'>('youtube');
 
   useLockBodyScroll(visible);
 
   if (!visible) return null;
-
-  const handleShare = async () => {
-    const url = video.videoUrl || window.location.href;
-    if (navigator?.share) {
-      try {
-        await navigator.share({
-          title: video.title,
-          text: video.subtitle,
-          url,
-        });
-        return;
-      } catch {
-        // Fallback
-      }
-    }
-    if (navigator?.clipboard) {
-      await navigator.clipboard.writeText(url);
-      setCopiedToast(true);
-      setTimeout(() => setCopiedToast(false), 2500);
-    }
-  };
 
   return (
     <div
@@ -96,8 +76,8 @@ export const AboutVideoModal: React.FC<AboutVideoModalProps> = ({
 
             <button
               type="button"
-              onClick={handleShare}
-              className="p-1.5 text-slate-500 hover:text-slate-800 rounded-lg hover:bg-slate-200/60 transition-colors"
+              onClick={() => setShareModalOpen(true)}
+              className="p-1.5 text-slate-500 hover:text-slate-800 rounded-lg hover:bg-slate-200/60 transition-colors cursor-pointer"
               title="Share Video"
             >
               <Share2 size={17} />
@@ -180,13 +160,6 @@ export const AboutVideoModal: React.FC<AboutVideoModalProps> = ({
               ))}
             </div>
           )}
-
-          {/* Toast on copied share link */}
-          {copiedToast && (
-            <div className="p-2 rounded bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold text-center">
-              Link copied to clipboard!
-            </div>
-          )}
         </div>
 
         {/* Action Buttons in Footer */}
@@ -230,6 +203,16 @@ export const AboutVideoModal: React.FC<AboutVideoModalProps> = ({
           )}
         </div>
       </div>
+
+      {/* Share Modal */}
+      <ShareModal
+        isOpen={shareModalOpen}
+        onClose={() => setShareModalOpen(false)}
+        title={video.title}
+        summary={video.subtitle}
+        url={video.videoUrl || window.location.href}
+        category={video.badgeLabel || 'Official Video'}
+      />
     </div>
   );
 };

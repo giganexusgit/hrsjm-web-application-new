@@ -24,6 +24,7 @@ import {
   formatViews,
 } from '@/features/admin/blogs/types/blog.types';
 import { BlogFilterModal } from '@/features/admin/blogs/components/BlogFilterModal';
+import { ShareModal } from '@/components/common/ShareModal';
 
 export const MemberBlogsPage: React.FC = () => {
   const snapshot = useSyncExternalStore<{ blogs: BlogListItem[]; version: number }>(
@@ -40,6 +41,7 @@ export const MemberBlogsPage: React.FC = () => {
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [activeBlog, setActiveBlog] = useState<BlogListItem | null>(null);
+  const [shareTargetBlog, setShareTargetBlog] = useState<BlogListItem | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
   // New Blog form state
@@ -381,15 +383,7 @@ export const MemberBlogsPage: React.FC = () => {
                             type="button"
                             onClick={() => {
                               setOpenMenuId(null);
-                              if (navigator.share) {
-                                navigator.share({
-                                  title: item.title,
-                                  text: item.excerpt,
-                                });
-                              } else {
-                                navigator.clipboard.writeText(window.location.href);
-                                alert('Blog link copied to clipboard!');
-                              }
+                              setShareTargetBlog(item);
                             }}
                             className="w-full text-left px-3 py-1.5 hover:bg-slate-50 flex items-center gap-2 text-slate-700 cursor-pointer"
                           >
@@ -693,6 +687,16 @@ export const MemberBlogsPage: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+      {shareTargetBlog && (
+        <ShareModal
+          isOpen={!!shareTargetBlog}
+          onClose={() => setShareTargetBlog(null)}
+          title={shareTargetBlog.title}
+          summary={shareTargetBlog.excerpt}
+          thumbnailUrl={shareTargetBlog.thumbnailUrl || undefined}
+          category={shareTargetBlog.category}
+        />
       )}
     </div>
   );

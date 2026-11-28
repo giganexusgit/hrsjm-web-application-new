@@ -9,12 +9,12 @@ import {
   Tag,
   Heart,
   Link2,
-  Check,
 } from 'lucide-react';
 import { eventsStore } from '../store/eventsStore';
 import type { EventListItem } from '../types/events.types';
 import { EventDonationModal } from './EventDonationModal';
 import { useAuth } from '@/features/auth/store/authStore';
+import { ShareModal } from '@/components/common/ShareModal';
 
 export interface EventDetailsViewProps {
   event?: EventListItem | null;
@@ -46,7 +46,7 @@ export const EventDetailsView: React.FC<EventDetailsViewProps> = ({
   const event = propEvent || (eventId ? eventsStore.getEventById(eventId) : null);
   const [coverFailed, setCoverFailed] = useState(false);
   const [isDonationModalOpen, setIsDonationModalOpen] = useState(false);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
 
   if (!event) {
     return (
@@ -118,35 +118,8 @@ export const EventDetailsView: React.FC<EventDetailsViewProps> = ({
     }
   };
 
-  const handleShareEvent = async () => {
-    const formattedDate = formatEventDate(event.startAt);
-    const location = event.location || event.address || 'HRSJM Headquarters';
-    const organizer = event.organizer || 'HRSJM Mission';
-    const shareTitle = event.title;
-    const shareText = `Join "${shareTitle}" on ${formattedDate} at ${location}. Organized by ${organizer}.`;
-    const shareUrl = window.location.href;
-
-    try {
-      if (typeof navigator !== 'undefined' && navigator.share && navigator.canShare && navigator.canShare({ title: shareTitle, text: shareText, url: shareUrl })) {
-        await navigator.share({
-          title: shareTitle,
-          text: shareText,
-          url: shareUrl,
-        });
-        return;
-      }
-    } catch (err) {
-      if ((err as Error).name === 'AbortError') return;
-    }
-
-    try {
-      await navigator.clipboard.writeText(`${shareTitle}\n${shareText}\n${shareUrl}`);
-      setToastMessage('Event link copied to clipboard!');
-      setTimeout(() => setToastMessage(null), 3000);
-    } catch {
-      setToastMessage('Link copied!');
-      setTimeout(() => setToastMessage(null), 3000);
-    }
+  const handleShareEvent = () => {
+    setShareModalOpen(true);
   };
 
   const formattedDate = formatEventDate(event.startAt);
@@ -408,14 +381,6 @@ export const EventDetailsView: React.FC<EventDetailsViewProps> = ({
         </div>
       </main>
 
-      {/* Toast Notification */}
-      {toastMessage && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[#011F39] text-white text-xs sm:text-sm font-semibold px-4 py-2.5 rounded-full shadow-lg flex items-center gap-2 animate-in fade-in slide-in-from-bottom-2">
-          <Check size={16} className="text-[#FAD465]" />
-          <span>{toastMessage}</span>
-        </div>
-      )}
-
       {/* Dedicated Voluntary Donation Modal */}
       <EventDonationModal
         event={event}
@@ -424,6 +389,16 @@ export const EventDetailsView: React.FC<EventDetailsViewProps> = ({
         defaultDonorName={user?.full_name || ''}
         defaultDonorEmail={user?.email || ''}
         defaultDonorMobile={user?.mobile_number || ''}
+      />
+
+      {/* Share Modal */}
+      <ShareModal
+        isOpen={shareModalOpen}
+        onClose={() => setShareModalOpen(false)}
+        title={event.title}
+        summary={event.description}
+        thumbnailUrl={event.coverImageUrl || undefined}
+        category={event.category}
       />
     </div>
   );

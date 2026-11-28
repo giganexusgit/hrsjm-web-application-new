@@ -12,6 +12,7 @@ import {
 import { blogsStore } from '../../admin/blogs/store/blogsStore';
 import type { BlogListItem } from '../../admin/blogs/types/blog.types';
 import { filterBlogsForRole } from '@/features/content';
+import { ShareModal } from '@/components/common/ShareModal';
 
 const BLOG_CATEGORIES = [
   'All Articles',
@@ -87,6 +88,7 @@ export const UserBlogsPage: React.FC = () => {
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All Articles');
   const [activeBlog, setActiveBlog] = useState<BlogListItem | null>(null);
+  const [isShareOpen, setIsShareOpen] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -291,14 +293,7 @@ export const UserBlogsPage: React.FC = () => {
               <span className="text-xs text-slate-500">HRSJM Knowledge & Research Portal</span>
               <button
                 type="button"
-                onClick={() => {
-                  if (navigator.share) {
-                    navigator.share({ title: activeBlog.title, text: activeBlog.excerpt, url: window.location.href });
-                  } else {
-                    navigator.clipboard.writeText(window.location.href);
-                    alert('Article link copied to clipboard!');
-                  }
-                }}
+                onClick={() => setIsShareOpen(true)}
                 className="px-4 py-2 rounded-xl text-xs font-bold text-[#06294D] bg-white border border-slate-200 hover:bg-slate-100 flex items-center gap-1.5 cursor-pointer"
               >
                 <Share2 size={13} />
@@ -307,6 +302,17 @@ export const UserBlogsPage: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {activeBlog && (
+        <ShareModal
+          isOpen={isShareOpen}
+          onClose={() => setIsShareOpen(false)}
+          title={activeBlog.title}
+          summary={activeBlog.excerpt}
+          thumbnailUrl={activeBlog.thumbnailUrl || undefined}
+          category={activeBlog.category}
+        />
       )}
     </div>
   );

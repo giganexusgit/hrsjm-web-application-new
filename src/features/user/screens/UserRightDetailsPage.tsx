@@ -21,7 +21,9 @@ import {
   ExternalLink,
   Download,
   AlertCircle,
+  Share2,
 } from 'lucide-react';
+import { ShareModal } from '@/components/common/ShareModal';
 import {
   getRightDetail,
   type RightsCard,
@@ -253,6 +255,7 @@ export const UserRightDetailsPage: React.FC<UserRightDetailsPageProps> = ({
   const effectiveRightId = rightId || id || 'human-rights';
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const [selectedCard, setSelectedCard] = useState<RightCardDetailData | null>(null);
+  const [isShareOpen, setIsShareOpen] = useState(false);
 
   const rightsListRoute = isSeeker ? '/seeker/rights' : isMember ? '/member/rights' : '/rights';
   const supportRoute = isSeeker ? '/seeker/complaint' : isMember ? '/member/support' : '/support';
@@ -285,12 +288,24 @@ export const UserRightDetailsPage: React.FC<UserRightDetailsPageProps> = ({
           <span>Back to Rights</span>
         </button>
 
-        <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
-          <Link to={rightsListRoute} className="hover:text-[#06294D] transition-colors">
-            Know Your Rights
-          </Link>
-          <span>/</span>
-          <span className="text-[#06294D] font-bold">{content.title}</span>
+        <div className="flex items-center gap-3">
+          <div className="hidden sm:flex items-center gap-2 text-xs text-slate-500 font-medium">
+            <Link to={rightsListRoute} className="hover:text-[#06294D] transition-colors">
+              Know Your Rights
+            </Link>
+            <span>/</span>
+            <span className="text-[#06294D] font-bold">{content.title}</span>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setIsShareOpen(true)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-[#06294D] text-xs font-semibold shadow-2xs transition-all cursor-pointer"
+            title="Share this Rights Guide"
+          >
+            <Share2 size={14} />
+            <span>Share</span>
+          </button>
         </div>
       </div>
 
@@ -815,6 +830,16 @@ export const UserRightDetailsPage: React.FC<UserRightDetailsPageProps> = ({
           </div>
         </div>
       )}
+
+      {/* Share Modal */}
+      <ShareModal
+        isOpen={isShareOpen}
+        onClose={() => setIsShareOpen(false)}
+        title={content.title}
+        summary={content.description}
+        thumbnailUrl={content.heroImage}
+        category={content.badge}
+      />
     </div>
   );
 };

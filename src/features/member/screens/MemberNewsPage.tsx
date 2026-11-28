@@ -23,6 +23,7 @@ import {
   formatViews,
 } from '@/features/admin/news/types/news.types';
 import { NewsFilterModal } from '@/features/admin/news/components/NewsFilterModal';
+import { ShareModal } from '@/components/common/ShareModal';
 
 export const MemberNewsPage: React.FC = () => {
   const snapshot = useSyncExternalStore<{ news: NewsListItem[]; version: number }>(
@@ -38,6 +39,7 @@ export const MemberNewsPage: React.FC = () => {
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [activeArticle, setActiveArticle] = useState<NewsListItem | null>(null);
+  const [shareTargetNews, setShareTargetNews] = useState<NewsListItem | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
   // New News form state
@@ -377,15 +379,7 @@ export const MemberNewsPage: React.FC = () => {
                             type="button"
                             onClick={() => {
                               setOpenMenuId(null);
-                              if (navigator.share) {
-                                navigator.share({
-                                  title: item.title,
-                                  text: item.summary,
-                                });
-                              } else {
-                                navigator.clipboard.writeText(window.location.href);
-                                alert('Article link copied to clipboard!');
-                              }
+                              setShareTargetNews(item);
                             }}
                             className="w-full text-left px-3 py-1.5 hover:bg-slate-50 flex items-center gap-2 text-slate-700 cursor-pointer"
                           >
@@ -684,6 +678,16 @@ export const MemberNewsPage: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+      {shareTargetNews && (
+        <ShareModal
+          isOpen={!!shareTargetNews}
+          onClose={() => setShareTargetNews(null)}
+          title={shareTargetNews.title}
+          summary={shareTargetNews.summary}
+          thumbnailUrl={shareTargetNews.thumbnailUrl || undefined}
+          category={shareTargetNews.category}
+        />
       )}
     </div>
   );
